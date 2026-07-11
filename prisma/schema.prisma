@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("operator")
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Plant {
+  id        String   @id @default(uuid())
+  name      String
+  location  String
+  status    String   @default("operational")
+  image     String?
+  lat       Float?
+  lng       Float?
+  machines  Machine[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Machine {
+  id         String        @id @default(uuid())
+  name       String
+  type       String
+  status     String        @default("running")
+  health     Float         @default(100.0)
+  location   String?
+  plantId    String
+  plant      Plant         @relation(fields: [plantId], references: [id])
+  readings   SensorReading[]
+  alarms     Alarm[]
+  workOrders WorkOrder[]
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+model SensorReading {
+  id        String   @id @default(uuid())
+  machineId String
+  machine   Machine  @relation(fields: [machineId], references: [id])
+  metric    String
+  value     Float
+  unit      String
+  timestamp DateTime @default(now())
+}
+
+model Alarm {
+  id         String    @id @default(uuid())
+  machineId  String
+  machine    Machine   @relation(fields: [machineId], references: [id])
+  severity   String
+  title      String
+  message    String
+  status     String    @default("active")
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+}
+
+model Agent {
+  id        String   @id @default(uuid())
+  name      String
+  type      String
+  status    String   @default("idle")
+  model     String
+  mission   String?
+  progress  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Plan {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  type        String
+  status      String    @default("pending")
+  priority    String    @default("medium")
+  createdBy   String
+  approvedBy  String?
+  plantId     String?
+  approvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model WorkOrder {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  status      String   @default("open")
+  priority    String   @default("medium")
+  machineId   String?
+  machine     Machine? @relation(fields: [machineId], references: [id])
+  assignedTo  String?
+  createdBy   String
+  dueDate     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#413fd6;stop-opacity:0.2"/>
+      <stop offset="100%" style="stop-color:#5efae4;stop-opacity:0.1"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="400" fill="url(#g)"/>
+  <rect x="40" y="60" width="340" height="280" rx="8" fill="rgba(255,255,255,0.1)" stroke="rgba(65,63,214,0.2)" stroke-width="1"/>
+  <rect x="420" y="60" width="340" height="130" rx="8" fill="rgba(255,255,255,0.1)" stroke="rgba(65,63,214,0.2)" stroke-width="1"/>
+  <rect x="420" y="210" width="160" height="130" rx="8" fill="rgba(255,255,255,0.1)" stroke="rgba(65,63,214,0.2)" stroke-width="1"/>
+  <rect x="600" y="210" width="160" height="130" rx="8" fill="rgba(255,255,255,0.1)" stroke="rgba(65,63,214,0.2)" stroke-width="1"/>
+  <polyline points="60,280 100,260 140,270 180,220 220,240 260,190 300,210 340,200 360,230" fill="none" stroke="#413fd6" stroke-width="2"/>
+  <polyline points="440,140 480,120 520,130 560,100 600,110 640,90 680,105 720,85 740,95" fill="none" stroke="#5efae4" stroke-width="2"/>
+</svg>

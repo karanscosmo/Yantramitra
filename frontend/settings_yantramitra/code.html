@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Settings &amp; Profile | YantraMitra</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@600;700&amp;family=Geist:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed": "#09006b",
+                    "on-tertiary": "#ffffff",
+                    "primary-fixed-dim": "#c1c1ff",
+                    "secondary-container": "#5efae4",
+                    "on-background": "#191a28",
+                    "outline": "#767586",
+                    "on-primary-container": "#f6f2ff",
+                    "inverse-on-surface": "#f1efff",
+                    "on-secondary-fixed": "#00201c",
+                    "inverse-surface": "#2e2f3e",
+                    "surface-variant": "#e2e1f4",
+                    "on-tertiary-fixed": "#291800",
+                    "on-surface-variant": "#464555",
+                    "tertiary-container": "#986500",
+                    "surface": "#fbf8ff",
+                    "tertiary": "#774f00",
+                    "on-primary": "#ffffff",
+                    "secondary-fixed": "#5efae4",
+                    "on-secondary-fixed-variant": "#005047",
+                    "surface-tint": "#4948de",
+                    "on-secondary": "#ffffff",
+                    "surface-bright": "#fbf8ff",
+                    "surface-container": "#eeecff",
+                    "secondary-fixed-dim": "#36ddc8",
+                    "on-tertiary-container": "#fff2e5",
+                    "on-secondary-container": "#007165",
+                    "tertiary-fixed-dim": "#ffba4b",
+                    "on-primary-fixed-variant": "#2e29c6",
+                    "error": "#ba1a1a",
+                    "surface-container-high": "#e8e6fa",
+                    "surface-container-highest": "#e2e1f4",
+                    "tertiary-fixed": "#ffddb1",
+                    "surface-container-low": "#f4f2ff",
+                    "on-surface": "#191a28",
+                    "on-error": "#ffffff",
+                    "secondary": "#006b5f",
+                    "primary-container": "#5b5bf0",
+                    "on-error-container": "#93000a",
+                    "primary": "#413fd6",
+                    "inverse-primary": "#c1c1ff",
+                    "surface-dim": "#d9d8ec",
+                    "error-container": "#ffdad6",
+                    "surface-container-lowest": "#ffffff",
+                    "outline-variant": "#c7c4d7",
+                    "background": "#fbf8ff",
+                    "primary-fixed": "#e1dfff",
+                    "on-tertiary-fixed-variant": "#624000"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "nav-width": "72px",
+                    "lg": "40px",
+                    "gutter": "24px",
+                    "xl": "64px",
+                    "base": "4px",
+                    "sm": "16px",
+                    "xs": "8px",
+                    "md": "24px"
+            },
+            "fontFamily": {
+                    "display-hero": ["Geist"],
+                    "section-header": ["Geist"],
+                    "kpi-numeric": ["Space Grotesk"],
+                    "headline-lg": ["Geist"],
+                    "body-md": ["Inter"],
+                    "headline-lg-mobile": ["Geist"],
+                    "label-caps": ["Space Grotesk"]
+            },
+            "fontSize": {
+                    "display-hero": ["56px", {"lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "section-header": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "kpi-numeric": ["20px", {"lineHeight": "24px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                    "headline-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "body-md": ["15px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid #E7E9F5;
+        }
+        .glass-input {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(8px);
+            border: 1px solid #E7E9F5;
+            transition: all 0.3s ease;
+        }
+        .glass-input:focus {
+            outline: none;
+            border-color: #413fd6;
+            box-shadow: 0 0 4px rgba(65, 63, 214, 0.3);
+        }
+        .primary-gradient {
+            background: linear-gradient(135deg, #5B5BF0 0%, #7C7CFA 100%);
+        }
+        .shimmer-btn {
+            position: relative;
+            overflow: hidden;
+        }
+        .shimmer-btn::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transform: rotate(45deg);
+            transition: all 0.5s ease;
+            opacity: 0;
+        }
+        .shimmer-btn:hover::after {
+            opacity: 1;
+            left: 100%;
+        }
+        body {
+            background: radial-gradient(circle at 10% 20%, rgba(91, 91, 240, 0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 90% 80%, rgba(0, 107, 95, 0.03) 0%, transparent 50%),
+                        #fbf8ff;
+            min-height: 100vh;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full h-16 z-50 bg-white/70 backdrop-blur-md border-b border-outline-variant/30 shadow-[0_8px_32px_0_rgba(65,63,214,0.1)] flex justify-between items-center px-md">
+<div class="flex items-center gap-md">
+<span class="font-headline-lg text-headline-lg font-bold text-primary">YantraMitra</span>
+<div class="hidden md:flex items-center space-x-md ml-xl">
+<nav class="flex space-x-md font-body-md text-body-md">
+<a class="text-on-surface-variant font-medium hover:bg-primary/10 transition-colors px-3 py-1 rounded-lg" href="#">Assets</a>
+<a class="text-on-surface-variant font-medium hover:bg-primary/10 transition-colors px-3 py-1 rounded-lg" href="#">Reports</a>
+<a class="text-primary font-bold border-b-2 border-primary px-3 py-1" href="#">Settings</a>
+</nav>
+</div>
+</div>
+<div class="flex items-center gap-sm">
+<div class="relative flex items-center">
+<input class="glass-input rounded-full py-2 px-4 pl-10 w-64 text-body-md focus-within:ring-2 focus-within:ring-primary/50 transition-all" placeholder="Search (⌘K)" type="text"/>
+<span class="material-symbols-outlined absolute left-3 text-on-surface-variant">search</span>
+</div>
+<button class="p-2 rounded-full hover:bg-primary/10 transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-10 h-10 rounded-full border border-primary/20 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a female manufacturing supervisor in a modern, clean tech-inspired industrial setting. She is wearing a minimal grey uniform, and the background is softly blurred with hints of high-tech machinery and ambient indigo lighting, creating a high-end corporate portrait feel." src="/images/placeholder.svg"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar (Right-aligned Rail) -->
+<aside class="fixed right-4 top-24 bottom-24 w-[72px] rounded-full border border-outline-variant/30 bg-white/60 backdrop-blur-xl shadow-[0_0_20px_rgba(65,63,214,0.15)] flex flex-col items-center justify-center space-y-sm py-md z-40">
+<div class="flex flex-col items-center space-y-4">
+<button class="text-on-surface-variant p-3 hover:scale-110 transition-transform duration-200">
+<span class="material-symbols-outlined">dashboard</span>
+</button>
+<button class="text-on-surface-variant p-3 hover:scale-110 transition-transform duration-200">
+<span class="material-symbols-outlined">precision_manufacturing</span>
+</button>
+<button class="text-on-surface-variant p-3 hover:scale-110 transition-transform duration-200">
+<span class="material-symbols-outlined">smart_toy</span>
+</button>
+<button class="text-on-surface-variant p-3 hover:scale-110 transition-transform duration-200">
+<span class="material-symbols-outlined">build</span>
+</button>
+<button class="bg-primary text-on-primary rounded-full p-3 shadow-[0_0_15px_rgba(65,63,214,0.4)] hover:scale-110 transition-transform duration-200">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+<div class="mt-auto">
+<button class="text-on-surface-variant p-3 hover:scale-110 transition-transform duration-200">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="pt-32 pb-xl px-md max-w-6xl mx-auto mr-[100px]">
+<div class="mb-lg">
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-2">Account Settings</h1>
+<p class="text-on-surface-variant">Manage your industrial operations identity and system preferences.</p>
+</div>
+<!-- Tab Interface -->
+<div class="flex gap-gutter mb-md overflow-x-auto pb-2 scrollbar-hide">
+<button class="px-md py-3 rounded-full bg-primary text-on-primary shadow-lg shadow-primary/20 font-medium whitespace-nowrap">Profile</button>
+<button class="px-md py-3 rounded-full glass-card hover:bg-white transition-colors text-on-surface-variant font-medium whitespace-nowrap">Notifications</button>
+<button class="px-md py-3 rounded-full glass-card hover:bg-white transition-colors text-on-surface-variant font-medium whitespace-nowrap">Team &amp; Roles</button>
+<button class="px-md py-3 rounded-full glass-card hover:bg-white transition-colors text-on-surface-variant font-medium whitespace-nowrap">Integrations</button>
+<button class="px-md py-3 rounded-full glass-card hover:bg-white transition-colors text-on-surface-variant font-medium whitespace-nowrap">Security</button>
+</div>
+<!-- Content Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Left Column: User Header -->
+<div class="md:col-span-4 space-y-gutter">
+<div class="glass-card rounded-xl p-md flex flex-col items-center text-center">
+<div class="relative mb-md">
+<div class="w-32 h-32 rounded-full overflow-hidden border-2 border-white shadow-[0_0_30px_rgba(65,63,214,0.3)] ring-4 ring-primary/10">
+<img class="w-full h-full object-cover" data-alt="Close up portrait of a senior operations lead. The lighting is ethereal and moody, featuring soft indigo and teal highlights against a clean white clinical background. High fidelity digital photography style with a focus on professional composure and technological sophistication." src="/images/placeholder.svg"/>
+</div>
+<button class="absolute bottom-1 right-1 bg-primary text-white p-2 rounded-full shadow-lg hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+<h2 class="font-section-header text-section-header mb-1">Elias Thorne</h2>
+<span class="px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-caps text-label-caps tracking-wider mb-sm">Plant Manager</span>
+<p class="text-body-md text-on-surface-variant">Overseeing automated assembly line Alpha-4 and logistics hub Zeta.</p>
+</div>
+<div class="glass-card rounded-xl p-md">
+<h3 class="font-label-caps text-label-caps text-primary mb-md">Connected Facilities</h3>
+<div class="flex flex-wrap gap-xs">
+<div class="px-sm py-2 rounded-full glass-input text-on-surface text-body-md flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+                            Detroit-North
+                        </div>
+<div class="px-sm py-2 rounded-full glass-input text-on-surface text-body-md flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+                            Berlin-Giga
+                        </div>
+<div class="px-sm py-2 rounded-full glass-input text-on-surface text-body-md flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span>
+                            Tokyo-Bay
+                        </div>
+</div>
+</div>
+</div>
+<!-- Right Column: Profile Form -->
+<div class="md:col-span-8 space-y-gutter">
+<div class="glass-card rounded-xl p-md lg:p-xl">
+<div class="flex justify-between items-center mb-xl">
+<h3 class="font-section-header text-section-header">Personal Information</h3>
+<button class="shimmer-btn primary-gradient text-on-primary px-md py-2 rounded-lg font-medium shadow-[0_10px_20px_rgba(91,91,240,0.3)]">Save Changes</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="space-y-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant ml-1">Full Name</label>
+<input class="w-full glass-input rounded-lg px-md py-3 text-on-surface" type="text" value="Elias Thorne"/>
+</div>
+<div class="space-y-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant ml-1">Email Address</label>
+<input class="w-full glass-input rounded-lg px-md py-3 text-on-surface" type="email" value="e.thorne@yantramitra.io"/>
+</div>
+<div class="space-y-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant ml-1">Organization ID</label>
+<input class="w-full glass-input rounded-lg px-md py-3 bg-surface-container-low text-on-surface-variant cursor-not-allowed" readonly="" type="text" value="YM-OPS-4402"/>
+</div>
+<div class="space-y-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant ml-1">Phone (Encrypted)</label>
+<input class="w-full glass-input rounded-lg px-md py-3 text-on-surface" type="text" value="+1 (555) 902-3481"/>
+</div>
+</div>
+<div class="mt-xl space-y-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant ml-1">Bio / Role Description</label>
+<textarea class="w-full glass-input rounded-lg px-md py-3 text-on-surface" rows="4">Expert in neural-link assembly operations. Currently managing a fleet of 40 autonomous agents across two primary continental hubs. Focus on minimizing thermal latency in heavy lifting units.</textarea>
+</div>
+</div>
+<!-- Danger Zone -->
+<div class="rounded-xl border border-error/20 bg-error-container/10 p-md flex flex-col md:flex-row justify-between items-center gap-md">
+<div>
+<h4 class="font-section-header text-[18px] text-error mb-1">Danger Zone</h4>
+<p class="text-body-md text-on-surface-variant max-w-md">Once you delete your account, there is no going back. All node access and operation logs will be scrubbed.</p>
+</div>
+<button class="px-md py-3 rounded-lg border border-error text-error font-medium hover:bg-error hover:text-white transition-all">Delete Account</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full py-md border-t border-outline-variant/20 bg-transparent">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center px-md gap-sm">
+<span class="font-label-caps text-label-caps text-on-surface-variant">© 2024 YantraMitra Platform. All rights reserved.</span>
+<div class="flex gap-md font-body-md text-body-md">
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Sitemap</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Privacy</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Terms</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">API Status</a>
+</div>
+</div>
+</footer>
+<!-- Background Atmospheric Elements -->
+<div class="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
+<div class="absolute top-[20%] left-[-5%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]"></div>
+<div class="absolute bottom-[10%] right-[-10%] w-[30%] h-[30%] bg-secondary-fixed/5 rounded-full blur-[100px]"></div>
+</div>
+<script>
+        // Micro-interactions
+        document.querySelectorAll('.glass-input').forEach(input => {
+            input.addEventListener('focus', () => {
+                input.parentElement.classList.add('scale-[1.01]');
+            });
+            input.addEventListener('blur', () => {
+                input.parentElement.classList.remove('scale-[1.01]');
+            });
+        });
+
+        // Search shortcut visual
+        window.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                document.querySelector('input[type="text"]').focus();
+            }
+        });
+    </script>
+<script src="/js/settings_yantramitra.js" defer></script>
+</body></html>

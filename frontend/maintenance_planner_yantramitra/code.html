@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>YantraMitra | Maintenance Planner</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;family=Geist:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed": "#09006b",
+                    "on-tertiary": "#ffffff",
+                    "primary-fixed-dim": "#c1c1ff",
+                    "secondary-container": "#5efae4",
+                    "on-background": "#191a28",
+                    "outline": "#767586",
+                    "on-primary-container": "#f6f2ff",
+                    "inverse-on-surface": "#f1efff",
+                    "on-secondary-fixed": "#00201c",
+                    "inverse-surface": "#2e2f3e",
+                    "surface-variant": "#e2e1f4",
+                    "on-tertiary-fixed": "#291800",
+                    "on-surface-variant": "#464555",
+                    "tertiary-container": "#986500",
+                    "surface": "#fbf8ff",
+                    "tertiary": "#774f00",
+                    "on-primary": "#ffffff",
+                    "secondary-fixed": "#5efae4",
+                    "on-secondary-fixed-variant": "#005047",
+                    "surface-tint": "#4948de",
+                    "on-secondary": "#ffffff",
+                    "surface-bright": "#fbf8ff",
+                    "surface-container": "#eeecff",
+                    "secondary-fixed-dim": "#36ddc8",
+                    "on-tertiary-container": "#fff2e5",
+                    "on-secondary-container": "#007165",
+                    "tertiary-fixed-dim": "#ffba4b",
+                    "on-primary-fixed-variant": "#2e29c6",
+                    "error": "#ba1a1a",
+                    "surface-container-high": "#e8e6fa",
+                    "surface-container-highest": "#e2e1f4",
+                    "tertiary-fixed": "#ffddb1",
+                    "surface-container-low": "#f4f2ff",
+                    "on-surface": "#191a28",
+                    "on-error": "#ffffff",
+                    "secondary": "#006b5f",
+                    "primary-container": "#5b5bf0",
+                    "on-error-container": "#93000a",
+                    "primary": "#413fd6",
+                    "inverse-primary": "#c1c1ff",
+                    "surface-dim": "#d9d8ec",
+                    "error-container": "#ffdad6",
+                    "surface-container-lowest": "#ffffff",
+                    "outline-variant": "#c7c4d7",
+                    "background": "#fbf8ff",
+                    "primary-fixed": "#e1dfff",
+                    "on-tertiary-fixed-variant": "#624000"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "nav-width": "72px",
+                    "lg": "40px",
+                    "gutter": "24px",
+                    "xl": "64px",
+                    "base": "4px",
+                    "sm": "16px",
+                    "xs": "8px",
+                    "md": "24px"
+            },
+            "fontFamily": {
+                    "display-hero": ["Geist"],
+                    "section-header": ["Geist"],
+                    "kpi-numeric": ["Space Grotesk"],
+                    "headline-lg": ["Geist"],
+                    "body-md": ["Inter"],
+                    "label-caps": ["Space Grotesk"]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid #E7E9F5;
+        }
+        .gantt-grid {
+            background-image: linear-gradient(to right, #E7E9F5 1px, transparent 1px);
+            background-size: 160px 100%;
+        }
+        .primary-glow {
+            box-shadow: 0 0 15px rgba(65, 63, 214, 0.4);
+        }
+        .shimmer {
+            position: relative;
+            overflow: hidden;
+        }
+        .shimmer::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+            transform: rotate(45deg);
+            transition: 0.5s;
+        }
+        .shimmer:hover::after {
+            left: 120%;
+            top: 120%;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c7c4d7;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen overflow-hidden">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full h-16 z-50 bg-white/70 backdrop-blur-md border-b border-outline-variant/30 flex justify-between items-center px-md shadow-[0_8px_32px_0_rgba(65,63,214,0.1)]">
+<div class="flex items-center gap-sm">
+<span class="font-headline-lg text-headline-lg font-bold text-primary">YantraMitra</span>
+<span class="text-on-surface-variant font-label-caps bg-surface-container px-xs py-0.5 rounded-full">PLANNER</span>
+</div>
+<div class="flex-1 max-w-xl mx-md">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-white/50 border border-outline-variant/30 rounded-full py-2 pl-10 pr-4 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none font-body-md" placeholder="Search tasks, assets, or crews..." type="text"/>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-xs font-label-caps border border-outline-variant/50 px-1 rounded">⌘K</span>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-2 text-on-surface-variant hover:bg-primary/10 rounded-full transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-primary/10 rounded-full transition-colors">
+<span class="material-symbols-outlined">factory</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-primary/20">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a female industrial operations manager with a sharp, modern aesthetic. She is wearing a minimal tech-wear jacket in a brightly lit, high-end architectural space with soft blue and indigo accent lighting in the background. The mood is sophisticated and expert." src="/images/placeholder.svg"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar (Right Floating Rail) -->
+<nav class="fixed right-4 top-24 bottom-24 w-[72px] rounded-full glass-panel border border-outline-variant/30 shadow-[0_0_20px_rgba(65,63,214,0.15)] flex flex-col items-center justify-center space-y-sm py-md z-50">
+<a class="group relative" href="#">
+<div class="text-on-surface-variant p-3 hover:scale-110 transition-transform duration-200 group-hover:text-primary">
+<span class="material-symbols-outlined">dashboard</span>
+</div>
+<span class="absolute right-full mr-4 bg-primary text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Dashboard</span>
+</a>
+<a class="group relative" href="#">
+<div class="text-on-surface-variant p-3 hover:scale-110 transition-transform duration-200 group-hover:text-primary">
+<span class="material-symbols-outlined">precision_manufacturing</span>
+</div>
+</a>
+<a class="group relative active" href="#">
+<div class="bg-primary text-on-primary rounded-full p-3 shadow-[0_0_15px_rgba(65,63,214,0.4)] active:scale-95 transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
+</div>
+</a>
+<a class="group relative" href="#">
+<div class="text-on-surface-variant p-3 hover:scale-110 transition-transform duration-200 group-hover:text-primary">
+<span class="material-symbols-outlined">build</span>
+</div>
+</a>
+<div class="flex-1"></div>
+<a class="group relative" href="#">
+<div class="text-on-surface-variant p-3 hover:scale-110 transition-transform duration-200 group-hover:text-primary">
+<span class="material-symbols-outlined">help</span>
+</div>
+</a>
+<a class="group relative" href="#">
+<div class="text-on-surface-variant p-3 hover:scale-110 transition-transform duration-200 group-hover:text-primary">
+<span class="material-symbols-outlined">settings</span>
+</div>
+</a>
+</nav>
+<!-- Main Content Canvas -->
+<main class="pt-16 pr-[100px] h-screen flex">
+<!-- Left Filter Sidebar -->
+<aside class="w-72 h-full glass-panel border-r border-outline-variant/20 p-md flex flex-col gap-md overflow-y-auto">
+<div>
+<h3 class="font-label-caps text-on-surface-variant mb-sm">ASSET LOCATIONS</h3>
+<div class="space-y-xs">
+<label class="flex items-center gap-sm p-2 hover:bg-primary/5 rounded-lg cursor-pointer transition-colors">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-body-md text-on-surface">Main Assembly Plant A</span>
+</label>
+<label class="flex items-center gap-sm p-2 hover:bg-primary/5 rounded-lg cursor-pointer transition-colors">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-body-md text-on-surface">Logistics Hub West</span>
+</label>
+<label class="flex items-center gap-sm p-2 hover:bg-primary/5 rounded-lg cursor-pointer transition-colors">
+<input class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-body-md text-on-surface">R&amp;D Fabricator</span>
+</label>
+<label class="flex items-center gap-sm p-2 hover:bg-primary/5 rounded-lg cursor-pointer transition-colors">
+<input class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-body-md text-on-surface">Data Center Delta</span>
+</label>
+</div>
+</div>
+<div class="pt-md border-t border-outline-variant/20">
+<h3 class="font-label-caps text-on-surface-variant mb-sm">PRIORITY FILTER</h3>
+<div class="flex flex-wrap gap-xs">
+<button class="px-3 py-1.5 rounded-full border border-error/30 text-error text-[11px] font-label-caps bg-error/5 hover:bg-error/10 transition-colors">CRITICAL</button>
+<button class="px-3 py-1.5 rounded-full border border-tertiary/30 text-tertiary text-[11px] font-label-caps bg-tertiary/5 hover:bg-tertiary/10 transition-colors">HIGH</button>
+<button class="px-3 py-1.5 rounded-full border border-secondary/30 text-secondary text-[11px] font-label-caps bg-secondary/5 hover:bg-secondary/10 transition-colors">MEDIUM</button>
+<button class="px-3 py-1.5 rounded-full border border-outline/30 text-on-surface-variant text-[11px] font-label-caps bg-surface-container-low transition-colors">LOW</button>
+</div>
+</div>
+<div class="pt-md border-t border-outline-variant/20">
+<h3 class="font-label-caps text-on-surface-variant mb-sm">MAINTENANCE TYPE</h3>
+<div class="space-y-xs">
+<div class="flex items-center justify-between p-2">
+<span class="text-on-surface font-body-md">Preventive</span>
+<div class="w-10 h-5 bg-primary/20 rounded-full relative cursor-pointer">
+<div class="absolute right-1 top-1 w-3 h-3 bg-primary rounded-full"></div>
+</div>
+</div>
+<div class="flex items-center justify-between p-2">
+<span class="text-on-surface font-body-md">Reactive</span>
+<div class="w-10 h-5 bg-surface-container-highest rounded-full relative cursor-pointer">
+<div class="absolute left-1 top-1 w-3 h-3 bg-outline rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Gantt View Area -->
+<section class="flex-1 flex flex-col min-w-0 bg-white/30 relative">
+<!-- Timeline Header -->
+<div class="h-20 glass-panel border-b border-outline-variant/30 flex items-end">
+<div class="w-48 border-r border-outline-variant/30 h-full flex flex-col justify-center px-md">
+<span class="text-primary font-kpi-numeric text-kpi-numeric">Oct 2024</span>
+<span class="text-on-surface-variant font-label-caps">Week 42</span>
+</div>
+<div class="flex-1 h-full flex overflow-x-hidden">
+<!-- Date Labels -->
+<div class="flex w-full overflow-x-auto no-scrollbar">
+<div class="flex-shrink-0 w-40 h-full flex flex-col justify-center items-center border-r border-outline-variant/20">
+<span class="font-kpi-numeric text-on-surface-variant">21 Mon</span>
+</div>
+<div class="flex-shrink-0 w-40 h-full flex flex-col justify-center items-center border-r border-outline-variant/20 bg-primary/5">
+<span class="font-kpi-numeric text-primary font-bold">22 Tue</span>
+</div>
+<div class="flex-shrink-0 w-40 h-full flex flex-col justify-center items-center border-r border-outline-variant/20">
+<span class="font-kpi-numeric text-on-surface-variant">23 Wed</span>
+</div>
+<div class="flex-shrink-0 w-40 h-full flex flex-col justify-center items-center border-r border-outline-variant/20">
+<span class="font-kpi-numeric text-on-surface-variant">24 Thu</span>
+</div>
+<div class="flex-shrink-0 w-40 h-full flex flex-col justify-center items-center border-r border-outline-variant/20">
+<span class="font-kpi-numeric text-on-surface-variant">25 Fri</span>
+</div>
+<div class="flex-shrink-0 w-40 h-full flex flex-col justify-center items-center border-r border-outline-variant/20">
+<span class="font-kpi-numeric text-on-surface-variant">26 Sat</span>
+</div>
+<div class="flex-shrink-0 w-40 h-full flex flex-col justify-center items-center border-r border-outline-variant/20">
+<span class="font-kpi-numeric text-on-surface-variant">27 Sun</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Gantt Content Rows -->
+<div class="flex-1 overflow-auto gantt-grid">
+<!-- Asset Row 1 -->
+<div class="flex border-b border-outline-variant/10 group">
+<div class="w-48 bg-white/40 border-r border-outline-variant/30 p-md flex-shrink-0 flex items-center gap-xs">
+<span class="material-symbols-outlined text-sm text-primary">robot_2</span>
+<span class="font-label-caps text-on-surface text-[10px]">CNC-7740 (A1)</span>
+</div>
+<div class="flex-1 relative h-20">
+<!-- Task Bar 1 -->
+<div class="absolute top-4 left-[80px] w-[320px] h-12 bg-primary/90 text-white rounded-xl flex items-center px-md gap-sm cursor-move primary-glow hover:scale-[1.02] transition-transform shimmer group/task">
+<span class="material-symbols-outlined">settings_suggest</span>
+<div class="flex flex-col">
+<span class="font-label-caps text-[10px] leading-tight">PREVENTIVE</span>
+<span class="font-body-md text-xs font-bold leading-tight">Spindle Calibration</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Asset Row 2 -->
+<div class="flex border-b border-outline-variant/10 group">
+<div class="w-48 bg-white/40 border-r border-outline-variant/30 p-md flex-shrink-0 flex items-center gap-xs">
+<span class="material-symbols-outlined text-sm text-tertiary">forklift</span>
+<span class="font-label-caps text-on-surface text-[10px]">EV-LOADER (W3)</span>
+</div>
+<div class="flex-1 relative h-20">
+<!-- Task Bar 2 -->
+<div class="absolute top-4 left-[400px] w-[200px] h-12 bg-tertiary/90 text-white rounded-xl flex items-center px-md gap-sm cursor-move shadow-[0_0_15px_rgba(152,101,0,0.3)] hover:scale-[1.02] transition-transform shimmer">
+<span class="material-symbols-outlined">battery_charging_full</span>
+<div class="flex flex-col">
+<span class="font-label-caps text-[10px] leading-tight">HIGH</span>
+<span class="font-body-md text-xs font-bold leading-tight">Battery Swap</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Asset Row 3 -->
+<div class="flex border-b border-outline-variant/10 group">
+<div class="w-48 bg-white/40 border-r border-outline-variant/30 p-md flex-shrink-0 flex items-center gap-xs">
+<span class="material-symbols-outlined text-sm text-error">warning</span>
+<span class="font-label-caps text-on-surface text-[10px]">CONVEYOR-B (A2)</span>
+</div>
+<div class="flex-1 relative h-20">
+<!-- Task Bar 3 -->
+<div class="absolute top-4 left-[20px] w-[440px] h-12 bg-error/90 text-white rounded-xl flex items-center px-md gap-sm cursor-move shadow-[0_0_15px_rgba(186,26,26,0.3)] hover:scale-[1.02] transition-transform shimmer">
+<span class="material-symbols-outlined">emergency</span>
+<div class="flex flex-col">
+<span class="font-label-caps text-[10px] leading-tight">CRITICAL</span>
+<span class="font-body-md text-xs font-bold leading-tight">Emergency Belt Realignment</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Asset Row 4 -->
+<div class="flex border-b border-outline-variant/10 group">
+<div class="w-48 bg-white/40 border-r border-outline-variant/30 p-md flex-shrink-0 flex items-center gap-xs">
+<span class="material-symbols-outlined text-sm text-secondary">eco</span>
+<span class="font-label-caps text-on-surface text-[10px]">HVAC-SYS (R1)</span>
+</div>
+<div class="flex-1 relative h-20">
+<!-- Task Bar 4 -->
+<div class="absolute top-4 left-[640px] w-[280px] h-12 bg-secondary/90 text-white rounded-xl flex items-center px-md gap-sm cursor-move shadow-[0_0_15px_rgba(0,107,95,0.3)] hover:scale-[1.02] transition-transform shimmer">
+<span class="material-symbols-outlined">filter_alt</span>
+<div class="flex flex-col">
+<span class="font-label-caps text-[10px] leading-tight">ROUTINE</span>
+<span class="font-body-md text-xs font-bold leading-tight">Filter Replacement</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Empty Rows for Grid visualization -->
+<div class="flex border-b border-outline-variant/5 h-20"><div class="w-48 border-r border-outline-variant/30 bg-white/20"></div></div>
+<div class="flex border-b border-outline-variant/5 h-20"><div class="w-48 border-r border-outline-variant/30 bg-white/20"></div></div>
+<div class="flex border-b border-outline-variant/5 h-20"><div class="w-48 border-r border-outline-variant/30 bg-white/20"></div></div>
+<div class="flex border-b border-outline-variant/5 h-20"><div class="w-48 border-r border-outline-variant/30 bg-white/20"></div></div>
+</div>
+<!-- Timeline Hover Marker -->
+<div class="absolute top-20 bottom-0 w-px bg-primary z-10 pointer-events-none" id="time-marker" style="left: 200px;">
+<div class="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-primary"></div>
+</div>
+</section>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed bottom-8 right-28 px-6 py-4 rounded-full bg-gradient-to-r from-primary to-[#7C7CFA] text-white flex items-center gap-sm primary-glow transition-all hover:scale-105 active:scale-95 z-50 group overflow-hidden">
+<span class="material-symbols-outlined group-hover:rotate-90 transition-transform">add</span>
+<span class="font-label-caps tracking-widest">+ SCHEDULE TASK</span>
+<div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+</button>
+<!-- Footer -->
+<footer class="fixed bottom-0 left-0 right-0 h-10 px-md flex items-center justify-between border-t border-outline-variant/20 bg-transparent z-40">
+<div class="flex items-center gap-md">
+<span class="text-[10px] font-label-caps text-on-surface-variant">© 2024 YANTRAMITRA PLATFORM</span>
+<div class="flex gap-sm">
+<a class="text-[10px] font-label-caps text-on-surface-variant hover:text-primary transition-colors" href="#">PRIVACY</a>
+<a class="text-[10px] font-label-caps text-on-surface-variant hover:text-primary transition-colors" href="#">API STATUS</a>
+</div>
+</div>
+<div class="flex items-center gap-sm text-[10px] font-label-caps text-on-surface-variant">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+            SYSTEM OPERATIONAL: LATENCY 24MS
+        </div>
+</footer>
+<script>
+        // Micro-interaction: Mouse following time marker
+        const ganttContainer = document.querySelector('section');
+        const timeMarker = document.getElementById('time-marker');
+
+        ganttContainer.addEventListener('mousemove', (e) => {
+            const rect = ganttContainer.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            // Only move if inside the actual scrollable grid area
+            if (x > 192) { // Width of the asset sidebar
+                timeMarker.style.left = `${x}px`;
+                timeMarker.style.opacity = '1';
+            } else {
+                timeMarker.style.opacity = '0';
+            }
+        });
+
+        ganttContainer.addEventListener('mouseleave', () => {
+            timeMarker.style.opacity = '0';
+        });
+
+        // Toggle animation for filter switches
+        document.querySelectorAll('.cursor-pointer.relative').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const dot = this.querySelector('div');
+                const isOff = dot.classList.contains('left-1');
+                if(isOff) {
+                    dot.classList.remove('left-1', 'bg-outline');
+                    dot.classList.add('right-1', 'bg-primary');
+                    this.classList.remove('bg-surface-container-highest');
+                    this.classList.add('bg-primary/20');
+                } else {
+                    dot.classList.add('left-1', 'bg-outline');
+                    dot.classList.remove('right-1', 'bg-primary');
+                    this.classList.add('bg-surface-container-highest');
+                    this.classList.remove('bg-primary/20');
+                }
+            });
+        });
+
+        // Fake drag and drop visual state
+        document.querySelectorAll('.cursor-move').forEach(task => {
+            task.addEventListener('mousedown', () => {
+                task.style.opacity = '0.7';
+                task.style.cursor = 'grabbing';
+            });
+            window.addEventListener('mouseup', () => {
+                task.style.opacity = '1';
+                task.style.cursor = 'move';
+            });
+        });
+    </script>
+<script src="/js/maintenance_planner_yantramitra.js" defer></script>
+</body></html>

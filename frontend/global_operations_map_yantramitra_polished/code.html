@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>YantraMitra | Global Plant Map</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@600;700&amp;family=Geist:wght@700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#f4f2ff",
+                    "surface-variant": "#e2e1f4",
+                    "on-background": "#191a28",
+                    "on-secondary-fixed": "#00201c",
+                    "on-error": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-container": "#5b5bf0",
+                    "error": "#ba1a1a",
+                    "on-surface-variant": "#464555",
+                    "error-container": "#ffdad6",
+                    "on-surface": "#191a28",
+                    "tertiary": "#774f00",
+                    "surface-container-highest": "#e2e1f4",
+                    "tertiary-fixed": "#ffddb1",
+                    "on-secondary-container": "#007165",
+                    "surface-container": "#eeecff",
+                    "surface": "#fbf8ff",
+                    "primary-fixed": "#e1dfff",
+                    "inverse-on-surface": "#f1efff",
+                    "surface-tint": "#4948de",
+                    "secondary-fixed": "#5efae4",
+                    "tertiary-fixed-dim": "#ffba4b",
+                    "primary": "#413fd6",
+                    "on-primary-container": "#f6f2ff",
+                    "on-error-container": "#93000a",
+                    "primary-fixed-dim": "#c1c1ff",
+                    "on-primary-fixed": "#09006b",
+                    "background": "#fbf8ff",
+                    "on-tertiary": "#ffffff",
+                    "secondary-fixed-dim": "#36ddc8",
+                    "on-primary-fixed-variant": "#2e29c6",
+                    "surface-bright": "#fbf8ff",
+                    "inverse-primary": "#c1c1ff",
+                    "secondary-container": "#5efae4",
+                    "on-tertiary-container": "#fff2e5",
+                    "surface-container-high": "#e8e6fa",
+                    "tertiary-container": "#986500",
+                    "outline": "#767586",
+                    "secondary": "#006b5f",
+                    "on-tertiary-fixed-variant": "#624000",
+                    "inverse-surface": "#2e2f3e",
+                    "on-secondary-fixed-variant": "#005047",
+                    "outline-variant": "#c7c4d7",
+                    "surface-dim": "#d9d8ec",
+                    "on-tertiary-fixed": "#291800",
+                    "on-primary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xs": "8px",
+                    "sm": "16px",
+                    "md": "24px",
+                    "lg": "40px",
+                    "gutter": "24px",
+                    "nav-width": "72px",
+                    "base": "4px",
+                    "xl": "64px"
+            },
+            "fontFamily": {
+                    "body-md": ["Inter"],
+                    "headline-lg": ["Geist"],
+                    "label-caps": ["Space Grotesk"],
+                    "kpi-numeric": ["Space Grotesk"],
+                    "display-hero": ["Geist"]
+            },
+            "fontSize": {
+                    "body-md": ["15px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "kpi-numeric": ["20px", {"lineHeight": "24px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                    "display-hero": ["56px", {"lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid #E7E9F5;
+            box-shadow: 0 8px 32px 0 rgba(65, 63, 214, 0.08);
+        }
+        .glow-indigo {
+            box-shadow: 0 0 15px rgba(65, 63, 214, 0.4);
+        }
+        .shimmer {
+            position: relative;
+            overflow: hidden;
+        }
+        .shimmer::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+            transform: rotate(30deg);
+            transition: 0.5s;
+        }
+        .shimmer:hover::after {
+            left: 100%;
+        }
+        .map-container {
+            background: radial-gradient(circle at center, #fbf8ff 0%, #eeecff 100%);
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.33); opacity: 1; }
+            80%, 100% { opacity: 0; }
+        }
+        .pulse-marker::before {
+            content: '';
+            position: absolute;
+            left: -12px;
+            top: -12px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #413fd6;
+            animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-hidden selection:bg-primary/20 selection:text-primary">
+<!-- TopNavBar Shell -->
+<header class="fixed top-0 w-full h-16 z-50 bg-white/70 backdrop-blur-md border-b border-outline-variant/30 shadow-[0_8px_32px_0_rgba(65,63,214,0.1)] flex justify-between items-center px-md">
+<div class="flex items-center gap-sm">
+<span class="font-headline-lg text-headline-lg font-bold text-primary">YantraMitra</span>
+<div class="ml-lg relative group">
+<input class="bg-surface-container/50 border border-outline-variant/30 rounded-full px-md py-1.5 w-64 text-sm focus:ring-2 focus:ring-primary/50 transition-all outline-none" placeholder="Search operations (⌘K)" type="text"/>
+<span class="material-symbols-outlined absolute right-3 top-2 text-outline-variant text-sm">search</span>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined text-primary-fixed-dim hover:bg-primary/10 p-2 rounded-full transition-colors">notifications</button>
+<button class="material-symbols-outlined text-primary-fixed-dim hover:bg-primary/10 p-2 rounded-full transition-colors">factory</button>
+<img class="w-8 h-8 rounded-full border border-primary/20" data-alt="Close-up professional portrait of a tech executive with a soft indigo lighting rim, styled in a dreamy industrial aesthetic with a subtle glassmorphism background effect. High-end, clean, and minimalist photography." src="/images/placeholder.svg"/>
+</div>
+</header>
+<!-- SideNavBar Shell (Right Rail) -->
+<nav class="fixed right-4 top-24 bottom-24 w-[72px] rounded-full border border-outline-variant/30 bg-white/60 backdrop-blur-xl shadow-[0_0_20px_rgba(65,63,214,0.15)] flex flex-col items-center justify-center space-y-sm py-md z-50">
+<div class="flex-1 flex flex-col items-center justify-center space-y-6">
+<a class="text-on-surface-variant p-3 hover:scale-110 transition-transform" href="#"><span class="material-symbols-outlined">dashboard</span></a>
+<a class="bg-primary text-on-primary rounded-full p-3 shadow-[0_0_15px_rgba(65,63,214,0.4)] hover:scale-110 transition-transform" href="#"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">precision_manufacturing</span></a>
+<a class="text-on-surface-variant p-3 hover:scale-110 transition-transform" href="#"><span class="material-symbols-outlined">smart_toy</span></a>
+<a class="text-on-surface-variant p-3 hover:scale-110 transition-transform" href="#"><span class="material-symbols-outlined">build</span></a>
+<a class="text-on-surface-variant p-3 hover:scale-110 transition-transform" href="#"><span class="material-symbols-outlined">settings</span></a>
+</div>
+<div class="pb-sm border-t border-outline-variant/20 pt-sm">
+<a class="text-on-surface-variant p-3 hover:scale-110 transition-transform" href="#"><span class="material-symbols-outlined">help</span></a>
+</div>
+</nav>
+<!-- Main Canvas (Full Bleed Map) -->
+<main class="h-screen w-screen map-container relative overflow-hidden pt-16">
+<!-- Background Map Visualization (High-end Geo Viz) -->
+<div class="absolute inset-0 z-0">
+<div class="w-full h-full grayscale opacity-40 mix-blend-multiply bg-no-repeat bg-center bg-contain bg-[url('/images/factory.svg')]" data-alt="A highly detailed minimalist 2D vector world map in a soft lavender and indigo color palette. The map uses thin, precise lines for borders and subtle dots for landmasses, creating a dreamy industrial aesthetic. The lighting is ethereal and airy, with soft ambient glows suggesting global connectivity." data-location="World" style="background-image: url('/images/factory.svg')">
+</div>
+<!-- Interactive Map Pins -->
+<div id="pins-container"><!-- Global Network Lines -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none z-0" preserveaspectratio="none" viewbox="0 0 1000 1000">
+<path d="M 220 350 Q 450 200 680 520" fill="none" opacity="0.3" stroke="#413fd6" stroke-width="1"></path>
+<path d="M 680 520 Q 750 550 820 580" fill="none" opacity="0.3" stroke="#413fd6" stroke-width="1"></path>
+<path d="M 320 650 Q 500 600 680 520" fill="none" opacity="0.3" stroke="#413fd6" stroke-width="1"></path>
+<path d="M 220 350 Q 350 320 480 320" fill="none" opacity="0.3" stroke="#413fd6" stroke-width="1"></path>
+</svg>
+<!-- Central Hub Pin -->
+<div class="absolute top-[45%] left-[50%] z-10 group cursor-pointer">
+<div class="w-4 h-4 bg-primary rounded-full pulse-marker relative shadow-[0_0_15px_rgba(65,63,214,0.8)]"></div>
+</div>
+<!-- Detroit Pin -->
+<div class="absolute top-[35%] left-[22%] z-10 group cursor-pointer">
+<div class="w-2.5 h-2.5 bg-primary rounded-full pulse-marker relative shadow-[0_0_8px_rgba(65,63,214,0.8)]"></div>
+<!-- Tooltip Card -->
+<div class="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none w-48">
+<div class="glass-panel p-sm rounded-xl border border-white/50 text-xs">
+<h4 class="font-label-caps text-primary mb-1">DETROIT PLANT</h4>
+<div class="flex justify-between mb-1"><span class="text-on-surface-variant">Machines</span><span class="font-kpi-numeric text-primary">124</span></div>
+<div class="flex justify-between"><span class="text-on-surface-variant">Alerts</span><span class="text-error font-semibold">2 Critical</span></div>
+</div>
+</div>
+</div>
+<!-- Sao Paulo Pin -->
+<div class="absolute top-[65%] left-[32%] z-10 group cursor-pointer">
+<div class="w-2.5 h-2.5 bg-secondary-fixed-dim rounded-full pulse-marker relative shadow-[0_0_8px_rgba(54,221,200,0.8)]" style="background-color: #36ddc8;"></div>
+</div>
+<!-- Berlin Pin -->
+<div class="absolute top-[32%] left-[48%] z-10 group cursor-pointer">
+<div class="w-2.5 h-2.5 bg-primary rounded-full pulse-marker relative shadow-[0_0_8px_rgba(65,63,214,0.8)]"></div>
+</div>
+<!-- Mumbai Pin -->
+<div class="absolute top-[52%] left-[68%] z-10 group cursor-pointer">
+<div class="w-2.5 h-2.5 bg-primary rounded-full pulse-marker relative shadow-[0_0_8px_rgba(65,63,214,0.8)]"></div>
+<!-- Tooltip Card -->
+<div class="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none w-48">
+<div class="glass-panel p-sm rounded-xl border border-white/50 text-xs">
+<h4 class="font-label-caps text-primary mb-1">MUMBAI PLANT</h4>
+<div class="flex justify-between mb-1"><span class="text-on-surface-variant">Machines</span><span class="font-kpi-numeric text-primary">482</span></div>
+<div class="flex justify-between"><span class="text-on-surface-variant">Alerts</span><span class="text-secondary font-semibold">Operational</span></div>
+</div>
+</div>
+</div>
+<!-- Singapore Pin -->
+<div class="absolute top-[58%] left-[82%] z-10 group cursor-pointer">
+<div class="w-2.5 h-2.5 bg-secondary-fixed-dim rounded-full pulse-marker relative shadow-[0_0_8px_rgba(54,221,200,0.8)]" style="background-color: #36ddc8;"></div>
+</div>
+</div>
+</div>
+<!-- Left Sidebar Floating List -->
+<aside class="absolute left-md top-lg bottom-lg w-80 glass-panel rounded-3xl z-20 flex flex-col p-sm overflow-hidden">
+<div class="px-sm py-4 border-b border-outline-variant/20">
+<h2 class="font-headline-lg text-section-header text-primary">Plant Network</h2>
+<p class="font-label-caps text-on-surface-variant text-[10px]">REAL-TIME OPERATIONAL INTELLIGENCE</p>
+</div>
+<div class="flex-1 overflow-y-auto space-y-3 p-1 custom-scrollbar mt-4">
+<!-- Plant Card: Detroit -->
+<div class="glass-panel p-sm rounded-2xl hover:border-primary/40 transition-all group cursor-pointer border-transparent bg-white/40">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h3 class="font-semibold text-on-surface text-lg">Detroit</h3>
+<span class="font-label-caps text-[10px] text-on-surface-variant">US NORTH-EAST</span>
+</div>
+<div class="bg-error-container text-on-error-container text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Attention</div>
+</div>
+<div class="grid grid-cols-2 gap-2 mt-4">
+<div class="bg-surface-container-low/50 p-2 rounded-xl">
+<p class="text-[10px] text-on-surface-variant uppercase font-bold">Health</p>
+<p class="font-kpi-numeric text-error">72%</p>
+</div>
+<div class="bg-surface-container-low/50 p-2 rounded-xl">
+<p class="text-[10px] text-on-surface-variant uppercase font-bold">Uptime</p>
+<p class="font-kpi-numeric text-primary">94.8%</p>
+</div>
+</div>
+</div>
+<!-- Plant Card: Mumbai -->
+<div class="glass-panel p-sm rounded-2xl hover:border-primary/40 transition-all group cursor-pointer border-transparent bg-white/40">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h3 class="font-semibold text-on-surface text-lg">Mumbai</h3>
+<span class="font-label-caps text-[10px] text-on-surface-variant">INDIA WEST</span>
+</div>
+<div class="bg-secondary-container text-on-secondary-container text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Optimized</div>
+</div>
+<div class="grid grid-cols-2 gap-2 mt-4">
+<div class="bg-surface-container-low/50 p-2 rounded-xl">
+<p class="text-[10px] text-on-surface-variant uppercase font-bold">Health</p>
+<p class="font-kpi-numeric text-secondary">98%</p>
+</div>
+<div class="bg-surface-container-low/50 p-2 rounded-xl">
+<p class="text-[10px] text-on-surface-variant uppercase font-bold">Uptime</p>
+<p class="font-kpi-numeric text-primary">99.9%</p>
+</div>
+</div>
+</div>
+<!-- Plant Card: Berlin -->
+<div class="glass-panel p-sm rounded-2xl hover:border-primary/40 transition-all group cursor-pointer border-transparent bg-white/40">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h3 class="font-semibold text-on-surface text-lg">Berlin</h3>
+<span class="font-label-caps text-[10px] text-on-surface-variant">EUROPE CENTRAL</span>
+</div>
+<div class="bg-surface-container-highest text-on-surface-variant text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Operational</div>
+</div>
+<div class="grid grid-cols-2 gap-2 mt-4">
+<div class="bg-surface-container-low/50 p-2 rounded-xl">
+<p class="text-[10px] text-on-surface-variant uppercase font-bold">Health</p>
+<p class="font-kpi-numeric text-primary">89%</p>
+</div>
+<div class="bg-surface-container-low/50 p-2 rounded-xl">
+<p class="text-[10px] text-on-surface-variant uppercase font-bold">Uptime</p>
+<p class="font-kpi-numeric text-primary">97.2%</p>
+</div>
+</div>
+</div>
+<!-- Plant Card: Singapore -->
+<div class="glass-panel p-sm rounded-2xl hover:border-primary/40 transition-all group cursor-pointer border-transparent bg-white/40">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h3 class="font-semibold text-on-surface text-lg">Singapore</h3>
+<span class="font-label-caps text-[10px] text-on-surface-variant">APAC SOUTH</span>
+</div>
+<div class="bg-secondary-container text-on-secondary-container text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Optimized</div>
+</div>
+</div>
+<!-- Plant Card: Sao Paulo -->
+<div class="glass-panel p-sm rounded-2xl hover:border-primary/40 transition-all group cursor-pointer border-transparent bg-white/40">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h3 class="font-semibold text-on-surface text-lg">Sao Paulo</h3>
+<span class="font-label-caps text-[10px] text-on-surface-variant">LATAM BRAZIL</span>
+</div>
+<div class="bg-surface-container-highest text-on-surface-variant text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Operational</div>
+</div>
+</div>
+</div>
+<div class="p-sm pt-4 mt-auto">
+<button class="w-full bg-primary text-on-primary py-3 rounded-2xl font-label-caps shimmer flex items-center justify-center gap-2 glow-indigo">
+<span class="material-symbols-outlined text-sm">add_location_alt</span>
+                    ADD NEW FACILITY
+                </button>
+</div>
+</aside>
+<!-- KPI Bottom Strip -->
+<div class="absolute bottom-md left-[340px] right-32 h-20 glass-panel rounded-3xl flex items-center justify-between px-lg animate-fade-in z-20">
+<div class="flex items-center gap-md">
+<div class="flex flex-col relative"><svg class="absolute inset-0 w-full h-full opacity-20 pointer-events-none" viewbox="0 0 100 40">
+<path d="M0 35 L20 30 L40 32 L60 25 L80 28 L100 20" fill="none" stroke="#413fd6" stroke-width="2"></path>
+</svg>
+<span class="text-[10px] font-label-caps text-on-surface-variant">GLOBAL HEALTH</span>
+<div class="flex items-center gap-2">
+<span class="font-display-hero text-kpi-numeric text-primary leading-none">92.4</span>
+<span class="text-secondary text-xs">▲ 0.8%</span>
+</div>
+</div>
+<div class="w-px h-8 bg-outline-variant/30"></div>
+<div class="flex flex-col relative"><svg class="absolute inset-0 w-full h-full opacity-20 pointer-events-none" viewbox="0 0 100 40">
+<path d="M0 30 L25 35 L50 25 L75 30 L100 15" fill="none" stroke="#413fd6" stroke-width="2"></path>
+</svg>
+<span class="text-[10px] font-label-caps text-on-surface-variant">ACTIVE AGENTS</span>
+<span class="font-display-hero text-kpi-numeric text-on-surface leading-none">1,482</span>
+</div>
+<div class="w-px h-8 bg-outline-variant/30"></div>
+<div class="flex flex-col relative"><svg class="absolute inset-0 w-full h-full opacity-20 pointer-events-none" viewbox="0 0 100 40">
+<path d="M0 20 L30 25 L60 15 L100 35" fill="none" stroke="#ba1a1a" stroke-width="2"></path>
+</svg>
+<span class="text-[10px] font-label-caps text-on-surface-variant">PENDING ALERTS</span>
+<span class="font-display-hero text-kpi-numeric text-error leading-none">14</span>
+</div>
+</div>
+<div class="flex gap-sm">
+<button class="bg-surface-container-low border border-outline-variant/30 text-on-surface-variant px-sm py-2 rounded-full font-label-caps text-[10px] hover:bg-primary/5 transition-all">VIEW ANALYTICS</button>
+<button class="bg-surface-container-low border border-outline-variant/30 text-on-surface-variant px-sm py-2 rounded-full font-label-caps text-[10px] hover:bg-primary/5 transition-all">EXPORT REPORT</button>
+</div>
+</div>
+<!-- Atmospheric Element: Gradient Overlay -->
+<div class="absolute inset-0 pointer-events-none z-[1] bg-[radial-gradient(circle_at_top_right,rgba(91,91,240,0.05),transparent)]"></div>
+</main>
+<!-- Footer Shell -->
+<footer class="fixed bottom-0 w-full bg-transparent border-t border-outline-variant/20 z-40">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center px-md py-4">
+<p class="font-body-md text-on-surface-variant text-xs">© 2024 YantraMitra Platform. All rights reserved.</p>
+<div class="flex gap-md mt-2 md:mt-0">
+<a class="text-on-surface-variant text-xs hover:text-primary transition-colors" href="#">Sitemap</a>
+<a class="text-on-surface-variant text-xs hover:text-primary transition-colors" href="#">Privacy</a>
+<a class="text-on-surface-variant text-xs hover:text-primary transition-colors" href="#">Terms</a>
+<a class="text-on-surface-variant text-xs hover:text-primary transition-colors" href="#">API Status</a>
+</div>
+</div>
+</footer>
+<script>
+        // Micro-interactions for map pins and plant cards
+        document.querySelectorAll('.glass-panel').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-2px)';
+                card.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Search shortcut listener
+        window.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                document.querySelector('input').focus();
+            }
+        });
+    </script>
+<script src="/js/global_operations_map_yantramitra_polished.js" defer></script>
+</body></html>
