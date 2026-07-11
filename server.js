@@ -217,11 +217,13 @@ app.post('/api/auth/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 20, keyPr
 app.post('/api/auth/signup', rateLimit({ windowMs: 60 * 60 * 1000, max: 10, keyPrefix: 'signup' }), async (req, res) => {
   try {
     const { email, password, name } = req.body;
+    const allowedSignupRoles = ['operator', 'maintenance', 'plant_manager', 'executive'];
+    const role = allowedSignupRoles.includes(req.body.role) ? req.body.role : 'operator';
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) return res.status(400).json({ error: 'Email already registered' });
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { email, password: hashedPassword, name: name || email.split('@')[0] }
+      data: { email, password: hashedPassword, name: name || email.split('@')[0], role }
     });
     const token = jwt.sign({ id: user.id, email: user.email, name: user.name, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
     setAuthCookie(res, token);

@@ -10,6 +10,8 @@
     const emailInput = form.querySelector('input[type="email"]');
     const passwordInput = form.querySelector('input[type="password"]');
     const nameInput = form.querySelector('input[type="text"]') || form.querySelector('input:not([type="email"]):not([type="password"])');
+    const roleInput = form.querySelector('select');
+    const termsInput = form.querySelector('#terms');
     const submitBtn = form.querySelector('button[type="submit"]');
     const errorEl = document.createElement('p');
     errorEl.className = 'text-error text-sm mt-2 hidden';
@@ -20,13 +22,19 @@
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (termsInput && !termsInput.checked) {
+        errorEl.textContent = 'Please accept the Terms and Privacy Policy to continue.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
       submitBtn.disabled = true;
       submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Creating account...';
 
       const { status, data } = await post('/api/auth/signup', {
         email: emailInput ? emailInput.value.trim() : '',
         password: passwordInput ? passwordInput.value : '',
-        name: nameInput ? nameInput.value.trim() : ''
+        name: nameInput ? nameInput.value.trim() : '',
+        role: roleInput ? roleInput.value : 'operator'
       });
 
       if (status === 200) {
