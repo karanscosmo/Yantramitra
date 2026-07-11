@@ -36,7 +36,7 @@
 
     if (!isUser) {
       const avatarEl = document.createElement('img');
-      avatarEl.src = '/images/yantranklan-avatar.svg';
+      avatarEl.src = '/images/yantranklan-avatar-ai.jpg';
       avatarEl.alt = 'YantraNklan';
       avatarEl.className = 'w-10 h-10 rounded-full mt-1 shrink-0 border-2 border-secondary/30 self-start';
       
@@ -79,7 +79,7 @@
     bubble.className = 'max-w-[90%] flex gap-sm';
 
     const avatarEl = document.createElement('img');
-    avatarEl.src = '/images/yantranklan-avatar.svg';
+    avatarEl.src = '/images/yantranklan-avatar-ai.jpg';
     avatarEl.alt = 'YantraNklan';
     avatarEl.className = 'w-10 h-10 rounded-full mt-1 shrink-0 border-2 border-secondary/30 self-start';
 
@@ -154,8 +154,6 @@
 
     // Wire up the input
     const input = document.querySelector('input[type="text"]');
-    const sendBtn = document.querySelector('.bg-primary-container button, button:has(.material-symbols-outlined)') || document.querySelector('button:has(span.material-symbols-outlined:contains(send))');
-    
     // Find the send button - it's the one with the "send" icon
     const allButtons = document.querySelectorAll('button');
     let sendButton = null;

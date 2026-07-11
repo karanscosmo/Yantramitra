@@ -43,7 +43,9 @@
       }
     });
 
-    const viewAllBtn = document.querySelector('button:has(span:contains("VIEW ALL"))');
+    const viewAllBtn = Array.from(document.querySelectorAll('button')).find(btn =>
+      btn.textContent.trim().toUpperCase().includes('VIEW ALL')
+    );
     if (viewAllBtn) {
       viewAllBtn.addEventListener('click', () => { window.location.href = '/map'; });
     }

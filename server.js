@@ -8,11 +8,61 @@ const prisma = require('./lib/prisma');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'yantramitra-jwt-secret-2026';
+const isProduction = process.env.NODE_ENV === 'production';
 
+if (isProduction && JWT_SECRET === 'yantramitra-jwt-secret-2026') {
+  throw new Error('JWT_SECRET must be set in production');
+}
+
+const authCookieOptions = {
+  httpOnly: true,
+  maxAge: 7 * 86400000,
+  sameSite: 'lax',
+  secure: isProduction,
+};
+
+app.disable('x-powered-by');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
+app.use((req, res, next) => {
+  if (!['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method)) return next();
+  const origin = req.headers.origin;
+  if (!origin) return next();
+  try {
+    if (new URL(origin).host === req.headers.host) return next();
+  } catch {}
+  return res.status(403).json({ error: 'Cross-origin request blocked' });
+});
 app.use(express.static(path.join(__dirname, 'public')));
+
+const rateBuckets = new Map();
+function rateLimit({ windowMs, max, keyPrefix }) {
+  return (req, res, next) => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const key = `${keyPrefix}:${ip}`;
+    const now = Date.now();
+    const bucket = rateBuckets.get(key) || { count: 0, resetAt: now + windowMs };
+    if (bucket.resetAt <= now) {
+      bucket.count = 0;
+      bucket.resetAt = now + windowMs;
+    }
+    bucket.count += 1;
+    rateBuckets.set(key, bucket);
+    res.setHeader('RateLimit-Limit', String(max));
+    res.setHeader('RateLimit-Remaining', String(Math.max(0, max - bucket.count)));
+    res.setHeader('RateLimit-Reset', String(Math.ceil(bucket.resetAt / 1000)));
+    if (bucket.count > max) return res.status(429).json({ error: 'Too many requests. Please try again shortly.' });
+    next();
+  };
+}
 
 function getToken(req) {
   if (req.cookies && req.cookies.token) return req.cookies.token;
@@ -52,10 +102,70 @@ function authApi(req, res, next) {
   }
 }
 
+function requireRole(...roles) {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+    next();
+  };
+}
+
+function pickAllowed(source, allowedFields) {
+  const data = {};
+  for (const field of allowedFields) {
+    if (Object.prototype.hasOwnProperty.call(source, field)) data[field] = source[field];
+  }
+  return data;
+}
+
+function validateEnum(value, allowedValues, fieldName) {
+  if (value == null || allowedValues.includes(value)) return null;
+  return `${fieldName} must be one of: ${allowedValues.join(', ')}`;
+}
+
 function servePage(pageName) {
   return (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend', pageName, 'code.html'));
   };
+}
+
+function setAuthCookie(res, token) {
+  res.cookie('token', token, authCookieOptions);
+}
+
+function clearAuthCookie(res) {
+  res.clearCookie('token', {
+    sameSite: authCookieOptions.sameSite,
+    secure: authCookieOptions.secure,
+  });
+}
+
+function infoPage(title, content) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${title} | YantraMitra</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-[#fbf8ff] text-[#191a28]">
+  <main class="mx-auto max-w-3xl px-6 py-12">
+    <a href="/" class="inline-flex items-center gap-2 text-[#413fd6] font-semibold mb-8">YantraMitra</a>
+    <section class="rounded-lg border border-[#c7c4d7] bg-white p-8 shadow-sm">
+      <h1 class="text-3xl font-bold mb-4">${title}</h1>
+      <div class="space-y-4 text-base leading-7 text-[#464555]">${content}</div>
+      <div class="mt-8 flex flex-wrap gap-3 text-sm">
+        <a class="text-[#413fd6] font-semibold" href="/dashboard">Dashboard</a>
+        <a class="text-[#413fd6] font-semibold" href="/assets">Assets</a>
+        <a class="text-[#413fd6] font-semibold" href="/agents">Agents</a>
+        <a class="text-[#413fd6] font-semibold" href="/ai-console">YantraNklan</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>`;
 }
 
 app.get('/', authOptional, servePage('yantramitra_home'));
@@ -78,8 +188,20 @@ app.get('/plans', authRequired, servePage('plan_review_yantramitra'));
 app.get('/maintenance', authRequired, servePage('maintenance_planner_yantramitra'));
 app.get('/work-orders', authRequired, servePage('work_orders_yantramitra'));
 app.get('/settings', authRequired, servePage('settings_yantramitra'));
+app.get('/privacy', (req, res) => {
+  res.send(infoPage('Privacy', '<p>YantraMitra is designed for company-controlled operational data. Production deployments should connect only approved databases, restrict user access, and configure OpenAI keys under the company account.</p><p>This demo build does not sell personal data. Profile and operations data are used to provide dashboards, work order workflows, and YantraNklan AI responses.</p>'));
+});
+app.get('/terms', (req, res) => {
+  res.send(infoPage('Terms', '<p>YantraMitra is provided for authorized industrial operations teams. Users are responsible for validating AI-assisted recommendations before taking physical maintenance or production action.</p><p>Company deployments should define their own operating procedures, approval rules, and incident response policy.</p>'));
+});
+app.get('/sitemap', (req, res) => {
+  res.send(infoPage('Sitemap', '<p><a class="text-[#413fd6] font-semibold" href="/">Home</a></p><p><a class="text-[#413fd6] font-semibold" href="/dashboard">Dashboard</a></p><p><a class="text-[#413fd6] font-semibold" href="/map">Global Map</a></p><p><a class="text-[#413fd6] font-semibold" href="/assets">Assets</a></p><p><a class="text-[#413fd6] font-semibold" href="/digital-twin">Digital Twin</a></p><p><a class="text-[#413fd6] font-semibold" href="/ai-console">YantraNklan AI Console</a></p><p><a class="text-[#413fd6] font-semibold" href="/agents">Agent Mission Control</a></p><p><a class="text-[#413fd6] font-semibold" href="/plans">Plan Review</a></p><p><a class="text-[#413fd6] font-semibold" href="/maintenance">Maintenance Planner</a></p><p><a class="text-[#413fd6] font-semibold" href="/work-orders">Work Orders</a></p><p><a class="text-[#413fd6] font-semibold" href="/settings">Settings</a></p>'));
+});
+app.get('/api-status', (req, res) => {
+  res.send(infoPage('API Status', `<p><strong>Status:</strong> Operational</p><p><strong>Runtime:</strong> Node.js / Express</p><p><strong>Uptime:</strong> ${Math.round(process.uptime())} seconds</p><p><strong>AI assistant:</strong> ${process.env.OPENAI_API_KEY ? 'Configured' : 'Needs OPENAI_API_KEY'}</p>`));
+});
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 20, keyPrefix: 'login' }), async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await prisma.user.findUnique({ where: { email } });
@@ -87,12 +209,12 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
     const token = jwt.sign({ id: user.id, email: user.email, name: user.name, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
-    res.cookie('token', token, { httpOnly: true, maxAge: 7 * 86400000, sameSite: 'lax' });
+    setAuthCookie(res, token);
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/auth/signup', async (req, res) => {
+app.post('/api/auth/signup', rateLimit({ windowMs: 60 * 60 * 1000, max: 10, keyPrefix: 'signup' }), async (req, res) => {
   try {
     const { email, password, name } = req.body;
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -102,13 +224,18 @@ app.post('/api/auth/signup', async (req, res) => {
       data: { email, password: hashedPassword, name: name || email.split('@')[0] }
     });
     const token = jwt.sign({ id: user.id, email: user.email, name: user.name, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
-    res.cookie('token', token, { httpOnly: true, maxAge: 7 * 86400000, sameSite: 'lax' });
+    setAuthCookie(res, token);
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/auth/reset-password', async (req, res) => {
+app.post('/api/auth/reset-password', rateLimit({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'reset-password' }), async (req, res) => {
   try {
+    if (process.env.ENABLE_DEMO_PASSWORD_RESET !== 'true') {
+      return res.status(501).json({
+        error: 'Password reset requires email verification setup before production use'
+      });
+    }
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
     const user = await prisma.user.findUnique({ where: { email } });
@@ -130,18 +257,18 @@ app.get('/api/auth/me', async (req, res) => {
 });
 
 app.post('/api/auth/logout', (req, res) => {
-  res.clearCookie('token');
+  clearAuthCookie(res);
   res.json({ message: 'Logged out' });
 });
 
-app.get('/api/plants', async (req, res) => {
+app.get('/api/plants', authApi, async (req, res) => {
   try {
     const plants = await prisma.plant.findMany({ include: { _count: { select: { machines: true } } } });
     res.json(plants);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/plants/:id', async (req, res) => {
+app.get('/api/plants/:id', authApi, async (req, res) => {
   try {
     const plant = await prisma.plant.findUnique({
       where: { id: req.params.id },
@@ -159,7 +286,7 @@ app.get('/api/plants/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/machines', async (req, res) => {
+app.get('/api/machines', authApi, async (req, res) => {
   try {
     const machines = await prisma.machine.findMany({
       include: { plant: { select: { name: true, location: true } }, _count: { select: { alarms: true, workOrders: true } } }
@@ -168,7 +295,7 @@ app.get('/api/machines', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/machines/:id', async (req, res) => {
+app.get('/api/machines/:id', authApi, async (req, res) => {
   try {
     const machine = await prisma.machine.findUnique({
       where: { id: req.params.id },
@@ -184,7 +311,7 @@ app.get('/api/machines/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/readings', async (req, res) => {
+app.get('/api/readings', authApi, async (req, res) => {
   try {
     const { machineId, metric, hours } = req.query;
     const where = {};
@@ -201,7 +328,7 @@ app.get('/api/readings', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/alarms', async (req, res) => {
+app.get('/api/alarms', authApi, async (req, res) => {
   try {
     const alarms = await prisma.alarm.findMany({
       include: { machine: { select: { name: true } } },
@@ -221,33 +348,39 @@ app.patch('/api/alarms/:id/resolve', authApi, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/agents', async (req, res) => {
+app.get('/api/agents', authApi, async (req, res) => {
   try {
     const agents = await prisma.agent.findMany({ orderBy: { createdAt: 'desc' } });
     res.json(agents);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.patch('/api/agents/:id', async (req, res) => {
+app.patch('/api/agents/:id', authApi, requireRole('admin'), async (req, res) => {
   try {
+    const data = pickAllowed(req.body, ['status', 'mission', 'progress']);
+    const statusError = validateEnum(data.status, ['active', 'idle', 'paused', 'error'], 'status');
+    if (statusError) return res.status(400).json({ error: statusError });
+    if (data.progress != null) data.progress = Math.max(0, Math.min(100, Number(data.progress) || 0));
     const agent = await prisma.agent.update({
       where: { id: req.params.id },
-      data: req.body
+      data
     });
     res.json(agent);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/plans', async (req, res) => {
+app.get('/api/plans', authApi, async (req, res) => {
   try {
     const plans = await prisma.plan.findMany({ orderBy: { createdAt: 'desc' } });
     res.json(plans);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.patch('/api/plans/:id', authApi, async (req, res) => {
+app.patch('/api/plans/:id', authApi, requireRole('admin'), async (req, res) => {
   try {
     const { status } = req.body;
+    const statusError = validateEnum(status, ['pending', 'approved', 'rejected'], 'status');
+    if (statusError) return res.status(400).json({ error: statusError });
     const data = {};
     if (status) data.status = status;
     if (status === 'approved' || status === 'rejected') {
@@ -259,7 +392,7 @@ app.patch('/api/plans/:id', authApi, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/work-orders', async (req, res) => {
+app.get('/api/work-orders', authApi, async (req, res) => {
   try {
     const orders = await prisma.workOrder.findMany({
       include: { machine: { select: { name: true } } },
@@ -271,15 +404,20 @@ app.get('/api/work-orders', async (req, res) => {
 
 app.patch('/api/work-orders/:id', authApi, async (req, res) => {
   try {
+    const data = pickAllowed(req.body, ['title', 'description', 'status', 'priority', 'assignedTo', 'dueDate']);
+    const statusError = validateEnum(data.status, ['open', 'in_progress', 'completed', 'blocked'], 'status');
+    if (statusError) return res.status(400).json({ error: statusError });
+    const priorityError = validateEnum(data.priority, ['low', 'medium', 'high', 'critical'], 'priority');
+    if (priorityError) return res.status(400).json({ error: priorityError });
     const order = await prisma.workOrder.update({
       where: { id: req.params.id },
-      data: req.body
+      data
     });
     res.json(order);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/dashboard/summary', async (req, res) => {
+app.get('/api/dashboard/summary', authApi, async (req, res) => {
   try {
     const [
       totalMachines, activeAlarms, totalWorkOrders, plants,
@@ -297,7 +435,7 @@ app.get('/api/dashboard/summary', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/analytics/reliability', async (req, res) => {
+app.get('/api/analytics/reliability', authApi, async (req, res) => {
   try {
     const plants = await prisma.plant.findMany({
       include: { machines: { include: { readings: { orderBy: { timestamp: 'desc' }, take: 100 } } } }
@@ -310,41 +448,32 @@ app.get('/api/analytics/reliability', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/user/profile', async (req, res) => {
-  const token = getToken(req);
-  if (!token) return res.status(401).json({ error: 'Not authenticated' });
+app.get('/api/user/profile', authApi, async (req, res) => {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+      where: { id: req.user.id },
       select: { id: true, email: true, name: true, role: true, createdAt: true }
     });
     res.json(user);
   } catch { res.status(401).json({ error: 'Invalid token' }); }
 });
 
-app.patch('/api/user/profile', async (req, res) => {
-  const token = getToken(req);
-  if (!token) return res.status(401).json({ error: 'Not authenticated' });
+app.patch('/api/user/profile', authApi, async (req, res) => {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
     const { name, email } = req.body;
     const data = {};
     if (name) data.name = name;
     if (email) data.email = email;
-    const user = await prisma.user.update({ where: { id: decoded.id }, data, select: { id: true, email: true, name: true, role: true } });
+    const user = await prisma.user.update({ where: { id: req.user.id }, data, select: { id: true, email: true, name: true, role: true } });
     const newToken = jwt.sign({ id: user.id, email: user.email, name: user.name, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
-    res.cookie('token', newToken, { httpOnly: true, maxAge: 7 * 86400000, sameSite: 'lax' });
+    setAuthCookie(res, newToken);
     res.json(user);
   } catch { res.status(401).json({ error: 'Invalid token' }); }
 });
 
-app.get('/api/onboarding/status', async (req, res) => {
-  const token = getToken(req);
-  if (!token) return res.status(401).json({ error: 'Not authenticated' });
+app.get('/api/onboarding/status', authApi, async (req, res) => {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await prisma.user.findUnique({ where: { id: decoded.id }, select: { id: true, name: true, role: true, createdAt: true } });
+    const user = await prisma.user.findUnique({ where: { id: req.user.id }, select: { id: true, name: true, role: true, createdAt: true } });
     const completed = user.name !== 'Operator' && user.createdAt < new Date(Date.now() - 60000);
     res.json({ completed, user, steps: completed ? 4 : 2 });
   } catch { res.status(401).json({ error: 'Invalid token' }); }
@@ -353,7 +482,7 @@ app.get('/api/onboarding/status', async (req, res) => {
 // ──────────────────────────────────────────────
 // YantraNklan AI Chat — powered by OpenAI
 // ──────────────────────────────────────────────
-app.post('/api/ai-chat', authApi, async (req, res) => {
+app.post('/api/ai-chat', authApi, rateLimit({ windowMs: 60 * 1000, max: 20, keyPrefix: 'ai-chat' }), async (req, res) => {
   try {
     const { message } = req.body;
     if (!message) return res.status(400).json({ error: 'Message is required' });

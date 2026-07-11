@@ -44,9 +44,8 @@
     const ssoBtn = form.querySelector('button[type="button"]');
     if (ssoBtn) {
       ssoBtn.addEventListener('click', () => {
-        document.getElementById('email').value = 'admin@yantramitra.com';
-        document.getElementById('password').value = 'password123';
-        form.requestSubmit();
+        errorEl.textContent = 'SSO is ready for your identity provider configuration. Use email login or request access from an administrator.';
+        errorEl.classList.remove('hidden');
       });
     }
   });

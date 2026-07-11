@@ -67,6 +67,7 @@ cp .env.example .env
 | `DIRECT_URL` | Direct (non-pooled) Postgres connection string (used for migrations/seed) |
 | `JWT_SECRET` | Random 64-char hex string for signing auth tokens |
 | `OPENAI_API_KEY` | OpenAI API key for YantraNklan AI assistant (optional) |
+| `ENABLE_DEMO_PASSWORD_RESET` | Demo-only password reset toggle. Keep `false` for production. |
 
 > **Important**: `DATABASE_URL` must use the `-pooler` hostname for Neon. `DIRECT_URL` uses the direct hostname (no `-pooler`).
 
@@ -131,9 +132,12 @@ yantramitra/
 │   │   ├── dashboard.svg
 │   │   ├── factory.svg
 │   │   ├── machine.svg
-│   │   ├── placeholder.svg
 │   │   ├── robot.svg
-│   │   └── yantranklan-avatar.svg
+│   │   ├── yantranklan-avatar.svg
+│   │   ├── yantranklan-avatar-ai.jpg
+│   │   ├── ym-digital-twin-factory.jpg
+│   │   ├── ym-hero-control-room.jpg
+│   │   └── ym-operator-avatar.jpg
 │   └── js/                      # Per-page JavaScript
 │       ├── command_center_yantramitra.js
 │       ├── ai_operations_console_yantramitra.js
@@ -158,7 +162,7 @@ yantramitra/
 | POST | `/api/auth/signup` | Register new user |
 | POST | `/api/auth/login` | Login, returns JWT |
 | POST | `/api/auth/logout` | Clear auth cookie |
-| POST | `/api/auth/reset-password` | Reset password |
+| POST | `/api/auth/reset-password` | Demo-only reset password endpoint; requires `ENABLE_DEMO_PASSWORD_RESET=true` |
 | GET | `/api/auth/me` | Get current user |
 
 ### Dashboard

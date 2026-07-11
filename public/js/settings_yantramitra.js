@@ -49,7 +49,11 @@
         });
       });
 
-      const logoutBtn = document.querySelector('a[href="#logout"], button:has(span:contains("logout"))');
+      const logoutBtn = document.querySelector('a[href="#logout"]') ||
+        Array.from(document.querySelectorAll('button')).find(btn =>
+          btn.textContent.trim().toLowerCase().includes('logout') ||
+          btn.textContent.trim().toLowerCase().includes('sign out')
+        );
       if (logoutBtn) {
         logoutBtn.addEventListener('click', async (e) => {
           e.preventDefault();
