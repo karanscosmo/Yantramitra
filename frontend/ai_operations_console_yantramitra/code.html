@@ -201,9 +201,9 @@
 <a href="/assets" class="text-on-surface-variant p-3 hover:scale-110 transition-transform duration-200 inline-flex items-center justify-center">
 <span class="material-symbols-outlined" data-icon="precision_manufacturing">precision_manufacturing</span>
 </a>
-<span class="bg-primary text-on-primary rounded-full p-3 shadow-[0_0_15px_rgba(65,63,214,0.4)] inline-flex items-center justify-center">
+<a href="/ai-console" class="bg-primary text-on-primary rounded-full p-3 shadow-[0_0_15px_rgba(65,63,214,0.4)] inline-flex items-center justify-center">
 <span class="material-symbols-outlined" data-icon="smart_toy">smart_toy</span>
-</span>
+</a>
 <a href="/work-orders" class="text-on-surface-variant p-3 hover:scale-110 transition-transform duration-200 inline-flex items-center justify-center">
 <span class="material-symbols-outlined" data-icon="build">build</span>
 </a>
@@ -217,6 +217,16 @@
 </nav>
 <!-- Main Content Area: AI Operations Console -->
 <main class="pt-16 pr-[100px] pl-md h-screen flex flex-col">
+<!-- YantraNklan header - always visible -->
+<div class="px-md py-md border-b border-outline-variant/20 mb-md">
+  <div class="flex items-center gap-sm">
+    <img src="/images/yantranklan-avatar.svg" alt="YantraNklan" class="w-12 h-12 rounded-full border-2 border-secondary/40"/>
+    <div>
+      <h2 class="font-section-header text-section-header text-on-surface">YantraNklan</h2>
+      <p class="text-on-surface-variant text-sm">AI Operations Agent — connected to real-time plant data</p>
+    </div>
+  </div>
+</div>
 <!-- Chat Stream Wrapper -->
 <section class="flex-1 overflow-y-auto chat-scroll px-md py-lg space-y-md"></section>
 <!-- Fixed Bottom Input Area -->

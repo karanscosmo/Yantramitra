@@ -120,6 +120,10 @@
 
       if (data.error === 'api_key_missing') {
         addMessage('⚠️ ' + data.message, false);
+      } else if (data.error === 'api_quota_exceeded') {
+        addMessage('⚠️ ' + data.message, false);
+      } else if (data.error === 'api_key_invalid') {
+        addMessage('⚠️ ' + data.message, false);
       } else if (data.error) {
         addMessage('Error: ' + (data.detail || data.error), false);
       } else {
