@@ -15,6 +15,10 @@ model User {
   name      String
   role      String   @default("operator")
   avatar    String?
+  phone     String?
+  prefs     Json?
+  integrations Json?
+  sessions  Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -23,10 +27,14 @@ model Plant {
   id        String   @id @default(uuid())
   name      String
   location  String
+  domain    String?
   status    String   @default("operational")
   image     String?
   lat       Float?
   lng       Float?
+  oee       Float?
+  uptime    Float?
+  floorLayout Json?
   machines  Machine[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -39,6 +47,9 @@ model Machine {
   status     String        @default("running")
   health     Float         @default(100.0)
   location   String?
+  posX       Float?
+  posZ       Float?
+  rotation   Float?
   plantId    String
   plant      Plant         @relation(fields: [plantId], references: [id])
   readings   SensorReading[]

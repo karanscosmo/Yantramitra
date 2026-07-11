@@ -291,7 +291,12 @@ app.get('/api/plants/:id', authApi, async (req, res) => {
 app.get('/api/machines', authApi, async (req, res) => {
   try {
     const machines = await prisma.machine.findMany({
-      include: { plant: { select: { name: true, location: true } }, _count: { select: { alarms: true, workOrders: true } } }
+      include: {
+        plant: { select: { name: true, location: true } },
+        alarms: { orderBy: { createdAt: 'desc' }, take: 5 },
+        readings: { orderBy: { timestamp: 'desc' }, take: 18 },
+        _count: { select: { alarms: true, workOrders: true } }
+      }
     });
     res.json(machines);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -357,10 +362,23 @@ app.get('/api/agents', authApi, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.patch('/api/agents/:id', authApi, requireRole('admin'), async (req, res) => {
+app.post('/api/agents', authApi, async (req, res) => {
+  try {
+    const data = pickAllowed(req.body, ['name', 'type', 'status', 'model', 'mission', 'progress']);
+    if (!data.name) data.name = 'Mission Agent';
+    if (!data.type) data.type = 'analysis';
+    if (!data.model) data.model = 'Diagnostic-D2';
+    if (!data.status) data.status = 'active';
+    data.progress = Math.max(0, Math.min(100, Number(data.progress) || 0));
+    const agent = await prisma.agent.create({ data });
+    res.status(201).json(agent);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.patch('/api/agents/:id', authApi, async (req, res) => {
   try {
     const data = pickAllowed(req.body, ['status', 'mission', 'progress']);
-    const statusError = validateEnum(data.status, ['active', 'idle', 'paused', 'error'], 'status');
+    const statusError = validateEnum(data.status, ['active', 'idle', 'paused', 'done', 'error'], 'status');
     if (statusError) return res.status(400).json({ error: statusError });
     if (data.progress != null) data.progress = Math.max(0, Math.min(100, Number(data.progress) || 0));
     const agent = await prisma.agent.update({
@@ -375,6 +393,19 @@ app.get('/api/plans', authApi, async (req, res) => {
   try {
     const plans = await prisma.plan.findMany({ orderBy: { createdAt: 'desc' } });
     res.json(plans);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/plans', authApi, async (req, res) => {
+  try {
+    const data = pickAllowed(req.body, ['title', 'description', 'type', 'status', 'priority', 'plantId']);
+    if (!data.title) return res.status(400).json({ error: 'title is required' });
+    data.type = data.type || 'maintenance';
+    data.status = data.status || 'pending';
+    data.priority = data.priority || 'medium';
+    data.createdBy = req.user.id;
+    const plan = await prisma.plan.create({ data });
+    res.status(201).json(plan);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -401,6 +432,18 @@ app.get('/api/work-orders', authApi, async (req, res) => {
       orderBy: { createdAt: 'desc' }
     });
     res.json(orders);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/work-orders', authApi, async (req, res) => {
+  try {
+    const data = pickAllowed(req.body, ['title', 'description', 'status', 'priority', 'machineId', 'assignedTo', 'dueDate']);
+    if (!data.title) return res.status(400).json({ error: 'title is required' });
+    data.status = data.status || 'open';
+    data.priority = data.priority || 'medium';
+    data.createdBy = req.user.id;
+    const order = await prisma.workOrder.create({ data, include: { machine: { select: { name: true } } } });
+    res.status(201).json(order);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -454,21 +497,69 @@ app.get('/api/user/profile', authApi, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      select: { id: true, email: true, name: true, role: true, createdAt: true }
+      select: { id: true, email: true, name: true, role: true, avatar: true, phone: true, createdAt: true }
     });
     res.json(user);
   } catch { res.status(401).json({ error: 'Invalid token' }); }
 });
 
+app.get('/api/team', authApi, async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: { id: true, email: true, name: true, role: true, avatar: true, phone: true, createdAt: true },
+      orderBy: { createdAt: 'asc' }
+    });
+    res.json(users);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/user/preferences', authApi, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user.id }, select: { prefs: true, integrations: true, sessions: true } });
+    res.json({
+      prefs: user?.prefs || {},
+      integrations: user?.integrations || {},
+      sessions: user?.sessions || []
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.patch('/api/user/preferences', authApi, async (req, res) => {
+  try {
+    const current = await prisma.user.findUnique({ where: { id: req.user.id }, select: { prefs: true, integrations: true, sessions: true } });
+    const data = {};
+    if (req.body.prefs) data.prefs = { ...(current?.prefs || {}), ...req.body.prefs };
+    if (req.body.integrations) data.integrations = { ...(current?.integrations || {}), ...req.body.integrations };
+    if (req.body.sessions) data.sessions = req.body.sessions;
+    const user = await prisma.user.update({ where: { id: req.user.id }, data, select: { prefs: true, integrations: true, sessions: true } });
+    res.json(user);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/user/change-password', authApi, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!newPassword || newPassword.length < 8) return res.status(400).json({ error: 'New password must be at least 8 characters' });
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const ok = currentPassword && await bcrypt.compare(currentPassword, user.password);
+    if (!ok) return res.status(400).json({ error: 'Current password is incorrect' });
+    const password = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({ where: { id: req.user.id }, data: { password } });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.patch('/api/user/profile', authApi, async (req, res) => {
   try {
-    const { name, email, role } = req.body;
+    const { name, email, role, phone, avatar } = req.body;
     const allowedProfileRoles = ['operator', 'maintenance', 'plant_manager', 'executive'];
     const data = {};
     if (name) data.name = name;
     if (email) data.email = email;
     if (role && allowedProfileRoles.includes(role)) data.role = role;
-    const user = await prisma.user.update({ where: { id: req.user.id }, data, select: { id: true, email: true, name: true, role: true } });
+    if (phone != null) data.phone = phone;
+    if (avatar != null) data.avatar = avatar;
+    const user = await prisma.user.update({ where: { id: req.user.id }, data, select: { id: true, email: true, name: true, role: true, avatar: true, phone: true } });
     const newToken = jwt.sign({ id: user.id, email: user.email, name: user.name, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
     setAuthCookie(res, newToken);
     res.json(user);

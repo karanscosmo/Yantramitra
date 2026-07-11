@@ -16,10 +16,12 @@
       const plant = plants.find(p => p.id === plantId) || plants[0];
       if (!plant) return;
 
-      document.querySelectorAll('h1, h2, h3').forEach(el => {
-        if (el.textContent.includes('Detroit') || el.textContent.includes('Plant')) {
-          if (!el.dataset) el.dataset = {};
-        }
+      const heroTitle = document.querySelector('h1');
+      if (heroTitle) heroTitle.textContent = plant.name;
+      const subtitle = Array.from(document.querySelectorAll('p')).find(p => p.textContent.includes('Detroit') || p.textContent.includes('factory') || p.textContent.includes('plant'));
+      if (subtitle) subtitle.textContent = `${plant.domain || 'Industrial facility'} in ${plant.location}. OEE ${plant.oee || 'n/a'}%, uptime ${plant.uptime || 'n/a'}%.`;
+      document.querySelectorAll('img').forEach(img => {
+        if (img.src.includes('factory') || img.src.includes('control') || img.src.includes('digital-twin')) img.src = plant.image || img.src;
       });
 
       const detail = await get('/api/plants/' + (plant.id || plantId));
@@ -47,7 +49,7 @@
       const drilldownBtns = document.querySelectorAll('button');
       drilldownBtns.forEach(btn => {
         if (btn.textContent.includes('DRILLDOWN') || btn.textContent.includes('ASSET')) {
-          btn.addEventListener('click', () => { window.location.href = '/assets'; });
+          btn.addEventListener('click', () => { window.location.href = btn.textContent.toLowerCase().includes('digital') ? '/digital-twin' : '/assets'; });
         }
       });
     } catch {}

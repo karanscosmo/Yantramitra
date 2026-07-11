@@ -17,6 +17,21 @@
 
   const currentPath = window.location.pathname;
   const authPaths = ['/login', '/signup', '/reset-password'];
+  const shellExcludedPaths = ['/', ...authPaths];
+  const demoSteps = [
+    { route: '/dashboard', target: 'h1, .font-headline-lg', caption: 'Global command center: live KPIs, open incidents, and agent activity across Indian facilities.' },
+    { route: '/map', target: 'h1, .font-headline-lg', caption: 'Map view: all five facilities are pinned at real Indian city coordinates.' },
+    { route: '/plant/detroit', target: 'h1, .font-headline-lg', caption: 'Plant overview: drill into one facility before opening its live digital twin.' },
+    { route: '/digital-twin', target: '#ym-twin-canvas, main', caption: '3D Digital Twin: rotate, zoom, and click faulted red machines to inspect live sensor context.' },
+    { route: '/assets', target: 'h1, .font-headline-lg', caption: 'Asset fleet: compare health, status, and maintenance exposure across machines.' },
+    { route: '/assets/pump-p-102', target: 'h1, .font-headline-lg', caption: 'Asset detail: sensor traces, alarms, and linked work orders live in one view.' },
+    { route: '/anomaly', target: 'h1, .font-headline-lg', caption: 'Anomaly investigation: operational context and fault evidence come together.' },
+    { route: '/plans', target: 'h1, .font-headline-lg', caption: 'Plan review: approve or reject maintenance plans against current plant risk.' },
+    { route: '/work-orders', target: 'h1, .font-headline-lg', caption: 'Work orders: track technician ownership and status changes.' },
+    { route: '/agents', target: 'h1, .font-headline-lg', caption: 'Agent Mission Control: create and advance real persisted missions.' },
+    { route: '/ai-console', target: 'input[type="text"], .chat-scroll', caption: 'YantraNklan: ask plant-aware questions, or use speech input in Chrome.' },
+    { route: '/settings', target: 'h1, .font-headline-lg', caption: 'Settings: profile, notifications, team roles, integrations, and security are persisted.' },
+  ];
 
   function injectStyles() {
     if (document.getElementById('ym-shell-styles')) return;
@@ -70,9 +85,9 @@
       .ym-shell-rail .material-symbols-outlined { font-size: 23px; line-height: 1; }
       .ym-ask-yantranklan {
         position: fixed;
-        right: 104px;
-        bottom: 24px;
-        z-index: 75;
+        right: 108px;
+        bottom: 96px;
+        z-index: 62;
         display: inline-flex;
         align-items: center;
         gap: 10px;
@@ -85,6 +100,77 @@
         box-shadow: 0 18px 42px rgba(65, 63, 214, .20);
         backdrop-filter: blur(18px);
         font: 700 13px/1.2 Inter, system-ui, sans-serif;
+      }
+      body.ym-shell-safe-bottom main,
+      body.ym-shell-safe-bottom footer {
+        padding-bottom: 112px !important;
+      }
+      .ym-home-motion {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      .ym-home-motion::before {
+        content: '';
+        position: absolute;
+        width: 280px;
+        height: 280px;
+        right: 8%;
+        top: 20%;
+        border-radius: 38% 62% 54% 46%;
+        background: linear-gradient(135deg, rgba(65,63,214,.18), rgba(94,250,228,.24));
+        box-shadow: inset 0 0 60px rgba(255,255,255,.65), 0 30px 80px rgba(65,63,214,.16);
+        animation: ym-drift-3d 14s ease-in-out infinite alternate;
+      }
+      @keyframes ym-drift-3d {
+        from { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+        to { transform: translate3d(-36px, 26px, 0) rotate(28deg) scale(1.08); }
+      }
+      .ym-demo-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 0;
+        border-radius: 9999px;
+        padding: 10px 16px;
+        background: #191a28;
+        color: #fff;
+        font: 800 13px/1 Inter, system-ui, sans-serif;
+        box-shadow: 0 14px 34px rgba(25,26,40,.18);
+        cursor: pointer;
+        text-decoration: none;
+      }
+      .ym-demo-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 120;
+        pointer-events: none;
+      }
+      .ym-demo-highlight {
+        position: fixed;
+        border: 3px solid #5efae4;
+        border-radius: 16px;
+        box-shadow: 0 0 0 9999px rgba(25,26,40,.32), 0 0 34px rgba(94,250,228,.75);
+        transition: all .24s ease;
+      }
+      .ym-demo-card {
+        position: fixed;
+        width: min(360px, calc(100vw - 32px));
+        border-radius: 18px;
+        background: rgba(255,255,255,.94);
+        border: 1px solid rgba(199,196,215,.75);
+        box-shadow: 0 24px 70px rgba(65,63,214,.26);
+        padding: 16px;
+        pointer-events: auto;
+      }
+      .ym-demo-card button {
+        border: 0;
+        border-radius: 9999px;
+        padding: 8px 12px;
+        font-weight: 800;
+        cursor: pointer;
       }
       .ym-ask-yantranklan img {
         width: 34px;
@@ -111,7 +197,7 @@
       .ym-home-auth .ym-signup { color: #fff; background: #413fd6; box-shadow: 0 10px 24px rgba(65, 63, 214, .25); }
       @media (max-width: 900px) {
         .ym-shell-rail { right: 8px; top: auto; left: 8px; bottom: 8px; width: auto; height: 64px; flex-direction: row; border-radius: 9999px; overflow-x: auto; overflow-y: hidden; }
-        .ym-ask-yantranklan { right: 14px; bottom: 86px; }
+        .ym-ask-yantranklan { right: 14px; bottom: 84px; }
       }
       @media (max-width: 1100px) {
         .ym-home-search,
@@ -134,11 +220,14 @@
   }
 
   function normalizeRightRail() {
-    if (authPaths.includes(currentPath)) return;
     const existingRails = Array.from(document.querySelectorAll('aside, nav')).filter(el => {
       const cls = el.className || '';
       return typeof cls === 'string' && cls.includes('right-4') && (cls.includes('72px') || cls.includes('rounded-full'));
     });
+    if (shellExcludedPaths.includes(currentPath)) {
+      existingRails.forEach(el => { el.style.display = 'none'; });
+      return;
+    }
 
     const rail = existingRails[0] || document.createElement('aside');
     rail.className = 'ym-shell-rail';
@@ -155,8 +244,9 @@
   }
 
   function addYantraNklanEntry() {
-    if (authPaths.includes(currentPath)) return;
+    if (shellExcludedPaths.includes(currentPath)) return;
     if (document.querySelector('.ym-ask-yantranklan') || currentPath === '/ai-console') return;
+    document.body.classList.add('ym-shell-safe-bottom');
     const link = document.createElement('a');
     link.href = '/ai-console';
     link.className = 'ym-ask-yantranklan';
@@ -166,6 +256,11 @@
 
   function addHomeAuthActions() {
     if (currentPath !== '/') return;
+    if (!document.querySelector('.ym-home-motion')) {
+      const motion = document.createElement('div');
+      motion.className = 'ym-home-motion';
+      document.body.prepend(motion);
+    }
     const headerInner = document.querySelector('header .max-w-7xl, header > div, header');
     const searchInput = document.querySelector('header input[placeholder*="Search"]');
     const searchWrap = searchInput ? searchInput.closest('div') : null;
@@ -213,11 +308,87 @@
     });
   }
 
+  function addRunDemoButtons() {
+    if (currentPath === '/') {
+      const heroActions = document.querySelector('main section .flex.flex-wrap') || document.querySelector('main .flex');
+      if (heroActions && !heroActions.querySelector('.ym-demo-button')) {
+        const btn = document.createElement('button');
+        btn.className = 'ym-demo-button';
+        btn.innerHTML = '<span class="material-symbols-outlined">play_circle</span><span>Run Demo</span>';
+        btn.addEventListener('click', () => startDemo());
+        heroActions.appendChild(btn);
+      }
+    }
+    if (currentPath === '/dashboard') {
+      const header = document.querySelector('main header, main');
+      if (header && !document.querySelector('.ym-demo-button')) {
+        const btn = document.createElement('button');
+        btn.className = 'ym-demo-button';
+        btn.innerHTML = '<span class="material-symbols-outlined">play_circle</span><span>Run Demo</span>';
+        btn.addEventListener('click', () => startDemo());
+        header.appendChild(btn);
+      }
+    }
+  }
+
+  function startDemo() {
+    localStorage.setItem('ymDemoActive', '1');
+    localStorage.setItem('ymDemoIndex', '0');
+    window.location.href = demoSteps[0].route;
+  }
+
+  function stopDemo() {
+    localStorage.removeItem('ymDemoActive');
+    localStorage.removeItem('ymDemoIndex');
+    document.querySelector('.ym-demo-overlay')?.remove();
+  }
+
+  function runDemoIfActive() {
+    if (localStorage.getItem('ymDemoActive') !== '1') return;
+    const index = Number(localStorage.getItem('ymDemoIndex') || '0');
+    const step = demoSteps[index];
+    if (!step) return stopDemo();
+    if (currentPath !== step.route) {
+      window.location.href = step.route;
+      return;
+    }
+    setTimeout(() => {
+      const target = document.querySelector(step.target) || document.querySelector('main') || document.body;
+      const rect = target.getBoundingClientRect();
+      const overlay = document.createElement('div');
+      overlay.className = 'ym-demo-overlay';
+      const cardTop = Math.min(window.innerHeight - 190, Math.max(18, rect.bottom + 16));
+      overlay.innerHTML = `
+        <div class="ym-demo-highlight" style="left:${Math.max(8, rect.left - 8)}px;top:${Math.max(8, rect.top - 8)}px;width:${Math.min(window.innerWidth - 16, rect.width + 16)}px;height:${Math.min(window.innerHeight - 16, rect.height + 16)}px"></div>
+        <div class="ym-demo-card" style="left:${Math.min(window.innerWidth - 376, Math.max(16, rect.left))}px;top:${cardTop}px">
+          <p style="font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:#413fd6;font-weight:900">Run Demo · ${index + 1}/${demoSteps.length}</p>
+          <p style="margin-top:8px;color:#191a28;font-weight:800;line-height:1.35">${step.caption}</p>
+          <div style="height:6px;background:#eeecff;border-radius:999px;margin-top:12px;overflow:hidden"><div style="width:${((index + 1) / demoSteps.length) * 100}%;height:100%;background:#5efae4"></div></div>
+          <div style="display:flex;justify-content:space-between;margin-top:12px"><button class="ym-demo-skip" style="background:#eeecff;color:#464555">Skip</button><button class="ym-demo-next" style="background:#413fd6;color:white">Next</button></div>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.querySelector('.ym-demo-skip').addEventListener('click', stopDemo);
+      overlay.querySelector('.ym-demo-next').addEventListener('click', () => {
+        localStorage.setItem('ymDemoIndex', String(index + 1));
+        if (demoSteps[index + 1]) window.location.href = demoSteps[index + 1].route;
+        else stopDemo();
+      });
+      setTimeout(() => {
+        if (localStorage.getItem('ymDemoActive') !== '1') return;
+        localStorage.setItem('ymDemoIndex', String(index + 1));
+        if (demoSteps[index + 1]) window.location.href = demoSteps[index + 1].route;
+        else stopDemo();
+      }, 11000);
+    }, 700);
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     injectStyles();
     normalizeRightRail();
     addYantraNklanEntry();
     addHomeAuthActions();
     wireKnownButtons();
+    addRunDemoButtons();
+    runDemoIfActive();
   });
 })();

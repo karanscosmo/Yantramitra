@@ -143,7 +143,45 @@
     }
 
     // Add a welcome message
-    addMessage("Hello! I'm YantraNklan, your operations AI assistant. I have access to your plant's real-time data including machines, alarms, work orders, and more. Ask me anything about your operations!", false);
+    const context = new URLSearchParams(window.location.search).get('context');
+    addMessage(context
+      ? `Hello! I'm YantraNklan. I see you came from the Digital Twin with context for ${context}. Ask me what to inspect, what likely failed, or what work order should be created.`
+      : "Hello! I'm YantraNklan, your operations AI assistant. I have access to your plant's real-time data including machines, alarms, work orders, and more. Ask me anything about your operations!", false);
+  }
+
+  function addSpeechToText(input, sendButton) {
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Recognition || !input || !sendButton) return;
+    const mic = document.createElement('button');
+    mic.type = 'button';
+    mic.title = 'Speak to YantraNklan';
+    mic.className = sendButton.className || 'p-2 rounded-full bg-primary text-white';
+    mic.innerHTML = '<span class="material-symbols-outlined">mic</span>';
+    sendButton.parentElement.insertBefore(mic, sendButton);
+
+    const recognition = new Recognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-IN';
+    let listening = false;
+
+    recognition.onstart = () => {
+      listening = true;
+      mic.classList.add('ring-4', 'ring-secondary/40');
+    };
+    recognition.onend = () => {
+      listening = false;
+      mic.classList.remove('ring-4', 'ring-secondary/40');
+    };
+    recognition.onresult = event => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) transcript += event.results[i][0].transcript;
+      input.value = transcript.trim();
+    };
+    mic.addEventListener('click', () => {
+      if (listening) recognition.stop();
+      else recognition.start();
+    });
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
@@ -186,6 +224,10 @@
         await doSend();
       });
     }
+    addSpeechToText(input, sendButton);
+
+    const context = new URLSearchParams(window.location.search).get('context');
+    if (context && input) input.value = `Investigate ${context} using the latest alarms, sensor readings, and work orders.`;
 
     // Wire up the pill/suggestion buttons
     document.querySelectorAll('.shrink-0.glass-panel').forEach(pill => {

@@ -4,6 +4,8 @@ Industrial operations intelligence for plant teams, maintenance teams, and AI-as
 
 YantraMitra is built from the original 20 Google Stitch HTML screens and keeps that standalone frontend structure intact. The backend is a real Express + Prisma + PostgreSQL service with JWT auth, bcryptjs password hashing, database-backed plant/machine/alarm/work-order data, and the YantraNklan AI operations assistant.
 
+The seeded demo is now an India-first industrial scenario: Pune automotive components, Ahmedabad textile/chemical processing, Chennai electronics assembly, Bengaluru precision/R&D fabrication, and a Nagpur logistics hub, all pinned with real city latitude/longitude.
+
 ## Current Stack
 
 | Layer | Implementation |
@@ -15,6 +17,18 @@ YantraMitra is built from the original 20 Google Stitch HTML screens and keeps t
 | Auth | JWT in httpOnly cookies, bcryptjs password hashing |
 | AI | OpenAI `gpt-4o-mini` when `OPENAI_API_KEY` is set; database lookup fallback when the key is missing, invalid, or quota-limited |
 | Deployment | Vercel serverless through `api/index.js` and `vercel.json` |
+
+## Demo Scenario
+
+`node seed.js` creates:
+
+- 5 Indian facilities across Pune, Ahmedabad, Chennai, Bengaluru, and Nagpur
+- 25 domain-specific machines with per-machine 3D coordinates
+- 14,400 sensor readings across temperature, vibration, pressure, RPM, power, and flow
+- Active alarm history, maintenance plans, persisted agent missions, and work orders
+- 7 named team members with distinct roles and avatars
+
+The Digital Twin page uses Three.js to render clickable machine geometry. Faulted machines are shown in red with a visible warning glow. The inspector panel shows live seeded readings and can create a real work order or deep-link to YantraNklan with machine context.
 
 ## Setup
 
@@ -128,19 +142,32 @@ Operations:
 | `GET` | `/api/alarms` |
 | `PATCH` | `/api/alarms/:id/resolve` |
 | `GET` | `/api/agents` |
+| `POST` | `/api/agents` |
 | `PATCH` | `/api/agents/:id` |
 | `GET` | `/api/plans` |
+| `POST` | `/api/plans` |
 | `PATCH` | `/api/plans/:id` |
 | `GET` | `/api/work-orders` |
+| `POST` | `/api/work-orders` |
 | `PATCH` | `/api/work-orders/:id` |
 | `GET` | `/api/analytics/reliability` |
 | `GET` | `/api/user/profile` |
 | `PATCH` | `/api/user/profile` |
+| `GET` | `/api/team` |
+| `GET` | `/api/user/preferences` |
+| `PATCH` | `/api/user/preferences` |
+| `POST` | `/api/user/change-password` |
 | `POST` | `/api/ai-chat` |
 
 ## YantraNklan
 
 YantraNklan is the in-app AI operations assistant. It receives live database context for plants, machines, active alarms, agents, plans, and work orders. With `OPENAI_API_KEY`, it uses OpenAI `gpt-4o-mini`. If the key is missing, invalid, or quota-limited, `/api/ai-chat` returns a clear `fallback-data-lookup` response using the same database context, so the console remains useful during demos.
+
+The AI console also exposes a microphone button in Chrome-based browsers through the native Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`). Unsupported browsers simply do not show the mic control.
+
+## Guided Demo
+
+The shared app shell adds a `Run Demo` button on the home page and dashboard. It auto-navigates through the major pages, highlights key UI areas, shows captions and progress, and completes in roughly 2 minutes 12 seconds at the default 11-second dwell per step.
 
 ## Production Notes
 
@@ -148,4 +175,5 @@ YantraNklan is the in-app AI operations assistant. It receives live database con
 - Neon serverless deployments should use pooled `DATABASE_URL` and direct `DIRECT_URL`.
 - Password reset is demo-only unless `ENABLE_DEMO_PASSWORD_RESET=true`; production should connect a real email/token workflow.
 - The seeded operations data is realistic demo data, not a replacement for a real historian, SCADA, CMMS, ERP, or IoT integration.
+- Settings integrations persist connection state but do not perform real OAuth or vendor API calls.
 - Admin-only mutations require an admin user role; demo operator users can read and use core flows.

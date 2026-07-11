@@ -1,8 +1,135 @@
 const prisma = require('./lib/prisma');
 const bcrypt = require('bcryptjs');
 
+const people = [
+  { email: 'admin@yantramitra.com', name: 'Ananya Rao', role: 'admin', avatar: '/images/people-ananya-rao.svg', phone: '+91 98765 10011' },
+  { email: 'operator@yantramitra.com', name: 'Rohan Mehta', role: 'operator', avatar: '/images/people-rohan-mehta.svg', phone: '+91 98765 10012' },
+  { email: 'kavya.iyer@yantramitra.com', name: 'Kavya Iyer', role: 'plant_manager', avatar: '/images/people-kavya-iyer.svg', phone: '+91 98765 10013' },
+  { email: 'farhan.shaikh@yantramitra.com', name: 'Farhan Shaikh', role: 'maintenance', avatar: '/images/people-farhan-shaikh.svg', phone: '+91 98765 10014' },
+  { email: 'meera.nair@yantramitra.com', name: 'Meera Nair', role: 'maintenance', avatar: '/images/people-meera-nair.svg', phone: '+91 98765 10015' },
+  { email: 'arjun.menon@yantramitra.com', name: 'Arjun Menon', role: 'operator', avatar: '/images/people-arjun-menon.svg', phone: '+91 98765 10016' },
+  { email: 'neha.kulkarni@yantramitra.com', name: 'Neha Kulkarni', role: 'executive', avatar: '/images/people-neha-kulkarni.svg', phone: '+91 98765 10017' },
+];
+
+const plantData = [
+  {
+    name: 'Pune Auto Components',
+    location: 'Pune, Maharashtra, India',
+    domain: 'Automotive Components',
+    status: 'operational',
+    lat: 18.5204,
+    lng: 73.8567,
+    oee: 86.4,
+    uptime: 99.1,
+    image: '/images/plant-pune-auto.svg',
+    floorLayout: { theme: 'automotive', zones: ['CNC Bay', 'Robotic Weld Cell', 'Final Gauging'], dimensions: { width: 34, depth: 22 } },
+  },
+  {
+    name: 'Ahmedabad Process Textiles',
+    location: 'Ahmedabad, Gujarat, India',
+    domain: 'Textile & Chemical Processing',
+    status: 'attention',
+    lat: 23.0225,
+    lng: 72.5714,
+    oee: 78.6,
+    uptime: 96.8,
+    image: '/images/plant-ahmedabad-textile.svg',
+    floorLayout: { theme: 'textile', zones: ['Dyeing Range', 'Chemical Dosing', 'Effluent Monitoring'], dimensions: { width: 38, depth: 24 } },
+  },
+  {
+    name: 'Chennai Electronics Assembly',
+    location: 'Chennai, Tamil Nadu, India',
+    domain: 'Electronics Assembly',
+    status: 'operational',
+    lat: 13.0827,
+    lng: 80.2707,
+    oee: 91.2,
+    uptime: 99.4,
+    image: '/images/plant-chennai-electronics.svg',
+    floorLayout: { theme: 'electronics', zones: ['SMT Line', 'AOI', 'Burn-In', 'Packing'], dimensions: { width: 36, depth: 20 } },
+  },
+  {
+    name: 'Bengaluru Precision Fab Lab',
+    location: 'Bengaluru, Karnataka, India',
+    domain: 'Precision Engineering & R&D Fabrication',
+    status: 'operational',
+    lat: 12.9716,
+    lng: 77.5946,
+    oee: 88.9,
+    uptime: 98.9,
+    image: '/images/plant-bengaluru-precision.svg',
+    floorLayout: { theme: 'precision', zones: ['Micro Machining', 'Metrology', 'Additive Cell'], dimensions: { width: 30, depth: 18 } },
+  },
+  {
+    name: 'Nagpur Central Logistics Hub',
+    location: 'Nagpur, Maharashtra, India',
+    domain: 'Industrial Logistics & Spares',
+    status: 'operational',
+    lat: 21.1458,
+    lng: 79.0882,
+    oee: 82.7,
+    uptime: 98.2,
+    image: '/images/plant-nagpur-logistics.svg',
+    floorLayout: { theme: 'logistics', zones: ['Inbound Dock', 'ASRS', 'Dispatch Lanes'], dimensions: { width: 40, depth: 24 } },
+  },
+];
+
+const machineTemplates = [
+  ['Pune Auto Components', 'CNC-PN-101', 'cnc', 'running', 94.4, 'CNC Bay A', -12, -5, 0],
+  ['Pune Auto Components', 'CNC-PN-102', 'cnc', 'warning', 72.6, 'CNC Bay B', -6, -5, 0],
+  ['Pune Auto Components', 'ROBO-WELD-PN-201', 'robotic_welder', 'running', 90.1, 'Robotic Weld Cell', 2, -3, 0.4],
+  ['Pune Auto Components', 'PRESS-PN-301', 'servo_press', 'running', 87.5, 'Press Line', 9, -5, 0],
+  ['Pune Auto Components', 'CMM-PN-401', 'metrology', 'running', 96.9, 'Final Gauging', 13, 4, -0.2],
+  ['Ahmedabad Process Textiles', 'DYE-AH-101', 'dyeing_jigger', 'warning', 69.8, 'Dyeing Range 1', -13, -4, 0],
+  ['Ahmedabad Process Textiles', 'STENTER-AH-201', 'stenter', 'running', 81.5, 'Heat Setting', -5, -4, 0],
+  ['Ahmedabad Process Textiles', 'DOSING-AH-301', 'chemical_dosing', 'maintenance', 51.2, 'Dosing Skid', 4, -2, 0],
+  ['Ahmedabad Process Textiles', 'ETP-AH-401', 'effluent_treatment', 'running', 88.3, 'ETP Bay', 12, -3, 0],
+  ['Ahmedabad Process Textiles', 'DRYER-AH-501', 'dryer', 'running', 84.6, 'Drying Line', 2, 6, 0.15],
+  ['Chennai Electronics Assembly', 'SMT-CH-101', 'smt_line', 'running', 95.4, 'SMT Line 1', -13, -3, 0],
+  ['Chennai Electronics Assembly', 'AOI-CH-201', 'aoi', 'running', 93.2, 'Inspection Bay', -5, -3, 0],
+  ['Chennai Electronics Assembly', 'PICK-CH-301', 'pick_place', 'warning', 74.1, 'Placement Cell', 3, -3, 0],
+  ['Chennai Electronics Assembly', 'REFLOW-CH-401', 'reflow_oven', 'running', 90.7, 'Thermal Process', 11, -3, 0],
+  ['Chennai Electronics Assembly', 'BURNIN-CH-501', 'burn_in', 'running', 89.9, 'Burn-In Rack', 5, 6, 0],
+  ['Bengaluru Precision Fab Lab', 'MICRO-BL-101', 'micro_mill', 'running', 92.8, 'Micro Machining', -10, -4, 0],
+  ['Bengaluru Precision Fab Lab', 'LASER-BL-201', 'laser_cutter', 'running', 89.1, 'Laser Cell', -2, -4, 0],
+  ['Bengaluru Precision Fab Lab', 'AM-BL-301', 'additive_printer', 'warning', 67.4, 'Additive Cell', 7, -3, 0],
+  ['Bengaluru Precision Fab Lab', 'CMM-BL-401', 'metrology', 'running', 97.2, 'Metrology Lab', 12, 4, 0],
+  ['Bengaluru Precision Fab Lab', 'VAC-BL-501', 'vacuum_pump', 'running', 86.5, 'Clean Fabrication', -6, 5, 0],
+  ['Nagpur Central Logistics Hub', 'ASRS-NG-101', 'asrs', 'running', 91.7, 'ASRS Aisle', -12, -4, 0],
+  ['Nagpur Central Logistics Hub', 'SORT-NG-201', 'sorter', 'running', 85.2, 'Sortation Loop', -4, -3, 0],
+  ['Nagpur Central Logistics Hub', 'AGV-NG-301', 'agv_charger', 'warning', 73.8, 'AGV Charging', 5, -4, 0],
+  ['Nagpur Central Logistics Hub', 'DOCK-NG-401', 'dock_leveler', 'running', 88.8, 'Dispatch Dock', 13, -4, 0],
+  ['Nagpur Central Logistics Hub', 'PACK-NG-501', 'packing_line', 'running', 90.3, 'Packing Lane', 4, 6, 0],
+];
+
+const metricProfile = {
+  cnc: [62, 2.2, 6, 3200, 28, 0],
+  robotic_welder: [78, 3.4, 3, 120, 35, 0],
+  servo_press: [55, 2.4, 7, 80, 45, 0],
+  metrology: [24, 0.4, 1, 20, 5, 0],
+  dyeing_jigger: [92, 2.8, 4, 90, 30, 110],
+  stenter: [168, 3.1, 5, 60, 80, 0],
+  chemical_dosing: [48, 6.4, 6, 1400, 18, 65],
+  effluent_treatment: [38, 2.2, 3, 450, 22, 180],
+  dryer: [142, 3.5, 2, 70, 75, 0],
+  smt_line: [36, 1.1, 1, 600, 12, 0],
+  aoi: [28, 0.5, 1, 40, 4, 0],
+  pick_place: [42, 4.2, 2, 2200, 18, 0],
+  reflow_oven: [245, 1.8, 1, 55, 65, 0],
+  burn_in: [58, 1.2, 1, 10, 25, 0],
+  micro_mill: [58, 1.4, 5, 42000, 12, 0],
+  laser_cutter: [44, 0.8, 5, 100, 22, 0],
+  additive_printer: [72, 3.9, 2, 60, 16, 0],
+  vacuum_pump: [64, 2.6, 8, 1800, 15, 45],
+  asrs: [39, 1.2, 1, 180, 14, 0],
+  sorter: [44, 2.1, 1, 320, 16, 0],
+  agv_charger: [56, 1.3, 1, 0, 40, 0],
+  dock_leveler: [42, 1.9, 160, 20, 8, 0],
+  packing_line: [38, 1.5, 1, 240, 10, 0],
+};
+
 async function main() {
-  console.log('Seeding database...');
+  console.log('Seeding realistic Indian multi-plant scenario...');
 
   await prisma.sensorReading.deleteMany();
   await prisma.alarm.deleteMany();
@@ -14,155 +141,110 @@ async function main() {
   await prisma.user.deleteMany();
 
   const hashedPassword = await bcrypt.hash('password123', 10);
-
-  const user = await prisma.user.create({
-    data: {
-      email: 'admin@yantramitra.com',
-      password: hashedPassword,
-      name: 'Admin User',
-      role: 'admin',
-    }
-  });
-
-  await prisma.user.create({
-    data: {
-      email: 'operator@yantramitra.com',
-      password: hashedPassword,
-      name: 'Operator One',
-      role: 'operator',
-    }
-  });
-
-  const plants = [];
-  const plantData = [
-    { name: 'Detroit Auto Assembly', location: 'Detroit, MI, USA', status: 'operational', lat: 42.3314, lng: -83.0458 },
-    { name: 'Mumbai Heavy Industries', location: 'Mumbai, MH, India', status: 'operational', lat: 19.0760, lng: 72.8777 },
-    { name: 'Berlin Precision Manufacturing', location: 'Berlin, Germany', status: 'operational', lat: 52.5200, lng: 13.4050 },
-    { name: 'Singapore Electronics Hub', location: 'Singapore', status: 'operational', lat: 1.3521, lng: 103.8198 },
-    { name: 'Sao Paulo Processing Plant', location: 'Sao Paulo, Brazil', status: 'maintenance', lat: -23.5505, lng: -46.6333 },
-  ];
-
-  for (const p of plantData) {
-    const plant = await prisma.plant.create({ data: p });
-    plants.push(plant);
+  const users = [];
+  for (const person of people) {
+    users.push(await prisma.user.create({
+      data: {
+        ...person,
+        password: hashedPassword,
+        prefs: { criticalAlerts: true, shiftDigest: true, agentActions: true, weeklyReport: false },
+        integrations: { CMMS: true, ERP: false, SCADA: true, Historian: true },
+        sessions: [
+          { device: 'Chrome on macOS', city: 'Pune', lastSeen: 'just now', current: true },
+          { device: 'Edge on Windows', city: 'Bengaluru', lastSeen: '2h ago', current: false },
+        ],
+      }
+    }));
   }
 
-  const machineTemplates = [
-    { name: 'CNC-101', type: 'cnc', status: 'running', health: 94.2, plantIdx: 0 },
-    { name: 'CNC-102', type: 'cnc', status: 'running', health: 97.8, plantIdx: 0 },
-    { name: 'CNC-103', type: 'cnc', status: 'warning', health: 72.5, plantIdx: 0 },
-    { name: 'Pump P-101', type: 'pump', status: 'running', health: 99.1, plantIdx: 1 },
-    { name: 'Pump P-102', type: 'pump', status: 'maintenance', health: 45.3, plantIdx: 1 },
-    { name: 'Conveyor C-201', type: 'conveyor', status: 'running', health: 88.7, plantIdx: 2 },
-    { name: 'Robot Arm R-301', type: 'robot', status: 'running', health: 91.5, plantIdx: 0 },
-    { name: 'Turbine T-401', type: 'turbine', status: 'running', health: 96.3, plantIdx: 3 },
-    { name: 'Compressor K-501', type: 'compressor', status: 'warning', health: 68.9, plantIdx: 1 },
-    { name: 'Boiler B-601', type: 'boiler', status: 'running', health: 93.4, plantIdx: 4 },
-    { name: 'Mixer M-701', type: 'mixer', status: 'running', health: 87.2, plantIdx: 4 },
-    { name: 'Press P-801', type: 'press', status: 'idle', health: 100.0, plantIdx: 0 },
-    { name: 'Welder W-901', type: 'welder', status: 'running', health: 82.1, plantIdx: 2 },
-    { name: 'Labeler L-111', type: 'labeler', status: 'running', health: 95.0, plantIdx: 3 },
-    { name: 'Sorter S-222', type: 'sorter', status: 'maintenance', health: 52.8, plantIdx: 3 },
-    { name: 'Drill D-333', type: 'drill', status: 'running', health: 90.3, plantIdx: 2 },
-  ];
+  const plants = new Map();
+  for (const p of plantData) {
+    const plant = await prisma.plant.create({ data: p });
+    plants.set(plant.name, plant);
+  }
 
   const machines = [];
-  for (const mt of machineTemplates) {
-    const machine = await prisma.machine.create({
+  for (const [plantName, name, type, status, health, location, posX, posZ, rotation] of machineTemplates) {
+    machines.push(await prisma.machine.create({
       data: {
-        name: mt.name,
-        type: mt.type,
-        status: mt.status,
-        health: mt.health,
-        plantId: plants[mt.plantIdx].id,
-        location: `${mt.name} area`,
+        name, type, status, health, location, posX, posZ, rotation,
+        plantId: plants.get(plantName).id,
       }
-    });
-    machines.push(machine);
+    }));
   }
 
   const metrics = ['temperature', 'vibration', 'pressure', 'rpm', 'power', 'flow_rate'];
-  const units = { temperature: '°C', vibration: 'mm/s', pressure: 'bar', rpm: 'RPM', power: 'kW', flow_rate: 'L/min' };
-  const baseValues = {
-    temperature: { cnc: 65, pump: 80, conveyor: 45, robot: 55, turbine: 400, compressor: 120, boiler: 250, mixer: 70, press: 50, welder: 90, labeler: 40, sorter: 38, drill: 60 },
-    vibration: { cnc: 2.5, pump: 4.2, conveyor: 1.8, robot: 3.1, turbine: 6.5, compressor: 5.2, boiler: 3.8, mixer: 2.9, press: 2.1, welder: 3.5, labeler: 1.2, sorter: 1.5, drill: 4.0 },
-    pressure: { cnc: 6.0, pump: 10.0, conveyor: 2.0, robot: 4.0, turbine: 30.0, compressor: 8.0, boiler: 15.0, mixer: 5.0, press: 7.0, welder: 3.0, labeler: 1.5, sorter: 1.0, drill: 5.0 },
-    rpm: { cnc: 3000, pump: 1800, conveyor: 600, robot: 120, turbine: 3600, compressor: 1400, boiler: 200, mixer: 400, press: 100, welder: 50, labeler: 200, sorter: 300, drill: 2500 },
-    power: { cnc: 25, pump: 55, conveyor: 12, robot: 18, turbine: 500, compressor: 90, boiler: 200, mixer: 35, press: 40, welder: 30, labeler: 5, sorter: 8, drill: 20 },
-    flow_rate: { cnc: 0, pump: 120, conveyor: 0, robot: 0, turbine: 0, compressor: 80, boiler: 60, mixer: 45, press: 0, welder: 0, labeler: 0, sorter: 0, drill: 0 },
-  };
-
+  const units = ['C', 'mm/s', 'bar', 'RPM', 'kW', 'L/min'];
   for (const machine of machines) {
+    const profile = metricProfile[machine.type] || [50, 2, 2, 500, 15, 0];
     const readingsBatch = [];
-    for (let hour = 0; hour < 168; hour++) {
-      for (const metric of metrics) {
-        const base = baseValues[metric][machine.type] || 50;
-        const variation = (Math.random() - 0.5) * base * 0.2;
-        const value = base + variation;
+    for (let hour = 0; hour < 96; hour++) {
+      metrics.forEach((metric, idx) => {
+        const base = profile[idx];
+        const stress = machine.status === 'maintenance' ? 1.35 : machine.status === 'warning' ? 1.18 : 1;
+        const value = base * stress + (Math.random() - 0.5) * Math.max(base * 0.14, 1);
         readingsBatch.push({
           machineId: machine.id,
           metric,
           value: Math.round(value * 100) / 100,
-          unit: units[metric],
-          timestamp: new Date(Date.now() - (168 - hour) * 3600000),
+          unit: units[idx],
+          timestamp: new Date(Date.now() - (96 - hour) * 3600000),
         });
-      }
+      });
     }
     await prisma.sensorReading.createMany({ data: readingsBatch });
   }
 
+  const byName = Object.fromEntries(machines.map(m => [m.name, m]));
   await prisma.alarm.createMany({
     data: [
-      { machineId: machines[2].id, severity: 'critical', title: 'Spindle Overheating', message: 'CNC-103 spindle temperature exceeds threshold', status: 'active' },
-      { machineId: machines[4].id, severity: 'critical', title: 'Pump Cavitation Detected', message: 'Pump P-102 showing cavitation patterns', status: 'active' },
-      { machineId: machines[8].id, severity: 'warning', title: 'Compressor Pressure Drop', message: 'Compressor K-501 pressure dropped 15%', status: 'active' },
-      { machineId: machines[2].id, severity: 'warning', title: 'Vibration Anomaly', message: 'Unusual vibration pattern on CNC-103', status: 'active' },
-      { machineId: machines[14].id, severity: 'warning', title: 'Sorter Misfeed Rate High', message: 'Sorter S-222 misfeed rate above threshold', status: 'active' },
-      { machineId: machines[5].id, severity: 'info', title: 'Conveyor Belt Wear', message: 'Conveyor C-201 belt wear at 72%', status: 'active' },
-      { machineId: machines[4].id, severity: 'critical', title: 'Bearing Failure Imminent', message: 'Pump P-102 bearing temperature critical', status: 'active' },
-      { machineId: machines[0].id, severity: 'info', title: 'Routine Maintenance Due', message: 'CNC-101 scheduled maintenance in 48h', status: 'active' },
+      { machineId: byName['CNC-PN-102'].id, severity: 'critical', title: 'Spindle thermal drift', message: 'Pune CNC-PN-102 spindle bearing temperature rising above compensated tolerance.', status: 'active' },
+      { machineId: byName['DOSING-AH-301'].id, severity: 'critical', title: 'Caustic dosing pump vibration', message: 'Ahmedabad chemical dosing skid shows cavitation and flow instability.', status: 'active' },
+      { machineId: byName['PICK-CH-301'].id, severity: 'warning', title: 'Nozzle placement rejects', message: 'Chennai pick-and-place nozzle bank B has elevated reject rate.', status: 'active' },
+      { machineId: byName['AM-BL-301'].id, severity: 'warning', title: 'Build chamber humidity drift', message: 'Bengaluru additive printer chamber humidity is outside micro-fab control band.', status: 'active' },
+      { machineId: byName['AGV-NG-301'].id, severity: 'warning', title: 'AGV charger imbalance', message: 'Nagpur AGV fast charger is throttling module 3 under load.', status: 'active' },
+      { machineId: byName['DYE-AH-101'].id, severity: 'warning', title: 'Dye bath temperature oscillation', message: 'Dyeing jigger PID loop is overshooting during shade-change cycle.', status: 'active' },
+      { machineId: byName['SMT-CH-101'].id, severity: 'info', title: 'Feeder calibration due', message: 'SMT feeder calibration due within 36 hours.', status: 'active' },
+      { machineId: byName['CMM-BL-401'].id, severity: 'info', title: 'Probe verification complete', message: 'Metrology probe verification completed successfully.', status: 'resolved', resolvedAt: new Date() },
     ]
   });
 
   await prisma.agent.createMany({
     data: [
-      { name: 'Sentinel', type: 'monitoring', status: 'active', model: 'Sentinel-X1', mission: 'Real-time threat detection across all plants', progress: 100 },
-      { name: 'Diagnostic', type: 'analysis', status: 'active', model: 'Diagnostic-D2', mission: 'Root cause analysis of CNC-103 anomaly', progress: 67 },
-      { name: 'Planner', type: 'planning', status: 'idle', model: 'Planner-P3', mission: 'Optimize Q4 maintenance schedule', progress: 34 },
-      { name: 'Monitor', type: 'monitoring', status: 'active', model: 'Monitor-M1', mission: 'Watch Detroit plant floor round-the-clock', progress: 89 },
-      { name: 'Optimizer', type: 'optimization', status: 'active', model: 'Optimizer-O2', mission: 'Reduce energy consumption by 15%', progress: 72 },
-      { name: 'Inspector', type: 'inspection', status: 'idle', model: 'Inspector-I1', mission: 'Quality check batch B-2024-Q3', progress: 100 },
+      { name: 'Sentinel Pune', type: 'monitoring', status: 'active', model: 'Sentinel-X1', mission: 'Watch CNC spindle drift and robotic weld cycle anomalies in Pune.', progress: 82 },
+      { name: 'Rang AI', type: 'analysis', status: 'active', model: 'Diagnostic-D2', mission: 'Investigate Ahmedabad dye-bath temperature oscillation and dosing cavitation.', progress: 58 },
+      { name: 'SMT Guardian', type: 'inspection', status: 'active', model: 'Inspector-I1', mission: 'Track Chennai placement rejects and AOI false positives.', progress: 76 },
+      { name: 'MicroFab Planner', type: 'planning', status: 'paused', model: 'Planner-P3', mission: 'Build a controlled intervention plan for Bengaluru additive printer humidity drift.', progress: 44 },
+      { name: 'Spares Optimizer', type: 'optimization', status: 'idle', model: 'Optimizer-O2', mission: 'Rebalance Nagpur spares inventory for critical maintenance kits.', progress: 18 },
+      { name: 'Approval Sentinel', type: 'approval', status: 'done', model: 'Sentinel-X1', mission: 'Validate last approved maintenance plan against open alarms.', progress: 100 },
     ]
   });
 
   await prisma.plan.createMany({
     data: [
-      { title: 'Q4 Maintenance Overhaul', description: 'Complete overhaul of all CNC machines in Detroit plant', type: 'maintenance', status: 'pending', priority: 'high', createdBy: user.id, plantId: plants[0].id },
-      { title: 'Pump P-102 Replacement', description: 'Replace Pump P-102 at Mumbai plant with new high-efficiency model', type: 'replacement', status: 'pending', priority: 'critical', createdBy: user.id, plantId: plants[1].id },
-      { title: 'Energy Efficiency Program', description: 'Implement energy-saving protocols across Berlin facility', type: 'optimization', status: 'approved', priority: 'medium', createdBy: user.id, approvedBy: user.id, approvedAt: new Date(), plantId: plants[2].id },
-      { title: 'Sensor Network Upgrade', description: 'Upgrade all vibration sensors to newest model', type: 'upgrade', status: 'pending', priority: 'low', createdBy: user.id, plantId: plants[3].id },
-      { title: 'Safety Training Module', description: 'Mandatory safety training for all operators', type: 'training', status: 'approved', priority: 'high', createdBy: user.id, approvedBy: user.id, approvedAt: new Date(), plantId: plants[4].id },
-      { title: 'Conveyor Belt Replacement', description: 'Replace aging conveyor belts on Line 2', type: 'maintenance', status: 'rejected', priority: 'medium', createdBy: user.id, plantId: plants[2].id },
+      { title: 'Pune CNC-PN-102 spindle intervention', description: 'Inspect spindle bearing pack, rebalance tool carousel, and verify thermal compensation.', type: 'maintenance', status: 'pending', priority: 'critical', createdBy: users[0].id, plantId: plants.get('Pune Auto Components').id },
+      { title: 'Ahmedabad dosing skid flush window', description: 'Schedule controlled flush, inspect suction strainers, and recalibrate caustic dosing loop.', type: 'maintenance', status: 'pending', priority: 'critical', createdBy: users[3].id, plantId: plants.get('Ahmedabad Process Textiles').id },
+      { title: 'Chennai placement reject reduction', description: 'Replace nozzle bank B, run feeder calibration, and verify AOI recipe.', type: 'optimization', status: 'approved', priority: 'high', createdBy: users[4].id, approvedBy: users[0].id, approvedAt: new Date(), plantId: plants.get('Chennai Electronics Assembly').id },
+      { title: 'Bengaluru additive humidity control', description: 'Service dryer cartridge and tune chamber purge control.', type: 'upgrade', status: 'pending', priority: 'high', createdBy: users[2].id, plantId: plants.get('Bengaluru Precision Fab Lab').id },
+      { title: 'Nagpur AGV charger module swap', description: 'Swap charger module 3 and rebalance pack charge curves.', type: 'replacement', status: 'approved', priority: 'medium', createdBy: users[5].id, approvedBy: users[0].id, approvedAt: new Date(), plantId: plants.get('Nagpur Central Logistics Hub').id },
     ]
   });
 
   await prisma.workOrder.createMany({
     data: [
-      { title: 'CNC-103 Emergency Repair', description: 'Spindle overheating requires immediate inspection', status: 'in_progress', priority: 'critical', machineId: machines[2].id, assignedTo: 'Mike Chen', createdBy: user.id, dueDate: '2026-07-14' },
-      { title: 'Pump P-102 Seal Replacement', description: 'Replace worn seals on Pump P-102', status: 'open', priority: 'critical', machineId: machines[4].id, assignedTo: 'Sarah Patel', createdBy: user.id, dueDate: '2026-07-13' },
-      { title: 'Compressor K-501 Filter Change', description: 'Replace air intake filters', status: 'open', priority: 'high', machineId: machines[8].id, assignedTo: 'Hans Mueller', createdBy: user.id, dueDate: '2026-07-15' },
-      { title: 'Routine Lubrication - Detroit', description: 'Monthly lubrication of all CNC machines', status: 'completed', priority: 'medium', machineId: machines[0].id, assignedTo: 'Mike Chen', createdBy: user.id, dueDate: '2026-07-10' },
-      { title: 'Conveyor Belt Tensioning', description: 'Adjust tension on Conveyor C-201', status: 'open', priority: 'medium', machineId: machines[5].id, assignedTo: 'Klaus Weber', createdBy: user.id, dueDate: '2026-07-16' },
-      { title: 'Sorter Calibration', description: 'Recalibrate Sorter S-222 after maintenance', status: 'open', priority: 'high', machineId: machines[14].id, assignedTo: 'Wei Zhang', createdBy: user.id, dueDate: '2026-07-12' },
-      { title: 'Turbine Blade Inspection', description: 'Annual inspection of Turbine T-401 blades', status: 'open', priority: 'medium', machineId: machines[7].id, assignedTo: 'Ana Silva', createdBy: user.id, dueDate: '2026-07-30' },
-      { title: 'Boiler Pressure Test', description: 'Weekly pressure safety test', status: 'completed', priority: 'high', machineId: machines[9].id, assignedTo: 'Carlos Oliveira', createdBy: user.id, dueDate: '2026-07-11' },
+      { title: 'Inspect CNC-PN-102 spindle pack', description: 'Thermal drift and vibration trend require immediate mechanical inspection.', status: 'in_progress', priority: 'critical', machineId: byName['CNC-PN-102'].id, assignedTo: 'Farhan Shaikh', createdBy: users[0].id, dueDate: '2026-07-12' },
+      { title: 'Flush DOSING-AH-301 suction strainer', description: 'Caustic dosing skid cavitation detected during shade-change cycle.', status: 'open', priority: 'critical', machineId: byName['DOSING-AH-301'].id, assignedTo: 'Meera Nair', createdBy: users[3].id, dueDate: '2026-07-12' },
+      { title: 'Replace PICK-CH-301 nozzle bank B', description: 'Elevated placement rejects during electronics assembly run.', status: 'open', priority: 'high', machineId: byName['PICK-CH-301'].id, assignedTo: 'Arjun Menon', createdBy: users[4].id, dueDate: '2026-07-13' },
+      { title: 'Service AM-BL-301 dryer cartridge', description: 'Humidity drift affecting additive printer build chamber.', status: 'open', priority: 'high', machineId: byName['AM-BL-301'].id, assignedTo: 'Kavya Iyer', createdBy: users[2].id, dueDate: '2026-07-14' },
+      { title: 'Swap AGV-NG-301 charger module 3', description: 'Module imbalance throttling AGV charge bay throughput.', status: 'open', priority: 'medium', machineId: byName['AGV-NG-301'].id, assignedTo: 'Rohan Mehta', createdBy: users[5].id, dueDate: '2026-07-16' },
+      { title: 'SMT-CH-101 feeder calibration', description: 'Preventive feeder calibration for active electronics run.', status: 'completed', priority: 'medium', machineId: byName['SMT-CH-101'].id, assignedTo: 'Arjun Menon', createdBy: users[4].id, dueDate: '2026-07-10' },
     ]
   });
 
   console.log('Seeding complete!');
   console.log(`  ${await prisma.user.count()} users`);
-  console.log(`  ${await prisma.plant.count()} plants`);
-  console.log(`  ${await prisma.machine.count()} machines`);
+  console.log(`  ${await prisma.plant.count()} Indian facilities`);
+  console.log(`  ${await prisma.machine.count()} domain-specific machines`);
   console.log(`  ${await prisma.sensorReading.count()} sensor readings`);
   console.log(`  ${await prisma.alarm.count()} alarms`);
   console.log(`  ${await prisma.agent.count()} agents`);

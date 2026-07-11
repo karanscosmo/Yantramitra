@@ -1,38 +1,247 @@
 (function() {
   async function get(path) { const r = await fetch(path); return r.json(); }
+  async function post(path, body) { const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); return r.json(); }
+
+  const colors = {
+    running: 0x5efae4,
+    warning: 0xffba4b,
+    maintenance: 0xba1a1a,
+    idle: 0xc7c4d7
+  };
 
   async function checkAuth() {
-    try { const me = await get('/api/auth/me'); if (!me || !me.id) window.location.href = '/login'; return me; }
-    catch { window.location.href = '/login'; return null; }
+    try {
+      const me = await get('/api/auth/me');
+      if (!me || !me.id) window.location.href = '/login';
+      return me;
+    } catch {
+      window.location.href = '/login';
+      return null;
+    }
+  }
+
+  function iconFor(type) {
+    if (type.includes('dye') || type.includes('chemical') || type.includes('effluent')) return 'science';
+    if (type.includes('smt') || type.includes('aoi') || type.includes('pick') || type.includes('reflow')) return 'memory';
+    if (type.includes('laser') || type.includes('micro') || type.includes('additive')) return 'precision_manufacturing';
+    if (type.includes('asrs') || type.includes('sort') || type.includes('agv') || type.includes('dock')) return 'local_shipping';
+    if (type.includes('welder') || type.includes('robot')) return 'smart_toy';
+    return 'manufacturing';
+  }
+
+  function latest(readings, metric) {
+    const row = readings.find(r => r.metric === metric);
+    return row ? `${Number(row.value).toFixed(1)} ${row.unit}` : 'n/a';
+  }
+
+  function createMachineMesh(machine) {
+    const fault = machine.status === 'warning' || machine.status === 'maintenance' || (machine.alarms || []).some(a => a.status === 'active');
+    const group = new THREE.Group();
+    const color = fault ? 0xba1a1a : colors[machine.status] || colors.running;
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(machine.type.includes('line') || machine.type.includes('stenter') || machine.type.includes('asrs') ? 3.8 : 2.2, 1.2, machine.type.includes('line') ? 1.1 : 2.0),
+      new THREE.MeshStandardMaterial({ color, roughness: 0.42, metalness: 0.25, emissive: fault ? 0x6f0000 : 0x002a26, emissiveIntensity: fault ? 0.55 : 0.12 })
+    );
+    group.add(body);
+
+    if (machine.type.includes('robot') || machine.type.includes('welder')) {
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 2.8, 16), new THREE.MeshStandardMaterial({ color: 0x413fd6 }));
+      arm.rotation.z = Math.PI / 4;
+      arm.position.set(0.8, 1.4, 0);
+      group.add(arm);
+    } else if (machine.type.includes('dye') || machine.type.includes('dosing') || machine.type.includes('vacuum')) {
+      const cylinder = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 1.7, 28), new THREE.MeshStandardMaterial({ color: fault ? 0xba1a1a : 0x413fd6, roughness: 0.35 }));
+      cylinder.position.y = 0.7;
+      group.add(cylinder);
+    } else if (machine.type.includes('smt') || machine.type.includes('aoi') || machine.type.includes('pick')) {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.22, 0.22), new THREE.MeshStandardMaterial({ color: 0x413fd6 }));
+      rail.position.y = 0.85;
+      group.add(rail);
+    }
+
+    if (fault) {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(1.9, 0.07, 12, 48),
+        new THREE.MeshBasicMaterial({ color: 0xff2a2a })
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = 0.72;
+      group.add(ring);
+
+      const beacon = new THREE.PointLight(0xff2424, 2.2, 7);
+      beacon.position.set(0, 2.7, 0);
+      group.add(beacon);
+    }
+
+    group.position.set(machine.posX || 0, 0.8, machine.posZ || 0);
+    group.rotation.y = machine.rotation || 0;
+    group.userData.machine = machine;
+    group.traverse(child => { child.userData.machine = machine; });
+    return group;
+  }
+
+  function renderInspector(machine) {
+    const panel = document.getElementById('ym-twin-inspector');
+    if (!panel) return;
+    const activeAlarms = (machine.alarms || []).filter(a => a.status === 'active');
+    panel.innerHTML = `
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-[11px] uppercase tracking-[0.16em] text-primary font-bold">${machine.plant?.name || 'Plant'} · ${machine.location || 'Floor'}</p>
+          <h2 class="text-2xl font-black text-on-surface mt-1">${machine.name}</h2>
+          <p class="text-sm text-on-surface-variant">${machine.type.replace(/_/g, ' ')} · ${machine.status}</p>
+        </div>
+        <span class="material-symbols-outlined text-3xl ${activeAlarms.length ? 'text-error' : 'text-secondary'}">${activeAlarms.length ? 'warning' : 'verified'}</span>
+      </div>
+      <div class="grid grid-cols-2 gap-3 mt-5">
+        <div class="rounded-xl bg-white/70 border border-outline-variant/40 p-3"><p class="text-[10px] font-bold uppercase text-on-surface-variant">Health</p><p class="text-2xl font-black text-primary">${Math.round(machine.health)}%</p></div>
+        <div class="rounded-xl bg-white/70 border border-outline-variant/40 p-3"><p class="text-[10px] font-bold uppercase text-on-surface-variant">Faults</p><p class="text-2xl font-black ${activeAlarms.length ? 'text-error' : 'text-secondary'}">${activeAlarms.length}</p></div>
+        <div class="rounded-xl bg-white/70 border border-outline-variant/40 p-3"><p class="text-[10px] font-bold uppercase text-on-surface-variant">Temp</p><p class="font-bold">${latest(machine.readings, 'temperature')}</p></div>
+        <div class="rounded-xl bg-white/70 border border-outline-variant/40 p-3"><p class="text-[10px] font-bold uppercase text-on-surface-variant">Vibration</p><p class="font-bold">${latest(machine.readings, 'vibration')}</p></div>
+        <div class="rounded-xl bg-white/70 border border-outline-variant/40 p-3"><p class="text-[10px] font-bold uppercase text-on-surface-variant">Power</p><p class="font-bold">${latest(machine.readings, 'power')}</p></div>
+        <div class="rounded-xl bg-white/70 border border-outline-variant/40 p-3"><p class="text-[10px] font-bold uppercase text-on-surface-variant">RPM/Flow</p><p class="font-bold">${latest(machine.readings, 'rpm') !== 'n/a' ? latest(machine.readings, 'rpm') : latest(machine.readings, 'flow_rate')}</p></div>
+      </div>
+      <div class="mt-5 rounded-xl ${activeAlarms.length ? 'bg-error-container/40 border-error/30' : 'bg-secondary-container/20 border-secondary/30'} border p-4">
+        <p class="font-bold">${activeAlarms[0]?.title || 'No active fault'}</p>
+        <p class="text-sm text-on-surface-variant mt-1">${activeAlarms[0]?.message || 'Machine is inside its seeded operating band.'}</p>
+      </div>
+      <div class="grid grid-cols-1 gap-2 mt-5">
+        <button id="ym-create-investigation" class="rounded-xl bg-primary text-white py-3 font-bold flex items-center justify-center gap-2"><span class="material-symbols-outlined">engineering</span>Ask Agent to Investigate</button>
+        <a class="rounded-xl bg-white/70 border border-outline-variant/50 py-3 font-bold text-primary flex items-center justify-center gap-2" href="/ai-console?context=${encodeURIComponent(machine.name)}"><span class="material-symbols-outlined">psychology</span>Ask YantraNklan</a>
+      </div>
+    `;
+    panel.querySelector('#ym-create-investigation')?.addEventListener('click', async () => {
+      const result = await post('/api/work-orders', {
+        title: `Agent investigation: ${machine.name}`,
+        description: `Digital Twin requested investigation for ${machine.name}. Current status ${machine.status}, health ${Math.round(machine.health)}%.`,
+        status: 'open',
+        priority: activeAlarms.length ? 'critical' : 'medium',
+        machineId: machine.id,
+        assignedTo: 'Farhan Shaikh',
+        dueDate: new Date(Date.now() + 86400000).toISOString().slice(0, 10)
+      });
+      if (result.id) {
+        panel.querySelector('#ym-create-investigation').innerHTML = '<span class="material-symbols-outlined">check_circle</span>Work Order Created';
+      }
+    });
+  }
+
+  async function initTwin(plants, machines) {
+    const main = document.querySelector('main');
+    if (!main) return;
+    main.innerHTML = `
+      <section class="h-screen pt-6 px-md md:pr-32 relative overflow-hidden">
+        <div class="absolute top-24 left-md z-30 glass-panel rounded-2xl p-4 w-[min(360px,calc(100vw-32px))]">
+          <p class="text-[11px] uppercase tracking-[0.16em] text-primary font-bold">Interactive 3D Digital Twin</p>
+          <h1 class="text-3xl font-black text-on-surface mt-1">Live Indian Plant Floor</h1>
+          <select id="ym-plant-select" class="mt-4 w-full rounded-xl border border-outline-variant/50 bg-white/80 p-3 font-bold"></select>
+          <p id="ym-plant-meta" class="text-sm text-on-surface-variant mt-3"></p>
+        </div>
+        <div id="ym-twin-canvas" class="absolute inset-0 bg-[#f4f2ff]"></div>
+        <aside id="ym-twin-inspector" class="fixed right-[104px] top-24 bottom-28 w-[360px] max-w-[calc(100vw-128px)] overflow-auto glass-panel rounded-2xl p-5 z-40 shadow-2xl"></aside>
+        <div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 glass-panel rounded-full px-4 py-2 flex items-center gap-3 text-sm font-bold text-on-surface-variant">
+          <span class="material-symbols-outlined text-primary">3d_rotation</span> Drag to rotate · scroll to zoom · click a machine
+        </div>
+      </section>`;
+
+    const select = document.getElementById('ym-plant-select');
+    plants.forEach(p => {
+      const option = document.createElement('option');
+      option.value = p.id;
+      option.textContent = `${p.name} · ${p.domain || 'Plant'}`;
+      select.appendChild(option);
+    });
+
+    if (!window.THREE) {
+      document.getElementById('ym-twin-canvas').innerHTML = '<div class="h-full flex items-center justify-center text-center p-10"><div><p class="text-2xl font-black text-error">3D engine unavailable</p><p class="text-on-surface-variant mt-2">Three.js could not load. Check network/CDN access.</p></div></div>';
+      return;
+    }
+
+    const canvasHost = document.getElementById('ym-twin-canvas');
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    canvasHost.appendChild(renderer.domElement);
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf4f2ff);
+    const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 1000);
+    camera.position.set(0, 26, 28);
+    camera.lookAt(0, 0, 0);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xc1c1ff, 2));
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
+    keyLight.position.set(14, 20, 10);
+    scene.add(keyLight);
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(44, 28), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.75 }));
+    floor.rotation.x = -Math.PI / 2;
+    scene.add(floor);
+    const grid = new THREE.GridHelper(44, 22, 0xc7c4d7, 0xe2e1f4);
+    scene.add(grid);
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let machineGroup = new THREE.Group();
+    scene.add(machineGroup);
+    let angle = 0;
+    let dragging = false;
+    let lastX = 0;
+
+    function resize() {
+      const rect = canvasHost.getBoundingClientRect();
+      renderer.setSize(rect.width, rect.height);
+      camera.aspect = rect.width / rect.height;
+      camera.updateProjectionMatrix();
+    }
+
+    function loadPlant(plantId) {
+      machineGroup.clear();
+      const plant = plants.find(p => p.id === plantId) || plants[0];
+      const plantMachines = machines.filter(m => m.plantId === plant.id);
+      document.getElementById('ym-plant-meta').textContent = `${plant.location} · OEE ${plant.oee || 'n/a'}% · Uptime ${plant.uptime || 'n/a'}% · ${plantMachines.length} assets`;
+      plantMachines.forEach(machine => machineGroup.add(createMachineMesh(machine)));
+      renderInspector(plantMachines.find(m => m.status !== 'running') || plantMachines[0]);
+    }
+
+    renderer.domElement.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; });
+    window.addEventListener('pointerup', () => { dragging = false; });
+    window.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      angle += (e.clientX - lastX) * 0.01;
+      lastX = e.clientX;
+    });
+    renderer.domElement.addEventListener('wheel', e => {
+      e.preventDefault();
+      camera.position.y = Math.max(13, Math.min(42, camera.position.y + e.deltaY * 0.02));
+      camera.position.z = Math.max(14, Math.min(48, camera.position.z + e.deltaY * 0.02));
+    }, { passive: false });
+    renderer.domElement.addEventListener('click', e => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hit = raycaster.intersectObjects(machineGroup.children, true).find(x => x.object.userData.machine);
+      if (hit) renderInspector(hit.object.userData.machine);
+    });
+    select.addEventListener('change', () => loadPlant(select.value));
+    window.addEventListener('resize', resize);
+    resize();
+    loadPlant(plants[0]?.id);
+
+    function animate() {
+      requestAnimationFrame(animate);
+      camera.position.x = Math.sin(angle) * 28;
+      camera.position.z = Math.cos(angle) * 28;
+      camera.lookAt(0, 0, 0);
+      machineGroup.children.forEach(group => {
+        const fault = group.userData.machine?.status !== 'running';
+        if (fault) group.rotation.y += 0.01;
+      });
+      renderer.render(scene, camera);
+    }
+    animate();
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
     const user = await checkAuth();
     if (!user) return;
-
-    try {
-      const machines = await get('/api/machines');
-      const twinContainer = document.querySelector('[class*="rounded-2xl"]') || document.querySelector('[class*="h-80"]') || document.querySelector('.flex-grow');
-      if (twinContainer && machines.length > 0) {
-        const infoPanel = twinContainer.querySelector('.text-center.opacity-40') || twinContainer.querySelector('.flex.items-center.justify-center');
-        if (infoPanel) {
-          infoPanel.innerHTML = '<div class="grid grid-cols-2 gap-2 w-full max-w-md"><div class="col-span-2 text-left"><p class="font-label-caps text-primary">LIVE MACHINE STATUS (' + machines.length + ' assets)</p></div>' +
-            machines.slice(0, 8).map(m => '<div class="p-2 bg-white/60 rounded-lg border border-outline-variant/20 flex items-center gap-2"><div class="w-2 h-2 rounded-full ' + (m.status === 'running' ? 'bg-secondary' : m.status === 'warning' || m.status === 'maintenance' ? 'bg-tertiary' : 'bg-outline') + '"></div><span class="text-xs">' + m.name + '</span></div>').join('') +
-            '</div>';
-        }
-      }
-    } catch {}
-
-    document.querySelectorAll('a[href="#"]').forEach(a => {
-      a.addEventListener('click', e => {
-        e.preventDefault();
-        const txt = a.textContent.trim().toLowerCase();
-        if (txt.includes('dashboard')) window.location.href = '/dashboard';
-        else if (txt.includes('asset')) window.location.href = '/assets';
-        else if (txt.includes('agent')) window.location.href = '/agents';
-        else if (txt.includes('work')) window.location.href = '/work-orders';
-        else if (txt.includes('setting')) window.location.href = '/settings';
-      });
-    });
+    const [plants, machines] = await Promise.all([get('/api/plants'), get('/api/machines')]);
+    await initTwin(plants, machines);
   });
 })();

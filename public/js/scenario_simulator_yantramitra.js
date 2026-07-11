@@ -1,5 +1,6 @@
 (function() {
   async function get(path) { const r = await fetch(path); return r.json(); }
+  async function post(path, body) { const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); return r.json(); }
 
   async function checkAuth() {
     try { const me = await get('/api/auth/me'); if (!me || !me.id) window.location.href = '/login'; return me; }
@@ -10,13 +11,21 @@
     const user = await checkAuth();
     if (!user) return;
 
+    let selectedMachineId = '';
     const btns = document.querySelectorAll('button');
     btns.forEach(btn => {
-      btn.addEventListener('click', function() {
+      btn.addEventListener('click', async function() {
         const original = this.textContent;
         this.textContent = 'Running Simulation...';
         this.disabled = true;
         this.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Simulating...';
+        await post('/api/plans', {
+          title: 'Scenario simulation recommendation',
+          description: selectedMachineId ? 'Generated from scenario simulator for selected asset ' + selectedMachineId : 'Generated from scenario simulator run.',
+          type: 'optimization',
+          status: 'pending',
+          priority: 'medium'
+        }).catch(() => {});
         setTimeout(() => {
           this.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Complete';
           setTimeout(() => {
@@ -29,6 +38,7 @@
 
     const selects = document.querySelectorAll('select');
     selects.forEach(sel => {
+      sel.addEventListener('change', () => { selectedMachineId = sel.value; });
       try {
         get('/api/machines').then(machines => {
           if (machines && machines.length > 0) {
