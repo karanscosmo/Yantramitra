@@ -9,54 +9,144 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      String   @default("operator")
-  avatar    String?
-  phone     String?
-  prefs     Json?
+  id           String   @id @default(uuid())
+  email        String   @unique
+  password     String
+  name         String
+  role         String   @default("operator")
+  avatar       String?
+  phone        String?
+  prefs        Json?
   integrations Json?
-  sessions  Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  sessions     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Plant {
-  id        String   @id @default(uuid())
-  name      String
-  location  String
-  domain    String?
-  status    String   @default("operational")
-  image     String?
-  lat       Float?
-  lng       Float?
-  oee       Float?
-  uptime    Float?
+  id          String     @id @default(uuid())
+  name        String
+  location    String
+  domain      String?
+  status      String     @default("operational")
+  image       String?
+  lat         Float?
+  lng         Float?
+  oee         Float?
+  uptime      Float?
   floorLayout Json?
-  machines  Machine[]
+  energyUsage Float?
+  co2Tonnes   Float?
+  utilization Float?
+  machines    Machine[]
+  buildings   Building[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Building {
+  id        String           @id @default(uuid())
+  name      String
+  code      String?
+  plantId   String
+  plant     Plant            @relation(fields: [plantId], references: [id])
+  lines     ProductionLine[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model ProductionLine {
+  id         String    @id @default(uuid())
+  name       String
+  code       String?
+  buildingId String
+  building   Building  @relation(fields: [buildingId], references: [id])
+  machines   Machine[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Machine {
+  id                  String             @id @default(uuid())
+  name                String
+  serial              String?
+  manufacturer        String?
+  installationDate    DateTime?
+  criticality         String?
+  oee                 Float?
+  failureProbability  Float?
+  remainingUsefulLife Int?
+  bearing             String?
+  lubrication         String?
+  aiSummary           String?
+  type                String
+  status              String             @default("running")
+  health              Float              @default(100.0)
+  location            String?
+  posX                Float?
+  posZ                Float?
+  rotation            Float?
+  plantId             String
+  plant               Plant              @relation(fields: [plantId], references: [id])
+  productionLineId    String?
+  productionLine      ProductionLine?    @relation(fields: [productionLineId], references: [id])
+  readings            SensorReading[]
+  sensors             MachineSensor[]
+  components          Component[]
+  inventoryParts      InventoryPart[]
+  maintenanceEvents   MaintenanceEvent[]
+  alarms              Alarm[]
+  workOrders          WorkOrder[]
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+}
+
+model Component {
+  id        String          @id @default(uuid())
+  name      String
+  type      String?
+  health    Float           @default(100.0)
+  machineId String
+  machine   Machine         @relation(fields: [machineId], references: [id])
+  sensors   MachineSensor[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model MachineSensor {
+  id          String     @id @default(uuid())
+  tag         String
+  metric      String
+  unit        String
+  status      String     @default("normal")
+  machineId   String
+  machine     Machine    @relation(fields: [machineId], references: [id])
+  componentId String?
+  component   Component? @relation(fields: [componentId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model InventoryPart {
+  id        String   @id @default(uuid())
+  sku       String
+  name      String
+  quantity  Int      @default(0)
+  reorderAt Int      @default(1)
+  machineId String
+  machine   Machine  @relation(fields: [machineId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model Machine {
-  id         String        @id @default(uuid())
-  name       String
-  type       String
-  status     String        @default("running")
-  health     Float         @default(100.0)
-  location   String?
-  posX       Float?
-  posZ       Float?
-  rotation   Float?
-  plantId    String
-  plant      Plant         @relation(fields: [plantId], references: [id])
-  readings   SensorReading[]
-  alarms     Alarm[]
-  workOrders WorkOrder[]
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+model MaintenanceEvent {
+  id          String   @id @default(uuid())
+  title       String
+  notes       String?
+  performedBy String?
+  performedAt DateTime @default(now())
+  machineId   String
+  machine     Machine  @relation(fields: [machineId], references: [id])
 }
 
 model SensorReading {

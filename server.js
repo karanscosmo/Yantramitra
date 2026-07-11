@@ -265,7 +265,12 @@ app.post('/api/auth/logout', (req, res) => {
 
 app.get('/api/plants', authApi, async (req, res) => {
   try {
-    const plants = await prisma.plant.findMany({ include: { _count: { select: { machines: true } } } });
+    const plants = await prisma.plant.findMany({
+      include: {
+        buildings: { include: { lines: true } },
+        _count: { select: { machines: true } }
+      }
+    });
     res.json(plants);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -293,8 +298,13 @@ app.get('/api/machines', authApi, async (req, res) => {
     const machines = await prisma.machine.findMany({
       include: {
         plant: { select: { name: true, location: true } },
+        productionLine: { include: { building: { include: { plant: { select: { name: true } } } } } },
         alarms: { orderBy: { createdAt: 'desc' }, take: 5 },
         readings: { orderBy: { timestamp: 'desc' }, take: 18 },
+        sensors: { take: 12, orderBy: { createdAt: 'asc' } },
+        components: { take: 6, orderBy: { createdAt: 'asc' } },
+        inventoryParts: { take: 6, orderBy: { createdAt: 'asc' } },
+        maintenanceEvents: { take: 4, orderBy: { performedAt: 'desc' } },
         _count: { select: { alarms: true, workOrders: true } }
       }
     });
@@ -308,6 +318,11 @@ app.get('/api/machines/:id', authApi, async (req, res) => {
       where: { id: req.params.id },
       include: {
         plant: true,
+        productionLine: { include: { building: true } },
+        sensors: true,
+        components: { include: { sensors: true } },
+        inventoryParts: true,
+        maintenanceEvents: { orderBy: { performedAt: 'desc' } },
         readings: { orderBy: { timestamp: 'desc' }, take: 1000 },
         alarms: { orderBy: { createdAt: 'desc' } },
         workOrders: { orderBy: { createdAt: 'desc' } }
@@ -471,7 +486,7 @@ app.get('/api/dashboard/summary', authApi, async (req, res) => {
       prisma.machine.count(),
       prisma.alarm.count({ where: { status: 'active' } }),
       prisma.workOrder.count(),
-      prisma.plant.findMany({ select: { id: true, name: true, location: true, status: true, lat: true, lng: true, _count: { select: { machines: true } } } }),
+      prisma.plant.findMany({ select: { id: true, name: true, location: true, status: true, lat: true, lng: true, oee: true, energyUsage: true, co2Tonnes: true, utilization: true, _count: { select: { machines: true } } } }),
       prisma.machine.groupBy({ by: ['status'], _count: true }),
       prisma.alarm.findMany({ where: { status: 'active' }, include: { machine: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 10 }),
       prisma.alarm.count({ where: { status: 'active', severity: 'critical' } }),

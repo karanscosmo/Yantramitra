@@ -23,12 +23,14 @@ The seeded demo is now an India-first industrial scenario: Pune automotive compo
 `node seed.js` creates:
 
 - 5 Indian facilities across Pune, Ahmedabad, Chennai, Bengaluru, and Nagpur
-- 25 domain-specific machines with per-machine 3D coordinates
-- 14,400 sensor readings across temperature, vibration, pressure, RPM, power, and flow
+- Company hierarchy for Yantra Manufacturing Technologies Pvt. Ltd.: 5 plants, 14 buildings, 27 production lines, machines, components, and sensors
+- 29 domain-specific machines with serials, manufacturers, criticality, OEE, failure probability, remaining useful life, assigned floor position, and AI summaries
+- 87 components, 174 configured sensors, 58 inventory part rows, and 58 maintenance history events
+- 16,704 sensor readings across temperature, vibration, pressure, RPM, power, and flow
 - Active alarm history, maintenance plans, persisted agent missions, and work orders
 - 7 named team members with distinct roles and avatars
 
-The Digital Twin page uses Three.js to render clickable machine geometry. Faulted machines are shown in red with a visible warning glow. The inspector panel shows live seeded readings and can create a real work order or deep-link to YantraNklan with machine context.
+The Digital Twin page uses Three.js to render clickable machine geometry. Faulted machines are shown in red with a visible warning glow. The inspector panel shows hierarchy, live seeded readings, OEE, RUL, sensors, components, spare parts, maintenance timeline, and can create a real work order or deep-link to YantraNklan with machine context.
 
 ## Setup
 

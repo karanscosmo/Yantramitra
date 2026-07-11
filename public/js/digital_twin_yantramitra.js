@@ -84,18 +84,31 @@
     const panel = document.getElementById('ym-twin-inspector');
     if (!panel) return;
     const activeAlarms = (machine.alarms || []).filter(a => a.status === 'active');
+    const hierarchy = [
+      'Yantra Manufacturing Technologies Pvt. Ltd.',
+      machine.productionLine?.building?.plant?.name || machine.plant?.name,
+      machine.productionLine?.building?.name,
+      machine.productionLine?.name,
+      machine.name
+    ].filter(Boolean).join(' / ');
     panel.innerHTML = `
       <div class="flex items-start justify-between gap-3">
         <div>
           <p class="text-[11px] uppercase tracking-[0.16em] text-primary font-bold">${machine.plant?.name || 'Plant'} · ${machine.location || 'Floor'}</p>
           <h2 class="text-2xl font-black text-on-surface mt-1">${machine.name}</h2>
-          <p class="text-sm text-on-surface-variant">${machine.type.replace(/_/g, ' ')} · ${machine.status}</p>
+          <p class="text-sm text-on-surface-variant">${machine.type.replace(/_/g, ' ')} · ${machine.status} · ${machine.serial || 'serial pending'}</p>
         </div>
         <span class="material-symbols-outlined text-3xl ${activeAlarms.length ? 'text-error' : 'text-secondary'}">${activeAlarms.length ? 'warning' : 'verified'}</span>
       </div>
+      <div class="mt-4 rounded-xl bg-white/70 border border-outline-variant/40 p-3">
+        <p class="text-[10px] font-bold uppercase text-on-surface-variant">Hierarchy</p>
+        <p class="text-sm font-bold text-on-surface mt-1">${hierarchy}</p>
+      </div>
       <div class="grid grid-cols-2 gap-3 mt-5">
         <div class="rounded-xl bg-white/70 border border-outline-variant/40 p-3"><p class="text-[10px] font-bold uppercase text-on-surface-variant">Health</p><p class="text-2xl font-black text-primary">${Math.round(machine.health)}%</p></div>
+        <div class="rounded-xl bg-white/70 border border-outline-variant/40 p-3"><p class="text-[10px] font-bold uppercase text-on-surface-variant">OEE</p><p class="text-2xl font-black text-primary">${Math.round(machine.oee || machine.health)}%</p></div>
         <div class="rounded-xl bg-white/70 border border-outline-variant/40 p-3"><p class="text-[10px] font-bold uppercase text-on-surface-variant">Faults</p><p class="text-2xl font-black ${activeAlarms.length ? 'text-error' : 'text-secondary'}">${activeAlarms.length}</p></div>
+        <div class="rounded-xl bg-white/70 border border-outline-variant/40 p-3"><p class="text-[10px] font-bold uppercase text-on-surface-variant">RUL</p><p class="text-2xl font-black text-primary">${machine.remainingUsefulLife || 'n/a'}h</p></div>
         <div class="rounded-xl bg-white/70 border border-outline-variant/40 p-3"><p class="text-[10px] font-bold uppercase text-on-surface-variant">Temp</p><p class="font-bold">${latest(machine.readings, 'temperature')}</p></div>
         <div class="rounded-xl bg-white/70 border border-outline-variant/40 p-3"><p class="text-[10px] font-bold uppercase text-on-surface-variant">Vibration</p><p class="font-bold">${latest(machine.readings, 'vibration')}</p></div>
         <div class="rounded-xl bg-white/70 border border-outline-variant/40 p-3"><p class="text-[10px] font-bold uppercase text-on-surface-variant">Power</p><p class="font-bold">${latest(machine.readings, 'power')}</p></div>
@@ -104,6 +117,20 @@
       <div class="mt-5 rounded-xl ${activeAlarms.length ? 'bg-error-container/40 border-error/30' : 'bg-secondary-container/20 border-secondary/30'} border p-4">
         <p class="font-bold">${activeAlarms[0]?.title || 'No active fault'}</p>
         <p class="text-sm text-on-surface-variant mt-1">${activeAlarms[0]?.message || 'Machine is inside its seeded operating band.'}</p>
+      </div>
+      <div class="mt-5 grid grid-cols-1 gap-3">
+        <details class="rounded-xl bg-white/70 border border-outline-variant/40 p-3" open>
+          <summary class="font-bold cursor-pointer">Sensors</summary>
+          <div class="mt-2 grid grid-cols-2 gap-2">${(machine.sensors || []).slice(0, 6).map(s => `<span class="text-xs rounded-lg bg-surface-container-low p-2">${s.tag}<br><strong>${s.metric} · ${s.status}</strong></span>`).join('')}</div>
+        </details>
+        <details class="rounded-xl bg-white/70 border border-outline-variant/40 p-3">
+          <summary class="font-bold cursor-pointer">Components & Spares</summary>
+          <div class="mt-2 space-y-2">${(machine.components || []).map(c => `<p class="text-xs">${c.name}: <strong>${Math.round(c.health)}%</strong></p>`).join('')}${(machine.inventoryParts || []).map(p => `<p class="text-xs">${p.sku}: ${p.quantity} in stock</p>`).join('')}</div>
+        </details>
+        <details class="rounded-xl bg-white/70 border border-outline-variant/40 p-3">
+          <summary class="font-bold cursor-pointer">Timeline</summary>
+          <div class="mt-2 space-y-2">${(machine.maintenanceEvents || []).map(e => `<p class="text-xs"><strong>${e.title}</strong><br>${e.performedBy || 'Team'} · ${new Date(e.performedAt).toLocaleDateString()}</p>`).join('')}</div>
+        </details>
       </div>
       <div class="grid grid-cols-1 gap-2 mt-5">
         <button id="ym-create-investigation" class="rounded-xl bg-primary text-white py-3 font-bold flex items-center justify-center gap-2"><span class="material-symbols-outlined">engineering</span>Ask Agent to Investigate</button>
@@ -138,6 +165,7 @@
           <p id="ym-plant-meta" class="text-sm text-on-surface-variant mt-3"></p>
         </div>
         <div id="ym-twin-canvas" class="absolute inset-0 bg-[#f4f2ff]"></div>
+        <div id="ym-twin-tooltip" class="fixed z-50 hidden rounded-lg bg-[#191a28] text-white text-xs font-bold px-3 py-2 pointer-events-none shadow-xl"></div>
         <aside id="ym-twin-inspector" class="fixed right-[104px] top-24 bottom-28 w-[360px] max-w-[calc(100vw-128px)] overflow-auto glass-panel rounded-2xl p-5 z-40 shadow-2xl"></aside>
         <div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 glass-panel rounded-full px-4 py-2 flex items-center gap-3 text-sm font-bold text-on-surface-variant">
           <span class="material-symbols-outlined text-primary">3d_rotation</span> Drag to rotate · scroll to zoom · click a machine
@@ -177,6 +205,7 @@
     scene.add(grid);
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
+    const tooltip = document.getElementById('ym-twin-tooltip');
     let machineGroup = new THREE.Group();
     scene.add(machineGroup);
     let angle = 0;
@@ -206,6 +235,24 @@
       angle += (e.clientX - lastX) * 0.01;
       lastX = e.clientX;
     });
+    renderer.domElement.addEventListener('pointermove', e => {
+      if (dragging || !tooltip) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hit = raycaster.intersectObjects(machineGroup.children, true).find(x => x.object.userData.machine);
+      if (!hit) {
+        tooltip.classList.add('hidden');
+        return;
+      }
+      const m = hit.object.userData.machine;
+      tooltip.textContent = `${m.name} · ${Math.round(m.health)}% health · ${m.status}`;
+      tooltip.style.left = `${Math.min(window.innerWidth - 260, e.clientX + 14)}px`;
+      tooltip.style.top = `${Math.max(80, e.clientY + 14)}px`;
+      tooltip.classList.remove('hidden');
+    });
+    renderer.domElement.addEventListener('pointerleave', () => tooltip?.classList.add('hidden'));
     renderer.domElement.addEventListener('wheel', e => {
       e.preventDefault();
       camera.position.y = Math.max(13, Math.min(42, camera.position.y + e.deltaY * 0.02));
