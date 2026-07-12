@@ -24,6 +24,7 @@ tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-primar
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .msg-enter { animation: msgSlideIn .3s ease; }
 @keyframes msgSlideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.ym-pill { padding: 8px 18px; border-radius: 9999px; font-size: 13px; font-weight: 700; white-space: nowrap; letter-spacing: 0.03em; }
 .animate-bounce-dot { animation: bounceDot 1.4s infinite ease-in-out both; }
 @keyframes bounceDot { 0%,80%,100% { transform: scale(0.6); } 40% { transform: scale(1); } }
 .modal-backdrop { position: fixed; inset: 0; z-index: 100; background: rgba(25,26,40,0.36); display: flex; align-items: center; justify-content: center; padding: 18px; }
@@ -41,40 +42,40 @@ pre code { font-size: 12px; line-height: 1.5; }
 </div>
 <main class="pt-4 pr-0 pl-0 h-screen flex flex-col">
 <div class="flex items-center gap-3 px-6 py-3 border-b border-outline-variant/20 shrink-0">
-  <img src="/images/yantranklan-avatar-ai.jpg" alt="YantraNklan" class="w-11 h-11 rounded-full border-2 border-secondary/40"/>
+  <img src="/images/yantranklan-avatar-ai.jpg" alt="YantraNklan" class="w-14 h-14 rounded-full border-2 border-secondary/40"/>
   <div class="flex-1 min-w-0">
-    <div class="flex items-center gap-2">
-      <h2 class="font-section-header text-section-header text-on-surface truncate">YantraNklan</h2>
-      <span class="w-2 h-2 rounded-full bg-secondary status-pulse-teal" id="ym-ai-status-dot"></span>
-      <span class="text-[10px] text-on-surface-variant font-medium" id="ym-ai-status">Online</span>
+    <div class="flex items-center gap-3">
+      <h2 class="font-bold text-on-surface truncate" style="font-size:42px;font-family:Geist,sans-serif;letter-spacing:-0.02em;line-height:1.1">YantraNklan</h2>
+      <span class="w-2.5 h-2.5 rounded-full bg-secondary status-pulse-teal" id="ym-ai-status-dot"></span>
+      <span class="text-xs text-on-surface-variant font-semibold" id="ym-ai-status">Online</span>
     </div>
-    <p class="text-xs text-on-surface-variant truncate">AI Operations Agent — YantraMitra Industrial Copilot</p>
+    <p class="text-lg text-on-surface-variant truncate mt-0.5" style="font-size:18px">AI Operations Agent — YantraMitra Industrial Copilot</p>
   </div>
-  <button class="text-xs text-on-surface-variant hover:text-primary px-3 py-1.5 rounded-full border border-outline-variant/30 hover:border-primary/50 transition-all" id="ym-clear-chat" title="Clear conversation">
-    <span class="material-symbols-outlined text-sm align-middle">delete_sweep</span> Clear
+  <button class="text-sm text-on-surface-variant hover:text-primary px-4 py-2 rounded-full border border-outline-variant/30 hover:border-primary/50 transition-all" id="ym-clear-chat" title="Clear conversation">
+    <span class="material-symbols-outlined align-middle" style="font-size:20px">delete_sweep</span> Clear
   </button>
 </div>
-<section class="flex-1 overflow-y-auto chat-scroll px-6 py-4 space-y-4" id="ym-chat-messages"></section>
-<section class="shrink-0 pb-3 pt-1 px-6">
-  <div class="flex gap-1.5 mb-2 overflow-x-auto no-scrollbar" id="ym-suggested-pills"></div>
-  <div class="glass-panel rounded-2xl p-1 flex items-end gap-1 shadow-lg border-primary/10" id="ym-input-area">
-    <label class="material-symbols-outlined text-on-surface-variant p-2 hover:bg-surface-container rounded-lg transition-colors cursor-pointer shrink-0" id="ym-attach-btn" title="Attach file">attach_file</label>
+<section class="flex-1 overflow-y-auto chat-scroll px-8 py-5 space-y-5" id="ym-chat-messages"></section>
+<section class="shrink-0 pb-4 pt-2 px-8">
+  <div class="flex gap-2 mb-3 overflow-x-auto no-scrollbar" id="ym-suggested-pills"></div>
+  <div class="glass-panel rounded-2xl p-1.5 flex items-end gap-1.5 shadow-lg border-primary/10" id="ym-input-area">
+    <label class="material-symbols-outlined text-on-surface-variant p-2.5 hover:bg-surface-container rounded-lg transition-colors cursor-pointer shrink-0" id="ym-attach-btn" title="Attach file" style="font-size:24px">attach_file</label>
     <input type="file" id="ym-file-input" class="hidden" multiple accept=".pdf,.csv,.xlsx,.xls,.txt,.log,.md,.jpg,.jpeg,.png,.svg"/>
     <div class="flex-1 flex flex-col min-w-0">
       <div id="ym-file-preview" class="hidden flex gap-1.5 flex-wrap mb-1 px-1"></div>
-      <input class="w-full bg-transparent border-none outline-none text-body-md px-2 py-2" id="ym-chat-input" placeholder="Ask YantraNklan about your operations..." type="text" autofocus/>
+      <input class="w-full bg-transparent border-none outline-none text-lg px-2" id="ym-chat-input" placeholder="Ask YantraNklan about your operations..." type="text" autofocus style="font-size:18px;padding-top:18px;padding-bottom:18px"/>
     </div>
-    <div class="flex items-center gap-0.5 shrink-0 pr-0.5">
-      <button class="material-symbols-outlined text-on-surface-variant p-2 hover:bg-surface-container rounded-lg transition-colors relative" id="ym-mic-btn" title="Voice input">mic</button>
-      <button class="bg-primary-container text-on-primary-container p-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all shimmer-btn disabled:opacity-40 disabled:cursor-not-allowed" id="ym-send-btn" disabled>
-        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+    <div class="flex items-center gap-1 shrink-0 pr-1">
+      <button class="material-symbols-outlined text-on-surface-variant p-2.5 hover:bg-surface-container rounded-lg transition-colors relative" id="ym-mic-btn" title="Voice input" style="font-size:26px">mic</button>
+      <button class="bg-primary-container text-on-primary-container p-3 rounded-xl hover:scale-105 active:scale-95 transition-all shimmer-btn disabled:opacity-40 disabled:cursor-not-allowed" id="ym-send-btn" disabled>
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;font-size:22px">send</span>
       </button>
-      <button class="hidden bg-tertiary text-white p-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all" id="ym-cancel-btn">
-        <span class="material-symbols-outlined">stop</span>
+      <button class="hidden bg-tertiary text-white p-3 rounded-xl hover:scale-105 active:scale-95 transition-all" id="ym-cancel-btn">
+        <span class="material-symbols-outlined" style="font-size:22px">stop</span>
       </button>
     </div>
   </div>
-  <p class="text-center text-[10px] text-on-surface-variant/50 mt-1.5 font-medium">YantraMitra AI · Responses use live plant data</p>
+  <p class="text-center text-xs text-on-surface-variant/50 mt-2 font-medium">YantraMitra AI · Responses use live plant data</p>
 </section>
 </main>
 <div id="ym-toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 glass-panel rounded-full py-2.5 px-5 flex items-center gap-2.5 translate-y-32 opacity-0 transition-all duration-500 z-[100] shadow-lg border border-outline-variant/30">

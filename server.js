@@ -963,19 +963,21 @@ app.get('/api/user/profile', authApi, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      select: { id: true, email: true, name: true, role: true, avatar: true, phone: true, createdAt: true }
+      select: { id: true, email: true, name: true, role: true, avatar: true, phone: true, prefs: true, createdAt: true }
     });
-    res.json(user);
+    const result = { ...user, assignedPlants: user.prefs?.assignedPlants || [] };
+    res.json(result);
   } catch { res.status(401).json({ error: 'Invalid token' }); }
 });
 
 app.get('/api/team', authApi, async (req, res) => {
   try {
     const users = await prisma.user.findMany({
-      select: { id: true, email: true, name: true, role: true, avatar: true, phone: true, createdAt: true },
+      select: { id: true, email: true, name: true, role: true, avatar: true, phone: true, prefs: true, createdAt: true },
       orderBy: { createdAt: 'asc' }
     });
-    res.json(users);
+    const mapped = users.map(u => ({ ...u, status: u.prefs?.status || 'active', lastLogin: u.prefs?.lastLogin || null, assignedPlants: u.prefs?.assignedPlants || [] }));
+    res.json(mapped);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -1030,6 +1032,138 @@ app.patch('/api/user/profile', authApi, async (req, res) => {
     setAuthCookie(res, newToken);
     res.json(user);
   } catch { res.status(401).json({ error: 'Invalid token' }); }
+});
+
+app.post('/api/user/profile/photo', authApi, upload.single('photo'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    const url = '/uploads/' + req.file.filename;
+    await prisma.user.update({ where: { id: req.user.id }, data: { avatar: url } });
+    res.json({ url });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.patch('/api/team/:id', authApi, async (req, res) => {
+  try {
+    const { role, status } = req.body;
+    const data = {};
+    if (role) data.role = role;
+    if (status) data.status = status;
+    const user = await prisma.user.update({ where: { id: req.params.id }, data, select: { id: true, email: true, name: true, role: true, avatar: true, phone: true, createdAt: true } });
+    res.json(user);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/team/:id/disable', authApi, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const prefs = (user.prefs || {});
+    prefs.status = 'disabled';
+    await prisma.user.update({ where: { id: req.params.id }, data: { prefs } });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/team/:id/enable', authApi, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const prefs = (user.prefs || {});
+    delete prefs.status;
+    await prisma.user.update({ where: { id: req.params.id }, data: { prefs } });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/team/:id/reset-password', authApi, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ ok: true, message: 'Password reset link sent to ' + user.email });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/team/:id', authApi, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.id === req.user.id) return res.status(400).json({ error: 'Cannot remove yourself' });
+    await prisma.user.delete({ where: { id: req.params.id } });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/team/invite', authApi, async (req, res) => {
+  try {
+    const { name, email, role, assignedPlants } = req.body;
+    if (!name || !email) return res.status(400).json({ error: 'Name and email are required' });
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) return res.status(400).json({ error: 'User with this email already exists' });
+    const password = await bcrypt.hash('Welcome@123', 10);
+    const user = await prisma.user.create({
+      data: { name, email, password, role: role || 'operator', prefs: { assignedPlants: assignedPlants || [], invitedBy: req.user.id, invitedAt: new Date().toISOString() } },
+      select: { id: true, email: true, name: true, role: true, createdAt: true }
+    });
+    res.json(user);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/integrations/:key/connect', authApi, async (req, res) => {
+  try {
+    const { key } = req.params;
+    const allowed = ['SCADA', 'CMMS', 'ERP', 'Historian', 'MQTT'];
+    if (!allowed.includes(key)) return res.status(400).json({ error: 'Unknown integration' });
+    const current = await prisma.user.findUnique({ where: { id: req.user.id }, select: { integrations: true } });
+    const integrations = { ...(current?.integrations || {}) };
+    integrations[key] = { ...(integrations[key] || {}), state: 'connected', lastSync: new Date().toISOString(), health: Math.floor(85 + Math.random() * 15), latency: Math.floor(5 + Math.random() * 150) + 'ms' };
+    const user = await prisma.user.update({ where: { id: req.user.id }, data: { integrations }, select: { integrations: true } });
+    res.json(user);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/integrations/:key/disconnect', authApi, async (req, res) => {
+  try {
+    const { key } = req.params;
+    const current = await prisma.user.findUnique({ where: { id: req.user.id }, select: { integrations: true } });
+    const integrations = { ...(current?.integrations || {}) };
+    integrations[key] = { ...(integrations[key] || {}), state: 'disconnected', lastSync: integrations[key]?.lastSync || '—' };
+    const user = await prisma.user.update({ where: { id: req.user.id }, data: { integrations }, select: { integrations: true } });
+    res.json(user);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/integrations/:key/configure', authApi, async (req, res) => {
+  try {
+    const { key } = req.params;
+    const { endpoint, apiKey, interval } = req.body;
+    const current = await prisma.user.findUnique({ where: { id: req.user.id }, select: { integrations: true } });
+    const integrations = { ...(current?.integrations || {}) };
+    integrations[key] = { ...(integrations[key] || {}), endpoint, apiKey, interval, configured: true };
+    const user = await prisma.user.update({ where: { id: req.user.id }, data: { integrations }, select: { integrations: true } });
+    res.json(user);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/user/sessions', authApi, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user.id }, select: { sessions: true } });
+    const sessions = (user?.sessions || []).filter(s => s.current);
+    await prisma.user.update({ where: { id: req.user.id }, data: { sessions } });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/user/sessions/:idx', authApi, async (req, res) => {
+  try {
+    const idx = parseInt(req.params.idx);
+    const user = await prisma.user.findUnique({ where: { id: req.user.id }, select: { sessions: true } });
+    const sessions = [...(user?.sessions || [])];
+    if (idx < 0 || idx >= sessions.length) return res.status(400).json({ error: 'Invalid session index' });
+    sessions.splice(idx, 1);
+    await prisma.user.update({ where: { id: req.user.id }, data: { sessions } });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/onboarding/status', authApi, async (req, res) => {

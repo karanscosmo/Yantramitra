@@ -193,81 +193,8 @@
 <button class="px-md py-3 rounded-full glass-card hover:bg-white transition-colors text-on-surface-variant font-medium whitespace-nowrap">Integrations</button>
 <button class="px-md py-3 rounded-full glass-card hover:bg-white transition-colors text-on-surface-variant font-medium whitespace-nowrap">Security</button>
 </div>
-<!-- Content Bento Grid -->
-<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
-<!-- Left Column: User Header -->
-<div class="md:col-span-4 space-y-gutter">
-<div class="glass-card rounded-xl p-md flex flex-col items-center text-center">
-<div class="relative mb-md">
-<div class="w-32 h-32 rounded-full overflow-hidden border-2 border-white shadow-[0_0_30px_rgba(65,63,214,0.3)] ring-4 ring-primary/10">
-<img class="w-full h-full object-cover" data-alt="Close up portrait of a senior operations lead. The lighting is ethereal and moody, featuring soft indigo and teal highlights against a clean white clinical background. High fidelity digital photography style with a focus on professional composure and technological sophistication." src="/images/ym-operator-avatar.jpg"/>
-</div>
-<button class="absolute bottom-1 right-1 bg-primary text-white p-2 rounded-full shadow-lg hover:scale-110 transition-transform">
-<span class="material-symbols-outlined text-[18px]">edit</span>
-</button>
-</div>
-<h2 class="font-section-header text-section-header mb-1">Elias Thorne</h2>
-<span class="px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-caps text-label-caps tracking-wider mb-sm">Plant Manager</span>
-<p class="text-body-md text-on-surface-variant">Overseeing automated assembly line Alpha-4 and logistics hub Zeta.</p>
-</div>
-<div class="glass-card rounded-xl p-md">
-<h3 class="font-label-caps text-label-caps text-primary mb-md">Connected Facilities</h3>
-<div class="flex flex-wrap gap-xs">
-<div class="px-sm py-2 rounded-full glass-input text-on-surface text-body-md flex items-center gap-xs">
-<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-                            Pune Auto Components
-                        </div>
-<div class="px-sm py-2 rounded-full glass-input text-on-surface text-body-md flex items-center gap-xs">
-<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-                            Chennai Electronics Assembly
-                        </div>
-<div class="px-sm py-2 rounded-full glass-input text-on-surface text-body-md flex items-center gap-xs">
-<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span>
-                            Nagpur Logistics Hub
-                        </div>
-</div>
-</div>
-</div>
-<!-- Right Column: Profile Form -->
-<div class="md:col-span-8 space-y-gutter">
-<div class="glass-card rounded-xl p-md lg:p-xl">
-<div class="flex justify-between items-center mb-xl">
-<h3 class="font-section-header text-section-header">Personal Information</h3>
-<button class="shimmer-btn primary-gradient text-on-primary px-md py-2 rounded-lg font-medium shadow-[0_10px_20px_rgba(91,91,240,0.3)]">Save Changes</button>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
-<div class="space-y-xs">
-<label class="font-label-caps text-label-caps text-on-surface-variant ml-1">Full Name</label>
-<input class="w-full glass-input rounded-lg px-md py-3 text-on-surface" type="text" value="Elias Thorne"/>
-</div>
-<div class="space-y-xs">
-<label class="font-label-caps text-label-caps text-on-surface-variant ml-1">Email Address</label>
-<input class="w-full glass-input rounded-lg px-md py-3 text-on-surface" type="email" value="e.thorne@yantramitra.io"/>
-</div>
-<div class="space-y-xs">
-<label class="font-label-caps text-label-caps text-on-surface-variant ml-1">Organization ID</label>
-<input class="w-full glass-input rounded-lg px-md py-3 bg-surface-container-low text-on-surface-variant cursor-not-allowed" readonly="" type="text" value="YM-OPS-4402"/>
-</div>
-<div class="space-y-xs">
-<label class="font-label-caps text-label-caps text-on-surface-variant ml-1">Phone (Encrypted)</label>
-<input class="w-full glass-input rounded-lg px-md py-3 text-on-surface" type="text" value="+1 (555) 902-3481"/>
-</div>
-</div>
-<div class="mt-xl space-y-xs">
-<label class="font-label-caps text-label-caps text-on-surface-variant ml-1">Bio / Role Description</label>
-<textarea class="w-full glass-input rounded-lg px-md py-3 text-on-surface" rows="4">Expert in neural-link assembly operations. Currently managing a fleet of 40 autonomous agents across two primary continental hubs. Focus on minimizing thermal latency in heavy lifting units.</textarea>
-</div>
-</div>
-<!-- Danger Zone -->
-<div class="rounded-xl border border-error/20 bg-error-container/10 p-md flex flex-col md:flex-row justify-between items-center gap-md">
-<div>
-<h4 class="font-section-header text-[18px] text-error mb-1">Danger Zone</h4>
-<p class="text-body-md text-on-surface-variant max-w-md">Once you delete your account, there is no going back. All node access and operation logs will be scrubbed.</p>
-</div>
-<button class="px-md py-3 rounded-lg border border-error text-error font-medium hover:bg-error hover:text-white transition-all">Delete Account</button>
-</div>
-</div>
-</div>
+<!-- Content Bento Grid - dynamically populated by JS -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter" id="ym-settings-content"></div>
 </main>
 <!-- Footer -->
 <footer class="w-full py-md border-t border-outline-variant/20 bg-transparent">

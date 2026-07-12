@@ -5,10 +5,35 @@
   async function patch(path, body) { const r = await fetch(path, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify(body) }); if (!r.ok) throw new Error(path); return r.json(); }
 
   let orders = [];
+  let machines = [];
+  let filteredOrders = [];
   let selectedOrder = null;
   let checklistItems = [];
   let currentUser = null;
   let drawerOpen = false;
+
+  const FILTER_KEYS = { status: 'st', priority: 'pr', location: 'lo', search: 'q' };
+
+  function getFiltersFromURL() {
+    const p = new URLSearchParams(window.location.search);
+    return {
+      status: p.get(FILTER_KEYS.status) ? p.get(FILTER_KEYS.status).split(',') : [],
+      priority: p.get(FILTER_KEYS.priority) ? p.get(FILTER_KEYS.priority).split(',') : [],
+      location: p.get(FILTER_KEYS.location) ? p.get(FILTER_KEYS.location).split(',') : [],
+      search: p.get(FILTER_KEYS.search) || ''
+    };
+  }
+
+  function setFiltersToURL(filters) {
+    const p = new URLSearchParams();
+    if (filters.status.length) p.set(FILTER_KEYS.status, filters.status.join(','));
+    if (filters.priority.length) p.set(FILTER_KEYS.priority, filters.priority.join(','));
+    if (filters.location.length) p.set(FILTER_KEYS.location, filters.location.join(','));
+    if (filters.search) p.set(FILTER_KEYS.search, filters.search);
+    const qs = p.toString();
+    const url = qs ? window.location.pathname + '?' + qs : window.location.pathname;
+    window.history.replaceState(null, '', url);
+  }
 
   function toast(message, type) {
     const container = document.getElementById('ym-toast-container');
@@ -20,6 +45,7 @@
   }
 
   function formatDate(d) {
+    if (!d) return '—';
     const dt = new Date(d);
     return dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   }
@@ -35,7 +61,7 @@
   }
 
   function orderIcon(order) {
-    const icons = { 'Hydraulic': 'precision_manufacturing', 'Generator': 'bolt', 'Belt': 'conveyor_belt', 'Pump': 'water_pump', 'Motor': 'electric_bolt', 'Valve': 'settings_input_component', 'Sensor': 'sensors', 'Calibration': 'tune', 'Inspection': 'search_insights', 'Repair': 'build' };
+    const icons = { 'Hydraulic': 'precision_manufacturing', 'Generator': 'bolt', 'Belt': 'conveyor_belt', 'Pump': 'water_pump', 'Motor': 'electric_bolt', 'Valve': 'settings_input_component', 'Sensor': 'sensors', 'Calibration': 'tune', 'Inspection': 'search_insights', 'Repair': 'build', 'Replace': 'swap_horiz', 'Upgrade': 'upgrade', 'Lubrication': 'oil_barrel' };
     for (const [key, icon] of Object.entries(icons)) {
       if (order.title?.includes(key)) return icon;
     }
@@ -56,11 +82,12 @@
     </div>`;
     wrap.addEventListener('click', e => { if (e.target === wrap || e.target.closest('.ym-close-modal')) { wrap.classList.remove('open'); setTimeout(() => wrap.remove(), 250); } });
     document.body.appendChild(wrap);
+    return wrap;
   }
 
   function openTechModal(tech) {
     const skills = ['PLC Programming', 'Hydraulic Systems', 'CNC Calibration', 'Predictive Maintenance', 'Robotics', 'Welding'];
-    const assignedMachines = ['RX-900 ARM', 'CNC Cell PNA-01', 'Conveyor C-404', 'Pump P-102'];
+    const assignedMachines = machines.filter(m => m.workOrders?.some(o => o.assignedTo === tech.name)).slice(0, 4);
     const openOrders = orders.filter(o => o.assignedTo === tech.name && o.status !== 'completed');
     openModal('Technician Profile', `
       <div class="flex items-center gap-md mb-md">
@@ -80,7 +107,7 @@
       </div>
       <div class="mb-md">
         <p class="font-label-caps text-label-caps text-on-surface-variant mb-xs">ASSIGNED MACHINES</p>
-        <div class="space-y-1">${assignedMachines.map(m => `<div class="flex items-center gap-xs text-sm text-on-surface"><span class="material-symbols-outlined text-sm text-primary">precision_manufacturing</span>${m}</div>`).join('')}</div>
+        <div class="space-y-1">${(assignedMachines.length ? assignedMachines : machines.slice(0, 3)).map(m => `<div class="flex items-center gap-xs text-sm text-on-surface"><span class="material-symbols-outlined text-sm text-primary">precision_manufacturing</span>${m.name}</div>`).join('')}</div>
       </div>
       <div class="mb-md">
         <p class="font-label-caps text-label-caps text-on-surface-variant mb-xs">OPEN WORK ORDERS (${openOrders.length})</p>
@@ -100,7 +127,7 @@
   }
 
   function openPartsDrawer(part) {
-    const compatibleMachines = ['RX-900 ARM', 'CNC Cell PNA-01', 'Conveyor C-404'];
+    const compatibleMachines = machines.slice(0, 3).map(m => m.name);
     openModal('Inventory: ' + part.name, `
       <div class="grid grid-cols-2 gap-sm mb-md">
         <div class="bg-primary/5 rounded-lg p-3">
@@ -127,10 +154,6 @@
           <p class="text-[10px] text-on-surface-variant">SKU</p>
           <p class="font-bold text-sm font-mono">${part.sku || 'PRT-' + String(Math.floor(Math.random() * 9000) + 1000)}</p>
         </div>
-      </div>
-      <div class="mb-md">
-        <p class="font-label-caps text-label-caps text-on-surface-variant mb-xs">COMPATIBLE MACHINES</p>
-        <div class="space-y-1">${compatibleMachines.map(m => `<div class="flex items-center gap-xs text-sm text-on-surface"><span class="material-symbols-outlined text-sm text-primary">precision_manufacturing</span>${m}</div>`).join('')}</div>
       </div>
       <button class="w-full shimmer-btn py-3 rounded-full text-on-primary font-label-caps text-label-caps shadow-lg" data-reserve-part="${part.sku || part.name}">
         <span class="material-symbols-outlined text-sm">inventory_2</span> RESERVE PART
@@ -161,9 +184,7 @@
   }
 
   function saveChecklist(orderId, items) {
-    try {
-      sessionStorage.setItem('ym-checklist-' + orderId, JSON.stringify(items));
-    } catch {}
+    try { sessionStorage.setItem('ym-checklist-' + orderId, JSON.stringify(items)); } catch {}
   }
 
   function renderChecklist(order) {
@@ -200,7 +221,6 @@
         checklistItems[idx].state = newState;
         saveChecklist(order?.id, checklistItems);
         renderChecklist(order);
-        const done = checklistItems.filter(i => i.state === 'completed').length;
         toast(`Task "${checklistItems[idx].text}" → ${newState.toUpperCase()}`);
       });
     });
@@ -277,7 +297,12 @@
     document.getElementById('ym-drawer-status').textContent = (order.status || 'open').replace(/_/g, ' ').toUpperCase();
     document.getElementById('ym-drawer-status').className = 'px-2 py-0.5 rounded-full text-[10px] font-bold ' + (order.status === 'completed' ? 'bg-secondary-container text-on-secondary-container' : order.status === 'in_progress' ? 'bg-primary/10 text-primary' : 'bg-tertiary-fixed-dim text-on-tertiary-fixed-variant');
     document.getElementById('ym-drawer-machine-name').textContent = order.machine?.name || 'Unknown Machine';
-    document.getElementById('ym-drawer-location').textContent = order.location || 'Plant Floor';
+    const machineObj = machines.find(m => m.id === order.machineId);
+    document.getElementById('ym-drawer-location').textContent = machineObj?.plant?.name || order.location || 'Plant Floor';
+
+    document.getElementById('ym-tech-name').textContent = order.assignedTo || 'Unassigned';
+    document.getElementById('ym-tech-role').textContent = 'L3 Automation Specialist';
+    document.getElementById('ym-tech-score').textContent = '98%';
 
     checklistItems = getChecklistForOrder(order);
     renderChecklist(order);
@@ -308,72 +333,201 @@
     }, 300);
   }
 
-  async function loadOrders() {
-    try {
-      const data = await get('/api/work-orders');
-      orders = data;
-      const container = document.getElementById('ym-orders-list');
-      if (!container) return;
-      const actives = orders.filter(o => o.status !== 'completed');
-      const completions = orders.filter(o => o.status === 'completed').length;
-      const total = orders.length;
-      const overdue = orders.filter(o => o.status !== 'completed' && o.dueDate && new Date(o.dueDate) < new Date()).length;
-      const avgCompletion = total ? Math.round(completions / total * 100) : 0;
-      document.getElementById('ym-active-count').textContent = actives.length;
-      document.getElementById('ym-completed-count').textContent = completions;
-      document.getElementById('ym-avg-completion').textContent = avgCompletion;
-      document.getElementById('ym-overdue-count').textContent = overdue;
+  function renderFilters() {
+    const f = getActiveFilters();
 
-      const statusOrder = { 'in_progress': 0, 'open': 1, 'blocked': 2, 'completed': 3 };
-      const sorted = [...orders].sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
-      container.innerHTML = sorted.map((o, idx) => {
-        const isSelected = selectedOrder && selectedOrder.id === o.id;
-        return `<div class="glass-card rounded-xl p-md flex items-center gap-md ${isSelected ? 'border-l-4 border-primary ring-2 ring-primary/20' : 'hover:bg-white/80 transition-all cursor-pointer'}" data-order-id="${o.id}">
-          <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-            <span class="material-symbols-outlined text-primary">${orderIcon(o)}</span>
-          </div>
-          <div class="flex-grow min-w-0">
-            <div class="flex items-center gap-xs">
-              <h3 class="font-semibold text-on-surface truncate">${o.title}</h3>
-              ${priorityBadge(o.priority)}
-            </div>
-            <p class="text-sm text-on-surface-variant mt-1 truncate">Asset: ${o.machine?.name || 'Unknown'} ${o.assignedTo ? '• ' + o.assignedTo : ''}</p>
-          </div>
-          <div class="text-right shrink-0">
-            <div class="flex items-center justify-end gap-1.5">
-              <div class="w-2 h-2 rounded-full ${o.status === 'in_progress' ? 'bg-secondary status-glow-teal' : o.status === 'completed' ? 'bg-outline-variant' : o.status === 'blocked' ? 'bg-error status-glow-coral' : 'bg-outline-variant'}"></div>
-              ${statusBadge(o.status)}
-            </div>
-            <span class="text-xs text-on-surface-variant block mt-1">${o.dueDate ? 'Due ' + new Date(o.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : ''}</span>
-          </div>
-        </div>`;
+    const statusContainer = document.getElementById('ym-status-filters');
+    if (statusContainer) {
+      const statuses = ['open', 'in_progress', 'completed', 'blocked'];
+      statusContainer.innerHTML = statuses.map(s => {
+        const active = f.status.includes(s);
+        return `<label class="flex items-center gap-xs p-2 hover:bg-primary/5 rounded-lg cursor-pointer transition-colors">
+          <input type="checkbox" value="${s}" ${active ? 'checked' : ''} class="rounded border-outline-variant text-primary focus:ring-primary status-filter"/>
+          <span class="text-sm capitalize">${s.replace(/_/g, ' ')}</span>
+        </label>`;
       }).join('');
-      container.querySelectorAll('[data-order-id]').forEach(el => {
-        el.addEventListener('click', function() {
-          const id = this.dataset.orderId;
-          const order = orders.find(o => o.id === id);
-          if (order) openDrawer(order);
+      statusContainer.querySelectorAll('.status-filter').forEach(cb => {
+        cb.addEventListener('change', function() {
+          const nf = getActiveFilters();
+          const val = this.value;
+          if (this.checked) { if (!nf.status.includes(val)) nf.status.push(val); }
+          else { nf.status = nf.status.filter(v => v !== val); }
+          setFiltersToURL(nf);
+          applyFilters();
         });
       });
-    } catch (e) { console.error('loadOrders error:', e); }
+    }
+
+    const priorityContainer = document.getElementById('ym-priority-filters');
+    if (priorityContainer) {
+      const priorities = ['critical', 'high', 'medium', 'low'];
+      priorityContainer.innerHTML = priorities.map(p => {
+        const active = f.priority.includes(p);
+        return `<label class="flex items-center gap-xs p-2 hover:bg-primary/5 rounded-lg cursor-pointer transition-colors">
+          <input type="checkbox" value="${p}" ${active ? 'checked' : ''} class="rounded border-outline-variant text-primary focus:ring-primary priority-filter"/>
+          <span class="text-sm capitalize">${p}</span>
+        </label>`;
+      }).join('');
+      priorityContainer.querySelectorAll('.priority-filter').forEach(cb => {
+        cb.addEventListener('change', function() {
+          const nf = getActiveFilters();
+          const val = this.value;
+          if (this.checked) { if (!nf.priority.includes(val)) nf.priority.push(val); }
+          else { nf.priority = nf.priority.filter(v => v !== val); }
+          setFiltersToURL(nf);
+          applyFilters();
+        });
+      });
+    }
+
+    const locationContainer = document.getElementById('ym-location-filters');
+    if (locationContainer) {
+      const locations = [...new Set(machines.map(m => m.plant?.name).filter(Boolean))];
+      locationContainer.innerHTML = locations.map(l => {
+        const active = f.location.includes(l);
+        return `<label class="flex items-center gap-xs p-2 hover:bg-primary/5 rounded-lg cursor-pointer transition-colors">
+          <input type="checkbox" value="${l}" ${active ? 'checked' : ''} class="rounded border-outline-variant text-primary focus:ring-primary location-filter"/>
+          <span class="text-sm">${l}</span>
+        </label>`;
+      }).join('');
+      locationContainer.querySelectorAll('.location-filter').forEach(cb => {
+        cb.addEventListener('change', function() {
+          const nf = getActiveFilters();
+          const val = this.value;
+          if (this.checked) { if (!nf.location.includes(val)) nf.location.push(val); }
+          else { nf.location = nf.location.filter(v => v !== val); }
+          setFiltersToURL(nf);
+          applyFilters();
+        });
+      });
+    }
+
+    document.getElementById('ym-reset-status')?.addEventListener('click', () => {
+      const nf = getActiveFilters(); nf.status = []; setFiltersToURL(nf); applyFilters();
+    });
+    document.getElementById('ym-reset-priority')?.addEventListener('click', () => {
+      const nf = getActiveFilters(); nf.priority = []; setFiltersToURL(nf); applyFilters();
+    });
+    document.getElementById('ym-reset-location')?.addEventListener('click', () => {
+      const nf = getActiveFilters(); nf.location = []; setFiltersToURL(nf); applyFilters();
+    });
+    document.getElementById('ym-reset-all')?.addEventListener('click', () => {
+      window.history.replaceState(null, '', window.location.pathname);
+      applyFilters();
+    });
+  }
+
+  function renderActiveFilters() {
+    const container = document.getElementById('ym-active-filters');
+    if (!container) return;
+    const f = getActiveFilters();
+    const chips = [];
+    f.status.forEach(s => chips.push({ label: s.replace(/_/g, ' ').toUpperCase(), group: 'status', value: s }));
+    f.priority.forEach(p => chips.push({ label: p.toUpperCase(), group: 'priority', value: p }));
+    f.location.forEach(l => chips.push({ label: l, group: 'location', value: l }));
+    if (!chips.length) { container.innerHTML = ''; return; }
+    container.innerHTML = chips.map(c => `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-label-caps cursor-pointer hover:bg-primary/20 transition-all active-filter-chip" data-group="${c.group}" data-value="${c.value}">${c.label} <span class="material-symbols-outlined text-[12px]">close</span></span>`).join('');
+    container.querySelectorAll('.active-filter-chip').forEach(chip => {
+      chip.addEventListener('click', function() {
+        const nf = getActiveFilters();
+        const g = this.dataset.group;
+        const v = this.dataset.value;
+        nf[g] = nf[g].filter(x => x !== v);
+        setFiltersToURL(nf);
+        applyFilters();
+      });
+    });
+  }
+
+  function applyFilters() {
+    const f = getActiveFilters();
+    filteredOrders = orders.filter(o => {
+      if (f.status.length && !f.status.includes(o.status)) return false;
+      if (f.priority.length && !f.priority.includes(o.priority)) return false;
+      if (f.location.length) {
+        const machineObj = machines.find(m => m.id === o.machineId);
+        const loc = machineObj?.plant?.name || '';
+        if (!f.location.includes(loc)) return false;
+      }
+      if (f.search) {
+        const q = f.search.toLowerCase();
+        if (!o.title?.toLowerCase().includes(q) && !(o.assignedTo || '').toLowerCase().includes(q) && !(o.machine?.name || '').toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+    renderOrders();
+  }
+
+  function renderOrders() {
+    const container = document.getElementById('ym-orders-list');
+    if (!container) return;
+    const totalOrders = orders.length;
+    const activeOrders = orders.filter(o => o.status !== 'completed').length;
+    const completedOrders = orders.filter(o => o.status === 'completed').length;
+    const overdueOrders = orders.filter(o => o.status !== 'completed' && o.dueDate && new Date(o.dueDate) < new Date()).length;
+    const avgCompletion = totalOrders ? Math.round(completedOrders / totalOrders * 100) : 0;
+    document.getElementById('ym-active-count').textContent = activeOrders;
+    document.getElementById('ym-completed-count').textContent = completedOrders;
+    document.getElementById('ym-avg-completion').textContent = avgCompletion;
+    document.getElementById('ym-overdue-count').textContent = overdueOrders;
+
+    if (!filteredOrders.length) {
+      container.innerHTML = `<div class="flex flex-col items-center justify-center py-20 text-on-surface-variant">
+        <span class="material-symbols-outlined text-5xl mb-sm">assignment</span>
+        <p class="font-label-caps text-sm">No work orders match your filters</p>
+        <button class="text-xs text-primary hover:underline mt-1 cursor-pointer" id="ym-empty-reset">Reset all filters</button>
+      </div>`;
+      document.getElementById('ym-empty-reset')?.addEventListener('click', () => {
+        window.history.replaceState(null, '', window.location.pathname);
+        applyFilters();
+      });
+      return;
+    }
+    const statusOrder = { 'in_progress': 0, 'open': 1, 'blocked': 2, 'completed': 3 };
+    const sorted = [...filteredOrders].sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
+    container.innerHTML = sorted.map((o, idx) => {
+      const isSelected = selectedOrder && selectedOrder.id === o.id;
+      return `<div class="wo-card glass-card rounded-xl p-md flex items-center gap-md ${isSelected ? 'border-l-4 border-primary ring-2 ring-primary/20' : 'hover:bg-white/80 transition-all cursor-pointer'}" data-order-id="${o.id}">
+        <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-primary">${orderIcon(o)}</span>
+        </div>
+        <div class="flex-grow min-w-0">
+          <div class="flex items-center gap-xs">
+            <h3 class="font-semibold text-on-surface truncate text-sm">${o.title}</h3>
+            ${priorityBadge(o.priority)}
+          </div>
+          <p class="text-sm text-on-surface-variant mt-1 truncate">Asset: ${o.machine?.name || 'Unknown'} ${o.assignedTo ? '• ' + o.assignedTo : ''}</p>
+        </div>
+        <div class="text-right shrink-0">
+          <div class="flex items-center justify-end gap-1.5">
+            <div class="w-2 h-2 rounded-full ${o.status === 'in_progress' ? 'bg-secondary status-glow-teal' : o.status === 'completed' ? 'bg-outline-variant' : o.status === 'blocked' ? 'bg-error status-glow-coral' : 'bg-outline-variant'}"></div>
+            ${statusBadge(o.status)}
+          </div>
+          <span class="text-xs text-on-surface-variant block mt-1">${o.dueDate ? 'Due ' + new Date(o.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : ''}</span>
+        </div>
+      </div>`;
+    }).join('');
+    container.querySelectorAll('[data-order-id]').forEach(el => {
+      el.addEventListener('click', function() {
+        const id = this.dataset.orderId;
+        const order = orders.find(o => o.id === id);
+        if (order) openDrawer(order);
+      });
+    });
+    renderActiveFilters();
   }
 
   async function pauseSession() {
     if (!selectedOrder) return toast('No work order selected', 'error');
     const btn = document.getElementById('ym-pause-btn');
     btn.disabled = true;
-    const isPaused = selectedOrder.status === 'paused';
-    const newStatus = isPaused ? 'in_progress' : 'paused';
+    const isBlocked = selectedOrder.status === 'blocked';
+    const newStatus = isBlocked ? 'in_progress' : 'blocked';
     try {
       await patch('/api/work-orders/' + selectedOrder.id, { status: newStatus });
-      await post('/api/timeline/event', { orderId: selectedOrder.id, event: isPaused ? 'resumed' : 'paused', actor: currentUser?.name || 'Operator' }).catch(() => {});
       selectedOrder.status = newStatus;
-      btn.textContent = isPaused ? 'PAUSE SESSION' : 'RESUME SESSION';
-      btn.classList.toggle('border-primary', !isPaused);
-      btn.classList.toggle('text-primary', !isPaused);
-      btn.classList.toggle('border-secondary', isPaused);
-      btn.classList.toggle('text-secondary', isPaused);
-      toast(isPaused ? 'Session resumed' : 'Session paused');
+      btn.textContent = isBlocked ? 'BLOCK SESSION' : 'MARK BLOCKED';
+      toast(isBlocked ? 'Session resumed' : 'Session blocked');
       await loadOrders();
     } catch (e) { toast('Failed to update session', 'error'); }
     btn.disabled = false;
@@ -391,17 +545,113 @@
     btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm">sync</span> PROCESSING...';
     try {
       await patch('/api/work-orders/' + selectedOrder.id, { status: 'completed' });
-      await post('/api/timeline/event', { orderId: selectedOrder.id, event: 'completed', actor: currentUser?.name || 'Operator' }).catch(() => {});
-      await post('/api/dashboard/kpi', { type: 'work_order_completed', value: 1 }).catch(() => {});
       selectedOrder.status = 'completed';
       btn.innerHTML = '<span class="material-symbols-outlined text-sm">check_circle</span> COMPLETED';
-      toast('Work order marked complete. Dashboard KPIs updated.');
+      toast('Work order marked complete.');
       await loadOrders();
-      setTimeout(() => {
-        btn.disabled = false;
-        btn.innerHTML = 'MARK AS COMPLETE';
-      }, 3000);
+      setTimeout(() => { btn.disabled = false; btn.innerHTML = 'MARK AS COMPLETE'; }, 3000);
     } catch (e) { toast('Failed to complete order', 'error'); btn.disabled = false; btn.innerHTML = 'MARK AS COMPLETE'; }
+  }
+
+  function createOrderModal() {
+    const machineOptions = machines.map(m => `<option value="${m.id}">${m.name} (${m.plant?.name || ''})</option>`).join('');
+    const body = `<form id="ym-create-form" class="space-y-md">
+      <div>
+        <label class="font-label-caps text-label-caps text-on-surface-variant block mb-1">TITLE</label>
+        <input required class="w-full border border-outline-variant/50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white/80" id="ym-form-title" placeholder="e.g., Inspect Conveyor Line PN-601"/>
+      </div>
+      <div>
+        <label class="font-label-caps text-label-caps text-on-surface-variant block mb-1">DESCRIPTION</label>
+        <textarea class="w-full border border-outline-variant/50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white/80" id="ym-form-description" placeholder="Describe the work needed..." rows="2"></textarea>
+      </div>
+      <div class="grid grid-cols-2 gap-md">
+        <div>
+          <label class="font-label-caps text-label-caps text-on-surface-variant block mb-1">MACHINE</label>
+          <select class="w-full border border-outline-variant/50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white/80" id="ym-form-machine">
+            <option value="">Select machine...</option>
+            ${machineOptions}
+          </select>
+        </div>
+        <div>
+          <label class="font-label-caps text-label-caps text-on-surface-variant block mb-1">PRIORITY</label>
+          <select class="w-full border border-outline-variant/50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white/80" id="ym-form-priority">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-md">
+        <div>
+          <label class="font-label-caps text-label-caps text-on-surface-variant block mb-1">ASSIGNED TO</label>
+          <input class="w-full border border-outline-variant/50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white/80" id="ym-form-assignee" placeholder="Technician name"/>
+        </div>
+        <div>
+          <label class="font-label-caps text-label-caps text-on-surface-variant block mb-1">DUE DATE</label>
+          <input type="date" class="w-full border border-outline-variant/50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white/80" id="ym-form-duedate"/>
+        </div>
+      </div>
+      <button type="submit" class="w-full shimmer-btn py-3.5 rounded-full text-on-primary font-label-caps text-label-caps shadow-lg text-sm flex items-center justify-center gap-xs">
+        <span class="material-symbols-outlined text-[20px]">add_task</span> CREATE WORK ORDER
+      </button>
+    </form>`;
+    const wrap = openModal('Create Work Order', body);
+    const form = wrap.querySelector('#ym-create-form');
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const title = document.getElementById('ym-form-title').value.trim();
+      if (!title) return toast('Title is required', 'error');
+      const btn = this.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm">sync</span> CREATING...';
+      try {
+        const payload = {
+          title,
+          description: document.getElementById('ym-form-description').value.trim(),
+          machineId: document.getElementById('ym-form-machine').value || undefined,
+          priority: document.getElementById('ym-form-priority').value,
+          assignedTo: document.getElementById('ym-form-assignee').value.trim() || undefined,
+          dueDate: document.getElementById('ym-form-duedate').value ? new Date(document.getElementById('ym-form-duedate').value).toISOString() : undefined
+        };
+        await post('/api/work-orders', payload);
+        toast('Work order created successfully');
+        wrap.classList.remove('open');
+        setTimeout(() => wrap.remove(), 250);
+        await loadOrders();
+      } catch (e) { toast('Failed to create order', 'error'); }
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">add_task</span> CREATE WORK ORDER';
+    });
+  }
+
+  async function askYantraNklan(command) {
+    const input = document.getElementById('ym-yantrankln-input');
+    const btn = document.getElementById('ym-yantrankln-send');
+    input.disabled = true;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span>';
+    try {
+      const res = await post('/api/ai-chat', { message: command, context: 'work_orders' });
+      const reply = res.reply || res.message || 'YantraNklan processed your request.';
+      toast('YantraNklan: ' + reply.substring(0, 120) + (reply.length > 120 ? '...' : ''));
+      await loadOrders();
+    } catch (e) {
+      toast('YantraNklan: Unable to process command right now.', 'error');
+    }
+    input.disabled = false;
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined text-sm">bolt</span>';
+    input.value = '';
+    input.focus();
+  }
+
+  async function loadOrders() {
+    try {
+      const data = await get('/api/work-orders');
+      orders = data;
+      applyFilters();
+    } catch (e) { console.error('loadOrders error:', e); }
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
@@ -410,7 +660,20 @@
       if (!me || !me.id) { window.location.href = '/login'; return; }
       currentUser = me;
     } catch { window.location.href = '/login'; return; }
+
+    try {
+      const machinesData = await get('/api/machines');
+      machines = machinesData;
+    } catch {}
+
+    renderFilters();
     await loadOrders();
+
+    const f = getActiveFilters();
+    if (f.search) {
+      document.getElementById('ym-search-input').value = f.search;
+    }
+
     document.getElementById('ym-drawer-close')?.addEventListener('click', closeDrawer);
     document.getElementById('ym-drawer-backdrop')?.addEventListener('click', closeDrawer);
     document.getElementById('ym-tech-card')?.addEventListener('click', () => {
@@ -421,26 +684,34 @@
     });
     document.getElementById('ym-pause-btn')?.addEventListener('click', pauseSession);
     document.getElementById('ym-complete-btn')?.addEventListener('click', markComplete);
-    document.getElementById('ym-create-order')?.addEventListener('click', async function() {
-      this.disabled = true;
-      this.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm">sync</span> CREATING';
-      try {
-        await post('/api/work-orders', {
-          title: 'Inspect Conveyor Line PN-601',
-          description: 'Created from Work Orders dashboard',
-          status: 'open',
-          priority: 'high',
-          assignedTo: 'Elias Thorne',
-          dueDate: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
-        });
-        toast('Work order created and assigned to Elias Thorne');
-        await loadOrders();
-      } catch (e) { toast('Failed to create order', 'error'); }
-      this.disabled = false;
-      this.innerHTML = '<span class="material-symbols-outlined text-[20px]">add</span> CREATE ORDER';
+    document.getElementById('ym-create-order')?.addEventListener('click', createOrderModal);
+
+    document.getElementById('ym-search-input')?.addEventListener('input', function() {
+      const nf = getActiveFilters();
+      nf.search = this.value;
+      setFiltersToURL(nf);
+      applyFilters();
     });
+
+    document.getElementById('ym-yantrankln-send')?.addEventListener('click', () => {
+      const input = document.getElementById('ym-yantrankln-input');
+      if (input.value.trim()) askYantraNklan(input.value.trim());
+    });
+    document.getElementById('ym-yantrankln-input')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.target.value.trim()) {
+        askYantraNklan(e.target.value.trim());
+      }
+    });
+
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && drawerOpen) closeDrawer();
+    });
+
+    window.addEventListener('popstate', () => {
+      const nf = getFiltersFromURL();
+      document.getElementById('ym-search-input').value = nf.search || '';
+      renderFilters();
+      applyFilters();
     });
   });
 })();

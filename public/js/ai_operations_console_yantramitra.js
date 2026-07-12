@@ -22,23 +22,23 @@
   function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
   function markdownToHtml(text) {
-    if (!text) return '<p class="my-1 leading-relaxed text-sm"></p>';
+    if (!text) return '<p class="my-1" style="font-size:18px;line-height:1.7"></p>';
     let html = escapeHtml(text);
-    html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="bg-surface-container rounded-lg p-3 my-2 overflow-x-auto border border-outline-variant/20 text-xs leading-relaxed"><code>$2</code></pre>');
-    html = html.replace(/### (.+)/g, '<h3 class="font-bold text-sm mt-3 mb-1 text-on-surface">$1</h3>');
-    html = html.replace(/## (.+)/g, '<h2 class="font-bold text-base mt-3 mb-1 text-on-surface">$1</h2>');
-    html = html.replace(/# (.+)/g, '<h1 class="font-bold text-lg mt-3 mb-1 text-on-surface">$1</h1>');
+    html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="bg-surface-container rounded-lg p-4 my-3 overflow-x-auto border border-outline-variant/20" style="font-size:14px;line-height:1.6"><code>$2</code></pre>');
+    html = html.replace(/### (.+)/g, '<h3 class="font-bold mt-4 mb-2 text-on-surface" style="font-size:18px">$1</h3>');
+    html = html.replace(/## (.+)/g, '<h2 class="font-bold mt-4 mb-2 text-on-surface" style="font-size:20px">$1</h2>');
+    html = html.replace(/# (.+)/g, '<h1 class="font-bold mt-4 mb-2 text-on-surface" style="font-size:22px">$1</h1>');
     html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-    html = html.replace(/`([^`]+)`/g, '<code class="bg-surface-container px-1 rounded text-[13px]">$1</code>');
-    html = html.replace(/^- (.+)/gm, '<li class="ml-4 list-disc text-sm text-on-surface">$1</li>');
-    html = html.replace(/^\d+\. (.+)/gm, '<li class="ml-4 list-decimal text-sm text-on-surface">$1</li>');
-    html = html.replace(/\[([^\]]+)\]\((\/[^\)]+)\)/g, '<a href="$2" class="text-primary font-semibold underline underline-offset-2 hover:text-primary/80 transition-colors">$1</a>');
-    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" class="text-primary font-semibold underline underline-offset-2">$1</a>');
-    html = html.replace(/\n{2,}/g, '</p><p class="my-1.5">');
+    html = html.replace(/`([^`]+)`/g, '<code class="bg-surface-container px-1.5 rounded" style="font-size:16px">$1</code>');
+    html = html.replace(/^- (.+)/gm, '<li class="ml-5 list-disc text-on-surface" style="font-size:18px;line-height:1.7;margin-bottom:4px">$1</li>');
+    html = html.replace(/^\d+\. (.+)/gm, '<li class="ml-5 list-decimal text-on-surface" style="font-size:18px;line-height:1.7;margin-bottom:4px">$1</li>');
+    html = html.replace(/\[([^\]]+)\]\((\/[^\)]+)\)/g, '<a href="$2" class="text-primary font-semibold underline underline-offset-2 hover:text-primary/80 transition-colors" style="font-size:18px">$1</a>');
+    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" class="text-primary font-semibold underline underline-offset-2" style="font-size:18px">$1</a>');
+    html = html.replace(/\n{2,}/g, '</p><p class="my-1.5" style="font-size:18px;line-height:1.7">');
     html = html.replace(/\n/g, '<br/>');
-    html = '<p class="my-1.5 leading-relaxed text-sm">' + html + '</p>';
-    html = html.replace(/<p class="my-1\.5 leading-relaxed text-sm"><\/p>/g, '');
+    html = '<p class="my-1.5" style="font-size:18px;line-height:1.7">' + html + '</p>';
+    html = html.replace(/<p class="my-1\.5" style="font-size:18px;line-height:1\.7"><\/p>/g, '');
     return html;
   }
 
@@ -47,35 +47,36 @@
     if (!container) return;
     opts = opts || {};
     const wrapper = document.createElement('div');
-    wrapper.className = 'flex ' + (isUser ? 'justify-end' : 'justify-start') + ' mb-3 msg-enter';
+    wrapper.className = 'flex ' + (isUser ? 'justify-end' : 'justify-start') + ' mb-5 msg-enter';
     wrapper.dataset.msgId = opts.id || Date.now().toString(36);
 
     if (isUser) {
       const bubble = document.createElement('div');
-      bubble.className = 'max-w-[80%] glass-panel rounded-2xl rounded-tr-none px-4 py-2.5 shadow-sm bg-primary/5 border border-primary/10';
-      bubble.innerHTML = '<p class="text-on-surface text-sm">' + escapeHtml(text) + '</p>';
+      bubble.className = 'max-w-[80%] glass-panel rounded-2xl rounded-tr-none px-5 py-3 shadow-sm bg-primary/5 border border-primary/10';
+      bubble.innerHTML = '<p class="text-on-surface" style="font-size:18px;line-height:1.7">' + escapeHtml(text) + '</p>';
       wrapper.appendChild(bubble);
     } else {
       const bubble = document.createElement('div');
-      bubble.className = 'max-w-[92%] flex gap-2.5';
+      bubble.className = 'max-w-[90%] flex gap-3';
       const avatar = document.createElement('img');
       avatar.src = '/images/yantranklan-avatar-ai.jpg';
-      avatar.className = 'w-9 h-9 rounded-full mt-0.5 shrink-0 border-2 border-secondary/30 self-start';
+      avatar.className = 'w-14 h-14 rounded-full mt-0.5 shrink-0 border-2 border-secondary/30 self-start';
       const contentDiv = document.createElement('div');
-      contentDiv.className = 'glass-panel rounded-2xl rounded-tl-none px-4 py-2.5 shadow-sm border-l-4 border-l-secondary flex-1 min-w-0';
+      contentDiv.className = 'glass-panel rounded-2xl rounded-tl-none px-5 py-3 shadow-sm border-l-4 border-l-secondary flex-1 min-w-0';
       const header = document.createElement('div');
-      header.className = 'flex items-center gap-1.5 mb-1 flex-wrap';
-      header.innerHTML = '<span class="font-kpi-numeric text-sm text-secondary">YantraNklan</span>';
-      if (opts.model) header.innerHTML += '<span class="text-[9px] text-on-surface-variant bg-secondary/10 px-1.5 py-0.5 rounded font-medium">' + escapeHtml(opts.model) + '</span>';
+      header.className = 'flex items-center gap-2 mb-1.5 flex-wrap';
+      header.innerHTML = '<span class="font-kpi-numeric text-secondary" style="font-size:16px">YantraNklan</span>';
+      if (opts.model) header.innerHTML += '<span class="text-on-surface-variant bg-secondary/10 px-2 py-0.5 rounded font-medium" style="font-size:11px">' + escapeHtml(opts.model) + '</span>';
       contentDiv.appendChild(header);
       const textEl = document.createElement('div');
-      textEl.className = 'text-on-surface text-sm leading-relaxed ai-response';
+      textEl.className = 'text-on-surface ai-response';
+      textEl.style.cssText = 'font-size:18px;line-height:1.7';
       textEl.innerHTML = opts.streaming ? '' : markdownToHtml(text);
       contentDiv.appendChild(textEl);
       if (!opts.streaming) {
         const actions = document.createElement('div');
         actions.className = 'flex items-center gap-1 mt-1.5 pt-1.5 border-t border-outline-variant/10';
-        actions.innerHTML = '<button class="ym-action-btn text-on-surface-variant/50 hover:text-primary transition-colors p-1" data-action="copy" title="Copy"><span class="material-symbols-outlined text-sm">content_copy</span></button><button class="ym-action-btn text-on-surface-variant/50 hover:text-primary transition-colors p-1" data-action="regenerate" title="Regenerate"><span class="material-symbols-outlined text-sm">refresh</span></button>';
+        actions.innerHTML = '<button class="ym-action-btn text-on-surface-variant/50 hover:text-primary transition-colors p-1.5" data-action="copy" title="Copy"><span class="material-symbols-outlined" style="font-size:20px">content_copy</span></button><button class="ym-action-btn text-on-surface-variant/50 hover:text-primary transition-colors p-1.5" data-action="regenerate" title="Regenerate"><span class="material-symbols-outlined" style="font-size:20px">refresh</span></button>';
         actions.querySelector('[data-action="copy"]').addEventListener('click', function() {
           navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard'));
         });
@@ -106,9 +107,9 @@
     const container = document.getElementById('ym-chat-messages');
     if (!container) return;
     const wrapper = document.createElement('div');
-    wrapper.className = 'flex justify-start mb-3 msg-enter';
+    wrapper.className = 'flex justify-start mb-5 msg-enter';
     wrapper.id = 'typing-indicator';
-    wrapper.innerHTML = '<div class="flex gap-2.5"><img src="/images/yantranklan-avatar-ai.jpg" class="w-9 h-9 rounded-full mt-0.5 shrink-0 border-2 border-secondary/30 self-start"/><div class="glass-panel rounded-2xl rounded-tl-none px-4 py-3 shadow-sm border-l-4 border-l-secondary"><div class="flex gap-1.5 items-center"><span class="w-2 h-2 bg-secondary rounded-full animate-bounce-dot" style="animation-delay:0s"></span><span class="w-2 h-2 bg-secondary rounded-full animate-bounce-dot" style="animation-delay:0.16s"></span><span class="w-2 h-2 bg-secondary rounded-full animate-bounce-dot" style="animation-delay:0.32s"></span></div></div></div>';
+    wrapper.innerHTML = '<div class="flex gap-3"><img src="/images/yantranklan-avatar-ai.jpg" class="w-14 h-14 rounded-full mt-0.5 shrink-0 border-2 border-secondary/30 self-start"/><div class="glass-panel rounded-2xl rounded-tl-none px-5 py-4 shadow-sm border-l-4 border-l-secondary"><div class="flex gap-2 items-center"><span class="w-3 h-3 bg-secondary rounded-full animate-bounce-dot" style="animation-delay:0s"></span><span class="w-3 h-3 bg-secondary rounded-full animate-bounce-dot" style="animation-delay:0.16s"></span><span class="w-3 h-3 bg-secondary rounded-full animate-bounce-dot" style="animation-delay:0.32s"></span></div></div></div>';
     container.appendChild(wrapper);
     container.scrollTop = container.scrollHeight;
   }
@@ -285,7 +286,7 @@
     const actions = document.createElement('div');
     actions.className = 'flex items-center gap-1 mt-1.5 pt-1.5 border-t border-outline-variant/10';
     const text = contentDiv.querySelector('.ai-response')?.textContent || '';
-    actions.innerHTML = '<button class="ym-action-btn text-on-surface-variant/50 hover:text-primary transition-colors p-1" data-action="copy" title="Copy"><span class="material-symbols-outlined text-sm">content_copy</span></button><button class="ym-action-btn text-on-surface-variant/50 hover:text-primary transition-colors p-1" data-action="regenerate" title="Regenerate"><span class="material-symbols-outlined text-sm">refresh</span></button>';
+    actions.innerHTML = '<button class="ym-action-btn text-on-surface-variant/50 hover:text-primary transition-colors p-1.5" data-action="copy" title="Copy"><span class="material-symbols-outlined" style="font-size:20px">content_copy</span></button><button class="ym-action-btn text-on-surface-variant/50 hover:text-primary transition-colors p-1.5" data-action="regenerate" title="Regenerate"><span class="material-symbols-outlined" style="font-size:20px">refresh</span></button>';
     actions.querySelector('[data-action="copy"]').addEventListener('click', function() {
       navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard'));
     });
@@ -314,8 +315,8 @@
         if (fileAttachments.some(f => f.file.name === file.name && f.file.size === file.size)) continue;
         fileAttachments.push({ file });
         const chip = document.createElement('div');
-        chip.className = 'flex items-center gap-1 bg-surface-container rounded-lg px-2 py-1 text-[10px] font-medium border border-outline-variant/20';
-        chip.innerHTML = '<span class="material-symbols-outlined text-sm">description</span><span class="truncate max-w-[120px]">' + escapeHtml(file.name) + '</span><button class="ym-remove-file material-symbols-outlined text-sm text-on-surface-variant hover:text-error">close</button>';
+        chip.className = 'flex items-center gap-1.5 bg-surface-container rounded-lg px-3 py-1.5 text-xs font-medium border border-outline-variant/20';
+        chip.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px">description</span><span class="truncate max-w-[140px]" style="font-size:13px">' + escapeHtml(file.name) + '</span><button class="ym-remove-file material-symbols-outlined text-on-surface-variant hover:text-error" style="font-size:18px">close</button>';
         chip.querySelector('.ym-remove-file').addEventListener('click', function() {
           const idx = fileAttachments.findIndex(f => f.file.name === file.name && f.file.size === file.size);
           if (idx > -1) fileAttachments.splice(idx, 1);
@@ -373,7 +374,7 @@
       'Energy usage report by plant',
       'Summarize agent mission status'
     ];
-    container.innerHTML = prompts.map(p => '<button class="ym-pill shrink-0 glass-panel px-3 py-1.5 rounded-full text-[10px] font-label-caps text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all border border-outline-variant/30 whitespace-nowrap">' + escapeHtml(p) + '</button>').join('');
+    container.innerHTML = prompts.map(p => '<button class="ym-pill shrink-0 glass-panel rounded-full text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all border border-outline-variant/30 whitespace-nowrap">' + escapeHtml(p) + '</button>').join('');
     container.addEventListener('click', function(e) {
       const btn = e.target.closest('.ym-pill');
       if (!btn) return;
