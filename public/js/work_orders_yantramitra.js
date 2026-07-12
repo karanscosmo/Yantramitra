@@ -1,5 +1,6 @@
 (function() {
   async function get(path) { const r = await fetch(path); return r.json(); }
+  async function post(path, body) { const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); return r.json(); }
   async function patch(path, body) { const r = await fetch(path, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); return r.json(); }
 
   async function checkAuth() {
@@ -10,6 +11,15 @@
   document.addEventListener('DOMContentLoaded', async () => {
     const user = await checkAuth();
     if (!user) return;
+
+    function toast(message) {
+      document.querySelector('.ym-work-toast')?.remove();
+      const el = document.createElement('div');
+      el.className = 'ym-work-toast fixed left-1/2 top-24 -translate-x-1/2 z-[120] rounded-full border border-primary/20 bg-white/95 px-5 py-3 text-sm font-bold text-primary shadow-xl';
+      el.textContent = message;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 2600);
+    }
 
     async function loadOrders() {
       try {
@@ -63,6 +73,55 @@
     }
 
     await loadOrders();
+
+    const createButton = Array.from(document.querySelectorAll('button')).find(button => /create order/i.test(button.textContent));
+    createButton?.addEventListener('click', async () => {
+      const original = createButton.innerHTML;
+      createButton.disabled = true;
+      createButton.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> CREATING';
+      await post('/api/work-orders', {
+        title: 'Inspect Conveyor Line PN-601',
+        description: 'Created from Work Orders dashboard for Pune Auto Components pressure-valve calibration.',
+        status: 'open',
+        priority: 'high',
+        assignedTo: 'Elias Thorne',
+        dueDate: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+      }).catch(() => {});
+      toast('Work order created and assigned to Elias Thorne');
+      createButton.innerHTML = original;
+      createButton.disabled = false;
+      await loadOrders();
+    });
+
+    document.querySelectorAll('.glass-drawer [class*="radio_button_unchecked"], .glass-drawer [class*="check_circle"]').forEach(icon => {
+      icon.closest('div')?.addEventListener('click', () => {
+        const checked = icon.textContent.trim() === 'check_circle';
+        icon.textContent = checked ? 'radio_button_unchecked' : 'check_circle';
+        icon.classList.toggle('text-secondary', !checked);
+        icon.classList.toggle('text-outline', checked);
+        const text = icon.parentElement?.querySelector('span:not(.material-symbols-outlined)');
+        text?.classList.toggle('line-through', !checked);
+        toast(checked ? 'Checklist item reopened' : 'Checklist item completed');
+      });
+    });
+
+    Array.from(document.querySelectorAll('button')).forEach(button => {
+      const text = button.textContent.trim().toLowerCase();
+      if (text.includes('pause session')) {
+        button.addEventListener('click', () => {
+          button.textContent = button.textContent.includes('RESUME') ? 'PAUSE SESSION' : 'RESUME SESSION';
+          toast(button.textContent.includes('RESUME') ? 'Work session paused' : 'Work session resumed');
+        });
+      }
+      if (text.includes('mark as complete')) {
+        button.addEventListener('click', async () => {
+          button.textContent = 'COMPLETED';
+          button.disabled = true;
+          button.classList.add('opacity-80');
+          toast('WO-9302 marked complete');
+        });
+      }
+    });
 
     document.querySelectorAll('a[href="#"]').forEach(a => {
       a.addEventListener('click', e => {

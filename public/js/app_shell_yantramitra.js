@@ -60,26 +60,32 @@
         overflow-y: auto;
         pointer-events: auto;
         scrollbar-width: none;
+        transition: transform .22s ease, opacity .22s ease, box-shadow .22s ease;
       }
       body.ym-rail-collapsed .ym-shell-rail {
-        width: 52px;
-        right: 8px;
-        padding: 12px 4px;
-        opacity: .82;
+        transform: translateX(62px);
+        opacity: .78;
       }
       body.ym-rail-collapsed .ym-shell-rail a,
-      body.ym-rail-collapsed .ym-shell-rail button {
-        width: 36px;
-        height: 36px;
-        flex-basis: 36px;
+      body.ym-rail-collapsed .ym-shell-rail button:not(.ym-shell-toggle) {
+        opacity: 0;
+        pointer-events: none;
+      }
+      body.ym-rail-collapsed .ym-shell-toggle {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        transform: translateX(-58px);
+        background: #fff !important;
+        box-shadow: 0 12px 32px rgba(65, 63, 214, .20);
       }
       body.ym-rail-collapsed main {
-        margin-right: 64px !important;
-        padding-right: 72px !important;
+        margin-right: 24px !important;
+        padding-right: 28px !important;
+        max-width: calc(100vw - 24px);
       }
       body.ym-in-app main {
-        margin-right: 96px !important;
-        max-width: calc(100vw - 96px);
+        margin-right: 128px !important;
+        max-width: calc(100vw - 128px);
       }
       .ym-standard-topbar {
         position: fixed;
@@ -157,6 +163,15 @@
         object-fit: cover;
         cursor: pointer;
       }
+      body.ym-in-app .primary-gradient,
+      body.ym-in-app .shimmer-btn {
+        color: #fff !important;
+      }
+      body.ym-in-app button:empty::after {
+        content: 'Open';
+        color: inherit;
+        font-weight: 800;
+      }
       .ym-shell-rail::-webkit-scrollbar { display: none; }
       .ym-shell-rail a,
       .ym-shell-rail button {
@@ -206,6 +221,41 @@
       }
       body.ym-in-app footer {
         display: none !important;
+      }
+      body.ym-page-ai-console main {
+        height: calc(100vh - 72px) !important;
+        padding-top: 16px !important;
+      }
+      body.ym-page-ai-console .chat-scroll {
+        padding-top: 12px !important;
+        padding-bottom: 12px !important;
+      }
+      body.ym-page-settings main,
+      body.ym-page-anomaly main,
+      body.ym-page-plans main,
+      body.ym-page-work-orders main {
+        padding-top: 28px !important;
+      }
+      body.ym-page-map main,
+      body.ym-page-simulator main {
+        height: calc(100vh - 72px) !important;
+        padding-top: 0 !important;
+      }
+      body.ym-page-work-orders main,
+      body.ym-page-plans main,
+      body.ym-page-anomaly main {
+        padding-right: 148px !important;
+      }
+      body.ym-page-work-orders .glass-drawer,
+      body.ym-page-work-orders div.fixed.right-0 {
+        right: 104px !important;
+        width: min(440px, calc(100vw - 720px)) !important;
+        min-width: 360px;
+        z-index: 62 !important;
+      }
+      body.ym-rail-collapsed.ym-page-work-orders .glass-drawer,
+      body.ym-rail-collapsed.ym-page-work-orders div.fixed.right-0 {
+        right: 24px !important;
       }
       body.ym-digital-twin .ym-shell-rail {
         z-index: 80;
@@ -461,8 +511,20 @@
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
       window.location.href = '/login';
     });
-    rail.querySelector('.ym-shell-toggle').addEventListener('click', () => {
+    const toggle = rail.querySelector('.ym-shell-toggle');
+    const setRailState = () => {
+      const collapsed = document.body.classList.contains('ym-rail-collapsed');
+      toggle.title = collapsed ? 'Open sidebar' : 'Hide sidebar';
+      toggle.setAttribute('aria-label', collapsed ? 'Open sidebar' : 'Hide sidebar');
+      const icon = toggle.querySelector('.material-symbols-outlined');
+      if (icon) icon.textContent = collapsed ? 'keyboard_tab_rtl' : 'keyboard_tab';
+    };
+    if (localStorage.getItem('ymRailExpanded') !== '1') document.body.classList.add('ym-rail-collapsed');
+    setRailState();
+    toggle.addEventListener('click', () => {
       document.body.classList.toggle('ym-rail-collapsed');
+      localStorage.setItem('ymRailExpanded', document.body.classList.contains('ym-rail-collapsed') ? '0' : '1');
+      setRailState();
     });
 
     existingRails.slice(1).forEach(el => { el.style.display = 'none'; });
@@ -945,7 +1007,11 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    if (!shellExcludedPaths.includes(currentPath)) document.body.classList.add('ym-in-app');
+    if (!shellExcludedPaths.includes(currentPath)) {
+      document.body.classList.add('ym-in-app');
+      const slug = (currentPath.replace(/^\/+/, '') || 'dashboard').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
+      document.body.classList.add('ym-page-' + slug);
+    }
     if (currentPath === '/digital-twin') document.body.classList.add('ym-digital-twin');
     injectStyles();
     normalizeTopBar();

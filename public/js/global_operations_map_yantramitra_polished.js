@@ -18,9 +18,11 @@
 
   function projectIndia(lat, lng) {
     const minLat = 7.5, maxLat = 32.5, minLng = 68, maxLng = 90;
+    const lngRatio = Math.max(0, Math.min(1, (lng - minLng) / (maxLng - minLng)));
+    const latRatio = Math.max(0, Math.min(1, 1 - (lat - minLat) / (maxLat - minLat)));
     return {
-      left: Math.max(18, Math.min(82, ((lng - minLng) / (maxLng - minLng)) * 100)),
-      top: Math.max(12, Math.min(88, (1 - (lat - minLat) / (maxLat - minLat)) * 100))
+      left: 34 + (lngRatio * 36),
+      top: 12 + (latRatio * 78)
     };
   }
 
@@ -43,6 +45,7 @@
         const t = tone(plant.status);
         return `<button class="absolute -translate-x-1/2 -translate-y-1/2 z-10 group cursor-pointer" style="left:${pos.left}%;top:${pos.top}%;" data-plant-id="${plant.id}">
           <div class="w-3.5 h-3.5 ${t.dot} rounded-full pulse-marker relative shadow-[0_0_12px_rgba(65,63,214,0.8)]"></div>
+          <span class="absolute left-1/2 top-full mt-2 -translate-x-1/2 rounded-full bg-white/85 px-2 py-0.5 text-[10px] font-bold text-primary shadow-sm border border-primary/10 whitespace-nowrap">${plant.location.split(',')[0]}</span>
           <div class="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none w-56">
             <div class="glass-panel p-sm rounded-xl border border-white/50 text-xs">
               <h4 class="font-label-caps text-primary mb-1">${plant.name}</h4>
