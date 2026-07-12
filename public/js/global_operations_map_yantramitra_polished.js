@@ -1,56 +1,105 @@
 (function() {
-  async function get(path) { const r = await fetch(path); return r.json(); }
+  async function get(path) {
+    const response = await fetch(path, { credentials: 'same-origin' });
+    if (!response.ok) throw new Error(path);
+    return response.json();
+  }
 
   async function checkAuth() {
-    try { const me = await get('/api/auth/me'); if (!me || !me.id) window.location.href = '/login'; return me; }
-    catch { window.location.href = '/login'; return null; }
+    try {
+      const me = await get('/api/auth/me');
+      if (!me || !me.id) window.location.href = '/login';
+      return me;
+    } catch {
+      window.location.href = '/login';
+      return null;
+    }
   }
 
   function projectIndia(lat, lng) {
     const minLat = 7.5, maxLat = 32.5, minLng = 68, maxLng = 90;
     return {
-      left: ((lng - minLng) / (maxLng - minLng)) * 100,
-      top: (1 - (lat - minLat) / (maxLat - minLat)) * 100
+      left: Math.max(8, Math.min(92, ((lng - minLng) / (maxLng - minLng)) * 100)),
+      top: Math.max(10, Math.min(90, (1 - (lat - minLat) / (maxLat - minLat)) * 100))
     };
+  }
+
+  function tone(status) {
+    if (status === 'attention' || status === 'warning') return { dot: 'bg-error', badge: 'bg-error-container text-on-error-container', label: 'Attention' };
+    if (status === 'optimized') return { dot: 'bg-secondary-fixed-dim', badge: 'bg-secondary-container text-on-secondary-container', label: 'Optimized' };
+    return { dot: 'bg-primary', badge: 'bg-surface-container-highest text-on-surface-variant', label: 'Operational' };
+  }
+
+  function renderPins(plants) {
+    const host = document.getElementById('pins-container');
+    if (!host) return;
+    host.innerHTML = `
+      <svg class="absolute inset-0 w-full h-full pointer-events-none z-0" preserveAspectRatio="none" viewBox="0 0 1000 1000">
+        <path d="M 330 350 Q 500 245 690 520" fill="none" opacity="0.28" stroke="#413fd6" stroke-width="1.5"></path>
+        <path d="M 470 560 Q 610 530 745 615" fill="none" opacity="0.28" stroke="#413fd6" stroke-width="1.5"></path>
+        <path d="M 570 390 Q 650 450 760 520" fill="none" opacity="0.28" stroke="#413fd6" stroke-width="1.5"></path>
+      </svg>
+      ${plants.map(plant => {
+        const pos = projectIndia(plant.lat, plant.lng);
+        const t = tone(plant.status);
+        return `<button class="absolute -translate-x-1/2 -translate-y-1/2 z-10 group cursor-pointer" style="left:${pos.left}%;top:${pos.top}%;" data-plant-id="${plant.id}">
+          <div class="w-3.5 h-3.5 ${t.dot} rounded-full pulse-marker relative shadow-[0_0_12px_rgba(65,63,214,0.8)]"></div>
+          <div class="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none w-56">
+            <div class="glass-panel p-sm rounded-xl border border-white/50 text-xs">
+              <h4 class="font-label-caps text-primary mb-1">${plant.name}</h4>
+              <div class="flex justify-between mb-1"><span class="text-on-surface-variant">Location</span><span class="font-bold text-on-surface">${plant.location.split(',')[0]}</span></div>
+              <div class="flex justify-between mb-1"><span class="text-on-surface-variant">Machines</span><span class="font-kpi-numeric text-primary">${plant._count?.machines || 0}</span></div>
+              <div class="flex justify-between"><span class="text-on-surface-variant">OEE</span><span class="text-secondary font-semibold">${plant.oee || 'n/a'}%</span></div>
+            </div>
+          </div>
+        </button>`;
+      }).join('')}`;
+    host.querySelectorAll('[data-plant-id]').forEach(button => {
+      button.addEventListener('click', () => { window.location.href = '/plant/' + button.dataset.plantId; });
+    });
+  }
+
+  function renderPlantList(plants) {
+    const sidebar = document.getElementById('ym-map-plant-list') ||
+      Array.from(document.querySelectorAll('aside .flex-1')).find(node => node.className.includes('overflow-y-auto'));
+    if (!sidebar) return;
+    sidebar.id = 'ym-map-plant-list';
+    sidebar.innerHTML = plants.map(plant => {
+      const t = tone(plant.status);
+      return `<button data-plant-id="${plant.id}" class="w-full glass-panel p-sm rounded-2xl hover:border-primary/40 transition-all group cursor-pointer border-transparent bg-white/40 text-left">
+        <div class="flex justify-between items-start mb-2">
+          <div>
+            <h3 class="font-semibold text-on-surface text-lg">${plant.name}</h3>
+            <span class="font-label-caps text-[10px] text-on-surface-variant">${plant.location}</span>
+          </div>
+          <div class="${t.badge} text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">${t.label}</div>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mt-4">
+          <div class="bg-surface-container-low/50 p-2 rounded-xl">
+            <p class="text-[10px] text-on-surface-variant uppercase font-bold">OEE</p>
+            <p class="font-kpi-numeric text-primary">${plant.oee || 'n/a'}%</p>
+          </div>
+          <div class="bg-surface-container-low/50 p-2 rounded-xl">
+            <p class="text-[10px] text-on-surface-variant uppercase font-bold">Machines</p>
+            <p class="font-kpi-numeric text-primary">${plant._count?.machines || 0}</p>
+          </div>
+        </div>
+      </button>`;
+    }).join('');
+    sidebar.querySelectorAll('[data-plant-id]').forEach(button => {
+      button.addEventListener('click', () => { window.location.href = '/plant/' + button.dataset.plantId; });
+    });
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
     const user = await checkAuth();
     if (!user) return;
-
     try {
       const plants = await get('/api/plants');
-      const target = document.querySelector('.flex-grow.flex') || document.querySelector('[data-location="World"]') || document.querySelector('main');
-      const parent = target.closest('.flex-grow') || target;
-      parent.innerHTML = `
-        <div class="w-full h-full min-h-[640px] rounded-2xl bg-gradient-to-br from-white via-[#f4f2ff] to-[#e9fffb] border border-outline-variant/30 p-5 relative overflow-hidden">
-          <div class="absolute inset-8 rounded-[40px] border border-primary/10 bg-white/35"></div>
-          <div class="absolute left-[12%] top-[12%] text-[160px] font-black text-primary/5 select-none">INDIA</div>
-          <div class="absolute inset-0">
-            ${plants.map(p => {
-              const pos = projectIndia(p.lat, p.lng);
-              const fault = p.status !== 'operational';
-              return `<button class="absolute -translate-x-1/2 -translate-y-1/2 group" style="left:${pos.left}%;top:${pos.top}%;" data-plant-id="${p.id}">
-                <span class="block w-7 h-7 rounded-full ${fault ? 'bg-error' : 'bg-secondary'} ring-4 ring-white shadow-[0_0_22px_rgba(65,63,214,.3)] animate-pulse"></span>
-                <span class="absolute left-8 top-1/2 -translate-y-1/2 w-64 text-left rounded-xl bg-white/90 border border-outline-variant/40 shadow-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                  <strong class="block text-sm">${p.name}</strong>
-                  <span class="block text-xs text-on-surface-variant">${p.location}</span>
-                  <span class="block text-xs text-primary font-bold mt-1">${p.domain || 'Facility'} · ${p._count.machines} machines</span>
-                </span>
-              </button>`;
-            }).join('')}
-          </div>
-          <div class="absolute bottom-5 left-5 right-5 grid grid-cols-1 md:grid-cols-5 gap-3">
-            ${plants.map(p => `<button data-plant-id="${p.id}" class="text-left rounded-xl bg-white/85 border border-outline-variant/40 p-3 hover:border-primary transition-colors">
-              <p class="font-bold text-sm">${p.name}</p>
-              <p class="text-[11px] text-on-surface-variant">${p.domain}</p>
-              <p class="text-[11px] text-primary font-bold mt-1">OEE ${p.oee}% · Uptime ${p.uptime}%</p>
-            </button>`).join('')}
-          </div>
-        </div>`;
-      parent.querySelectorAll('[data-plant-id]').forEach(el => {
-        el.addEventListener('click', () => { window.location.href = '/plant/' + el.dataset.plantId; });
-      });
-    } catch {}
+      renderPins(plants);
+      renderPlantList(plants);
+    } catch (error) {
+      console.error('Plant map load failed', error);
+    }
   });
 })();

@@ -6,6 +6,7 @@
   let profile = null;
   let settings = null;
   let team = [];
+  let plants = [];
 
   async function checkAuth() {
     try { const me = await get('/api/auth/me'); if (!me || !me.id) window.location.href = '/login'; return me; }
@@ -51,6 +52,16 @@
           <h2 class="font-section-header text-section-header mb-1">${profile.name}</h2>
           <span class="px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-caps text-label-caps tracking-wider mb-sm">${roleLabel(profile.role)}</span>
           <p class="text-body-md text-on-surface-variant">Indian operations intelligence workspace member.</p>
+        </div>
+        <div class="glass-card rounded-xl p-md">
+          <h3 class="font-label-caps text-label-caps text-primary mb-md">Connected Facilities</h3>
+          <div class="flex flex-wrap gap-xs">
+            ${plants.map((plant, index) => `
+              <a href="/plant/${plant.id}" class="px-sm py-2 rounded-full glass-input text-on-surface text-body-md flex items-center gap-xs hover:border-primary/40">
+                <span class="w-2 h-2 rounded-full ${plant.status === 'attention' ? 'bg-tertiary-fixed-dim' : 'bg-secondary animate-pulse'}"></span>
+                ${plant.name}
+              </a>`).join('') || '<span class="text-sm text-on-surface-variant">No connected facilities loaded.</span>'}
+          </div>
         </div>
       </div>
       <div class="md:col-span-8 space-y-gutter">
@@ -193,7 +204,7 @@
   document.addEventListener('DOMContentLoaded', async () => {
     const user = await checkAuth();
     if (!user) return;
-    [profile, settings, team] = await Promise.all([get('/api/user/profile'), get('/api/user/preferences'), get('/api/team')]);
+    [profile, settings, team, plants] = await Promise.all([get('/api/user/profile'), get('/api/user/preferences'), get('/api/team'), get('/api/plants')]);
     const tabActions = {
       Profile: renderProfile,
       Notifications: renderNotifications,

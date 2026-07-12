@@ -280,8 +280,7 @@ app.get('/api/plants', authApi, async (req, res) => {
 
 app.get('/api/plants/:id', authApi, async (req, res) => {
   try {
-    const plant = await prisma.plant.findUnique({
-      where: { id: req.params.id },
+    const plants = await prisma.plant.findMany({
       include: {
         machines: {
           include: {
@@ -291,6 +290,8 @@ app.get('/api/plants/:id', authApi, async (req, res) => {
         }
       }
     });
+    const slugify = value => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const plant = plants.find(p => p.id === req.params.id || slugify(p.name) === req.params.id);
     if (!plant) return res.status(404).json({ error: 'Plant not found' });
     res.json(plant);
   } catch (e) { res.status(500).json({ error: e.message }); }

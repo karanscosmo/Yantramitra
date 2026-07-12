@@ -1,74 +1,141 @@
 (function() {
-  async function get(path) { const r = await fetch(path); return r.json(); }
-  async function post(path, body) { const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); return r.json(); }
+  async function get(path) {
+    const response = await fetch(path, { credentials: 'same-origin' });
+    if (!response.ok) throw new Error(path);
+    return response.json();
+  }
 
   async function checkAuth() {
-    try { const me = await get('/api/auth/me'); if (!me || !me.id) window.location.href = '/login'; return me; }
-    catch { window.location.href = '/login'; return null; }
+    try {
+      const me = await get('/api/auth/me');
+      if (!me || !me.id) window.location.href = '/login';
+      return me;
+    } catch {
+      window.location.href = '/login';
+      return null;
+    }
+  }
+
+  function statusTone(status) {
+    if (status === 'attention' || status === 'warning') return { dot: 'bg-tertiary-container pulsing-amber', badge: 'bg-tertiary/80', text: 'ATTENTION', score: 'text-tertiary' };
+    if (status === 'optimized') return { dot: 'bg-secondary pulsing-green', badge: 'bg-secondary/80', text: 'OPTIMIZED', score: 'text-secondary' };
+    return { dot: 'bg-secondary pulsing-green', badge: 'bg-secondary/80', text: 'OPERATIONAL', score: 'text-primary' };
+  }
+
+  function renderFacilities(plants) {
+    const host = document.getElementById('ym-top-facilities');
+    if (!host) return;
+    host.innerHTML = plants.slice(0, 5).map(plant => {
+      const tone = statusTone(plant.status);
+      return `
+        <article class="glass-panel rounded-xl overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+          <div class="h-32 relative">
+            <img class="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-500" src="${plant.image || '/images/factory.svg'}" alt="${plant.name} facility preview"/>
+            <div class="absolute inset-0 bg-gradient-to-t from-surface to-transparent"></div>
+            <div class="absolute top-4 left-4 flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full ${tone.dot}"></div>
+              <span class="font-label-caps text-[10px] text-on-primary ${tone.badge} px-2 py-0.5 rounded-full">${tone.text}</span>
+            </div>
+          </div>
+          <div class="p-md pt-2">
+            <h3 class="font-section-header text-[18px] leading-tight mb-xs">${plant.name}</h3>
+            <p class="text-xs text-on-surface-variant mb-sm">${plant.location} · ${plant.domain || 'Industrial operations'}</p>
+            <div class="flex justify-between items-center py-sm border-y border-outline-variant/20 mb-sm">
+              <div>
+                <p class="text-[10px] font-label-caps text-on-surface-variant">OEE</p>
+                <p class="font-kpi-numeric ${tone.score} text-xl">${plant.oee || 'n/a'}%</p>
+              </div>
+              <div class="text-right">
+                <p class="text-[10px] font-label-caps text-on-surface-variant">MACHINES</p>
+                <p class="text-xs font-medium text-primary">${plant._count?.machines || 0} monitored</p>
+              </div>
+            </div>
+            <button data-plant-id="${plant.id}" class="ym-plant-drilldown w-full py-2 bg-primary/5 border border-primary/20 rounded-lg text-primary font-label-caps hover:bg-primary hover:text-on-primary transition-all">PLANT DRILLDOWN</button>
+          </div>
+        </article>`;
+    }).join('');
+    host.querySelectorAll('[data-plant-id]').forEach(button => {
+      button.addEventListener('click', () => { window.location.href = '/plant/' + button.dataset.plantId; });
+    });
+  }
+
+  function renderAgentActivity({ alarms = [], plants = [], workOrders = [] }) {
+    const host = document.getElementById('ym-agent-activity');
+    if (!host) return;
+    const firstAlarm = alarms[0];
+    const firstPlant = plants[0];
+    const secondPlant = plants[1] || plants[0];
+    const latestOrder = workOrders[0];
+    const items = [
+      {
+        icon: 'psychology',
+        color: 'bg-secondary-container text-on-secondary-container',
+        agent: 'Diagnostic Agent',
+        text: firstAlarm ? `Analyzing ${firstAlarm.machine?.name || 'machine'} at ${firstPlant?.name || 'plant'}: ${firstAlarm.title}.` : `All monitored machines across ${plants.length} plants are inside normal diagnostic review.`,
+        time: 'Just now'
+      },
+      {
+        icon: 'security',
+        color: 'bg-primary-container text-on-primary-container',
+        agent: 'Sentinel',
+        text: `Security handshake completed with ${secondPlant?.name || 'the plant'} edge network. All protocols green.`,
+        time: '2m ago'
+      },
+      {
+        icon: 'event_note',
+        color: 'bg-tertiary-fixed-dim text-on-tertiary-fixed-variant',
+        agent: 'Planner Agent',
+        text: latestOrder ? `Tracking ${latestOrder.title} for ${latestOrder.machine?.name || 'asset'} with ${latestOrder.priority} priority.` : 'No urgent work order backlog in the current operating snapshot.',
+        time: '12m ago'
+      },
+      {
+        icon: 'precision_manufacturing',
+        color: 'bg-secondary-container text-on-secondary-container',
+        agent: 'Maintenance Agent',
+        text: `Predictive maintenance queue refreshed for ${plants.map(p => p.name).slice(0, 3).join(', ')}.`,
+        time: '24m ago'
+      }
+    ];
+    host.innerHTML = items.map(item => `
+      <div class="p-sm rounded-xl bg-white/40 border border-outline-variant/20 flex gap-sm hover:bg-white/60 transition-colors cursor-pointer">
+        <div class="w-10 h-10 rounded-full ${item.color} flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">${item.icon}</span>
+        </div>
+        <div>
+          <p class="text-xs font-bold text-on-surface">${item.agent}</p>
+          <p class="text-xs text-on-surface-variant leading-relaxed">${item.text}</p>
+          <p class="text-[10px] text-primary mt-xs font-medium uppercase tracking-wider">${item.time}</p>
+        </div>
+      </div>`).join('');
+  }
+
+  function wireNavigation() {
+    const viewAllBtn = Array.from(document.querySelectorAll('button')).find(btn =>
+      btn.textContent.trim().toUpperCase().includes('VIEW ALL')
+    );
+    if (viewAllBtn) viewAllBtn.addEventListener('click', () => { window.location.href = '/map'; });
+
+    document.querySelectorAll('button').forEach(btn => {
+      if (btn.textContent.includes('AGENT TERMINAL')) {
+        btn.addEventListener('click', () => { window.location.href = '/agents'; });
+      }
+    });
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
     const user = await checkAuth();
     if (!user) return;
-
-    const data = await get('/api/dashboard/summary');
-    if (!data) return;
-
-    document.querySelectorAll('.nav-link, nav a').forEach(a => {
-      a.addEventListener('click', e => {
-        e.preventDefault();
-        const txt = a.textContent.trim().toLowerCase();
-        const map = { 'dashboard': '/dashboard', 'assets': '/assets', 'agents': '/agents', 'work orders': '/work-orders', 'settings': '/settings' };
-        const href = a.getAttribute('href');
-        if (href && href !== '#') return;
-        for (const [key, val] of Object.entries(map)) {
-          if (txt.includes(key)) { window.location.href = val; return; }
-        }
-      });
-    });
-
-    const plantBtns = document.querySelectorAll('button');
-    plantBtns.forEach((btn, i) => {
-      if (btn.textContent.includes('PLANT DRILLDOWN') || btn.textContent.includes('DRILLDOWN')) {
-        btn.addEventListener('click', async () => {
-          try {
-            const plants = await get('/api/plants');
-            if (plants && plants.length > 0) {
-              const idx = Array.from(plantBtns).filter(b => b.textContent.includes('DRILLDOWN')).indexOf(btn);
-              const plant = plants[idx] || plants[0];
-              window.location.href = '/plant/' + plant.id;
-            }
-          } catch { window.location.href = '/plant/demo'; }
-        });
-      }
-    });
-
-    const viewAllBtn = Array.from(document.querySelectorAll('button')).find(btn =>
-      btn.textContent.trim().toUpperCase().includes('VIEW ALL')
-    );
-    if (viewAllBtn) {
-      viewAllBtn.addEventListener('click', () => { window.location.href = '/map'; });
+    try {
+      const [summary, plants, workOrders] = await Promise.all([
+        get('/api/dashboard/summary'),
+        get('/api/plants'),
+        get('/api/work-orders')
+      ]);
+      renderFacilities(plants);
+      renderAgentActivity({ alarms: summary.recentAlarms || [], plants, workOrders });
+      wireNavigation();
+    } catch (error) {
+      console.error('Command center data load failed', error);
     }
-
-    const agentTerminalBtns = document.querySelectorAll('button');
-    agentTerminalBtns.forEach(btn => {
-      if (btn.textContent.includes('AGENT TERMINAL')) {
-        btn.addEventListener('click', () => { window.location.href = '/agents'; });
-      }
-    });
-
-    const allLinks = document.querySelectorAll('a[href="#"]');
-    allLinks.forEach(a => {
-      if (a.textContent.includes('Sitemap') || a.textContent.includes('Privacy') || a.textContent.includes('Terms')) return;
-      a.addEventListener('click', e => {
-        e.preventDefault();
-        const text = a.textContent.trim().toLowerCase();
-        if (text.includes('asset')) window.location.href = '/assets';
-        else if (text.includes('agent')) window.location.href = '/agents';
-        else if (text.includes('work')) window.location.href = '/work-orders';
-        else if (text.includes('setting')) window.location.href = '/settings';
-        else if (text.includes('map')) window.location.href = '/map';
-      });
-    });
   });
 })();

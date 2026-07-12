@@ -1,69 +1,111 @@
 (function() {
-  async function get(path) { const r = await fetch(path); return r.json(); }
+  async function get(path) {
+    const response = await fetch(path, { credentials: 'same-origin' });
+    if (!response.ok) throw new Error(path);
+    return response.json();
+  }
 
   async function checkAuth() {
-    try { const me = await get('/api/auth/me'); if (!me || !me.id) window.location.href = '/login'; return me; }
-    catch { window.location.href = '/login'; return null; }
+    try {
+      const me = await get('/api/auth/me');
+      if (!me || !me.id) window.location.href = '/login';
+      return me;
+    } catch {
+      window.location.href = '/login';
+      return null;
+    }
+  }
+
+  function metricRows(plant) {
+    const machines = plant.machines || [];
+    const avgHealth = machines.length
+      ? machines.reduce((sum, machine) => sum + Number(machine.health || 0), 0) / machines.length
+      : 0;
+    const activeAlerts = machines.reduce((sum, machine) => sum + (machine.alarms || []).filter(alarm => alarm.status === 'active').length, 0);
+    return {
+      avgHealth: Math.round(avgHealth * 10) / 10,
+      activeAlerts,
+      machineCount: machines.length,
+      warningCount: machines.filter(machine => machine.status !== 'running').length
+    };
+  }
+
+  function updateText(selector, value) {
+    const node = document.querySelector(selector);
+    if (node) node.textContent = value;
+  }
+
+  function renderPlant(plant) {
+    const metrics = metricRows(plant);
+    document.title = `YantraMitra | ${plant.name}`;
+    updateText('header .font-body-md', `${plant.name} - LIVE`);
+    updateText('main h2', `${plant.name} Intelligence`);
+    const firstHeading = document.querySelector('main h2') || document.querySelector('h1');
+    if (firstHeading) firstHeading.textContent = `${plant.name} Intelligence`;
+
+    const kpis = document.querySelectorAll('.font-kpi-numeric.text-4xl');
+    if (kpis[0]) kpis[0].textContent = `${plant.oee || metrics.avgHealth}%`;
+    if (kpis[1]) kpis[1].innerHTML = `${plant.utilization || 0}<span class="text-lg font-normal text-on-surface-variant">%</span>`;
+    if (kpis[2]) kpis[2].innerHTML = `${metrics.activeAlerts}<span class="text-lg font-normal text-on-surface-variant"> alerts</span>`;
+
+    const floorImage = Array.from(document.querySelectorAll('img')).find(img => img.src.includes('digital-twin') || img.src.includes('factory'));
+    if (floorImage) {
+      floorImage.src = plant.image || floorImage.src;
+      floorImage.alt = `${plant.name} facility operating view`;
+    }
+
+    const floorCaption = Array.from(document.querySelectorAll('p')).find(p => p.textContent.includes('Live operational status'));
+    if (floorCaption) floorCaption.textContent = `${plant.location} - ${plant.domain || 'Industrial facility'} - ${metrics.machineCount} monitored machines.`;
+
+    const alertHost = Array.from(document.querySelectorAll('.space-y-3')).find(node => node.closest('aside'));
+    if (alertHost) {
+      const alerts = (plant.machines || []).flatMap(machine =>
+        (machine.alarms || []).map(alarm => ({ ...alarm, machineName: machine.name }))
+      ).slice(0, 6);
+      alertHost.innerHTML = (alerts.length ? alerts : [{ severity: 'info', title: 'No active critical alerts', message: `${plant.name} is operating within its current monitored band.`, machineName: plant.name }]).map(alarm => {
+        const tone = alarm.severity === 'critical'
+          ? { bg: 'from-error/10', border: 'border-error', text: 'text-error' }
+          : alarm.severity === 'warning'
+            ? { bg: 'from-tertiary/10', border: 'border-tertiary', text: 'text-tertiary' }
+            : { bg: 'from-primary/10', border: 'border-primary', text: 'text-primary' };
+        return `<div class="p-3 rounded-xl bg-gradient-to-r ${tone.bg} to-transparent border-l-4 ${tone.border} hover:translate-x-1 transition-transform cursor-pointer">
+          <div class="flex justify-between items-start mb-1">
+            <span class="font-label-caps text-[10px] ${tone.text}">${alarm.severity || 'info'}</span>
+            <span class="text-[10px] text-on-surface-variant">${alarm.machineName}</span>
+          </div>
+          <h4 class="text-sm font-bold text-on-surface">${alarm.title}</h4>
+          <p class="text-xs text-on-surface-variant mt-1 line-clamp-1">${alarm.message}</p>
+        </div>`;
+      }).join('');
+    }
+
+    const nodeLabels = document.querySelectorAll('[title]');
+    (plant.machines || []).slice(0, nodeLabels.length).forEach((machine, index) => {
+      nodeLabels[index].title = `${machine.name}: ${Math.round(machine.health)}% health`;
+      const tip = nodeLabels[index].querySelector('div');
+      if (tip) tip.textContent = `${machine.name}: ${Math.round(machine.health)}%`;
+      nodeLabels[index].className = nodeLabels[index].className.replace(/bg-(secondary|tertiary)/, machine.status === 'running' ? 'bg-secondary' : 'bg-tertiary');
+    });
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
     const user = await checkAuth();
     if (!user) return;
-
-    const plantId = window.location.pathname.split('/plant/')[1] || '';
+    const requestedId = window.location.pathname.split('/plant/')[1] || '';
     try {
+      const plant = await get('/api/plants/' + encodeURIComponent(requestedId));
+      renderPlant(plant);
+    } catch {
       const plants = await get('/api/plants');
-      const plant = plants.find(p => p.id === plantId) || plants[0];
-      if (!plant) return;
-
-      const heroTitle = document.querySelector('h1');
-      if (heroTitle) heroTitle.textContent = plant.name;
-      const subtitle = Array.from(document.querySelectorAll('p')).find(p => p.textContent.includes('Detroit') || p.textContent.includes('factory') || p.textContent.includes('plant'));
-      if (subtitle) subtitle.textContent = `${plant.domain || 'Industrial facility'} in ${plant.location}. OEE ${plant.oee || 'n/a'}%, uptime ${plant.uptime || 'n/a'}%.`;
-      document.querySelectorAll('img').forEach(img => {
-        if (img.src.includes('factory') || img.src.includes('control') || img.src.includes('digital-twin')) img.src = plant.image || img.src;
-      });
-
-      const detail = await get('/api/plants/' + (plant.id || plantId));
-      if (detail && detail.machines) {
-        const machineList = document.querySelector('.grid-cols-1.md\\:grid-cols-3') ||
-          document.querySelector('[class*="grid-cols"]');
-        if (machineList) {
-          const machineCards = machineList.querySelectorAll('.glass-panel, [class*="rounded-xl"]');
-          machineCards.forEach((card, idx) => {
-            if (idx < detail.machines.length) {
-              const m = detail.machines[idx];
-              const nameEl = card.querySelector('h3, h4, .font-section-header');
-              if (nameEl) nameEl.textContent = m.name;
-              const healthEl = card.querySelector('.font-kpi-numeric');
-              if (healthEl) healthEl.textContent = m.health.toFixed(1) + '%';
-              const statusEl = card.querySelector('.pulsing-green, .pulsing-amber');
-              if (statusEl) {
-                statusEl.className = 'w-3 h-3 rounded-full ' + (m.status === 'running' ? 'bg-secondary pulsing-green' : 'bg-tertiary pulsing-amber');
-              }
-            }
-          });
-        }
+      if (plants[0]) {
+        const plant = await get('/api/plants/' + encodeURIComponent(plants[0].id));
+        renderPlant(plant);
       }
+    }
 
-      const drilldownBtns = document.querySelectorAll('button');
-      drilldownBtns.forEach(btn => {
-        if (btn.textContent.includes('DRILLDOWN') || btn.textContent.includes('ASSET')) {
-          btn.addEventListener('click', () => { window.location.href = btn.textContent.toLowerCase().includes('digital') ? '/digital-twin' : '/assets'; });
-        }
-      });
-    } catch {}
-
-    document.querySelectorAll('a[href="#"]').forEach(a => {
-      a.addEventListener('click', e => {
-        e.preventDefault();
-        const txt = a.textContent.trim().toLowerCase();
-        if (txt.includes('dashboard')) window.location.href = '/dashboard';
-        else if (txt.includes('asset')) window.location.href = '/assets';
-        else if (txt.includes('agent')) window.location.href = '/agents';
-        else if (txt.includes('work')) window.location.href = '/work-orders';
-        else if (txt.includes('setting')) window.location.href = '/settings';
-      });
+    document.querySelectorAll('button').forEach(btn => {
+      if (btn.textContent.includes('EXPORT')) btn.addEventListener('click', () => window.print());
+      if (btn.textContent.includes('ZOOM')) btn.addEventListener('click', () => window.location.href = '/digital-twin');
     });
   });
 })();
