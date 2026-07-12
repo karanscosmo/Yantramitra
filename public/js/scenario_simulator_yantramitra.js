@@ -98,11 +98,23 @@
   function renderKPIs(kpis) {
     const grid = document.getElementById('ym-charts-grid');
     if (!grid) return;
+    const prevVals = grid.__prevVals || {};
     grid.innerHTML = kpiDefs.map(def => {
       const val = kpis[def.key] || 0;
       const pct = Math.min(100, Math.round(val / def.max * 100));
-      return '<div class="glass-panel rounded-xl p-3 bg-white/70"><div class="flex items-center justify-between mb-1.5"><div class="flex items-center gap-1.5"><span class="material-symbols-outlined" style="font-size:20px;color:' + def.color + '">' + def.icon + '</span><span class="font-bold text-on-surface-variant" style="font-size:12px">' + def.label + '</span></div><span class="font-kpi-numeric font-bold" style="font-size:18px;color:' + def.color + '">' + val + (def.unit || '') + '</span></div><div style="height:5px;background:#e1dfff;border-radius:3px;overflow:hidden"><div class="kpi-bar" style="height:100%;width:' + pct + '%;background:' + def.color + ';border-radius:3px"></div></div></div>';
+      const prev = prevVals[def.key] || 0;
+      const dir = val > prev ? 'up' : val < prev ? 'down' : '';
+      const flash = dir ? (dir === 'up' ? 'text-secondary' : 'text-error') : '';
+      grid.__prevVals = grid.__prevVals || {};
+      grid.__prevVals[def.key] = val;
+      return '<div class="glass-panel rounded-xl p-3 bg-white/70 kpi-card"><div class="flex items-center justify-between mb-1.5"><div class="flex items-center gap-1.5"><span class="material-symbols-outlined" style="font-size:20px;color:' + def.color + '">' + def.icon + '</span><span class="font-bold text-on-surface-variant" style="font-size:12px">' + def.label + '</span></div><span class="font-kpi-numeric font-bold kpi-value" style="font-size:18px;color:' + def.color + '">' + val + (def.unit || '') + '</span></div><div style="height:5px;background:#e1dfff;border-radius:3px;overflow:hidden"><div class="kpi-bar" style="height:100%;width:' + pct + '%;background:' + def.color + ';border-radius:3px;transition:width .5s cubic-bezier(.4,0,.2,1)"></div></div></div>';
     }).join('');
+    grid.querySelectorAll('.kpi-card').forEach((card, i) => {
+      card.style.animation = 'none';
+      card.offsetHeight;
+      card.style.animation = 'kpiSlideIn .4s cubic-bezier(.4,0,.2,1) forwards';
+      card.style.animationDelay = (i * 50) + 'ms';
+    });
   }
 
   function updateSceneEffects(vals) {

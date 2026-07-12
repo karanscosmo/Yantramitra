@@ -261,7 +261,7 @@
       group.add(sprite);
     }
 
-    group.position.set((machine.posX ?? 0) * 1.3, 0, (machine.posZ ?? 0) * 1.3);
+    group.position.set((machine.posX ?? 0) * 1.6, 0, (machine.posZ ?? 0) * 1.6);
     group.rotation.y = machine.rotation || 0;
     group.userData.machine = machine;
     group.traverse(child => { child.userData.machine = machine; });
@@ -269,25 +269,23 @@
   }
 
   function addFactoryShell(scene, plant, machines) {
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(65, 42), material(PALETTE.floor, { roughness: 0.82, metalness: 0 }));
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(85, 55), material(PALETTE.floor, { roughness: 0.82, metalness: 0 }));
     floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
-    const grid = new THREE.GridHelper(65, 32, 0xc7c4d7, 0xe7e5f6);
+    const grid = new THREE.GridHelper(85, 40, 0xc7c4d7, 0xe7e5f6);
     grid.position.y = 0.015;
     scene.add(grid);
-    scene.add(box(65, 0.2, 0.25, 0xd9d8ee, 0, 0.1, -21));
-    scene.add(box(65, 0.2, 0.25, 0xd9d8ee, 0, 0.1, 21));
-    scene.add(box(0.25, 0.2, 42, 0xd9d8ee, -32.5, 0.1, 0));
-    scene.add(box(0.25, 0.2, 42, 0xd9d8ee, 32.5, 0.1, 0));
-
+    scene.add(box(85, 0.2, 0.25, 0xd9d8ee, 0, 0.1, -27.5));
+    scene.add(box(85, 0.2, 0.25, 0xd9d8ee, 0, 0.1, 27.5));
+    scene.add(box(0.25, 0.2, 55, 0xd9d8ee, -42.5, 0.1, 0));
+    scene.add(box(0.25, 0.2, 55, 0xd9d8ee, 42.5, 0.1, 0));
     const aisleColor = (plant?.domain || '').toLowerCase().includes('logistics') ? 0xffba4b : PALETTE.teal;
-    scene.add(box(60, 0.04, 0.18, aisleColor, 0, 0.035, -7.5, { emissive: aisleColor, emissiveIntensity: 0.28 }));
-    scene.add(box(60, 0.04, 0.18, aisleColor, 0, 0.035, 7.5, { emissive: aisleColor, emissiveIntensity: 0.28 }));
-    scene.add(box(0.18, 0.04, 36, aisleColor, -12, 0.035, 0, { emissive: aisleColor, emissiveIntensity: 0.18 }));
-
+    scene.add(box(78, 0.04, 0.18, aisleColor, 0, 0.035, -9, { emissive: aisleColor, emissiveIntensity: 0.28 }));
+    scene.add(box(78, 0.04, 0.18, aisleColor, 0, 0.035, 9, { emissive: aisleColor, emissiveIntensity: 0.28 }));
+    scene.add(box(0.18, 0.04, 48, aisleColor, -16, 0.035, 0, { emissive: aisleColor, emissiveIntensity: 0.18 }));
     const plantLabel = labelSprite(`${plant?.name || 'Plant'} · ${machines.length} machines`, '#413fd6');
-    plantLabel.position.set(-18, 5.5, -17);
-    plantLabel.scale.set(8.8, 2.1, 1);
+    plantLabel.position.set(-24, 6.5, -22);
+    plantLabel.scale.set(10, 2.4, 1);
     scene.add(plantLabel);
   }
 
@@ -301,21 +299,24 @@
     host.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(options.background || 0xf4f2ff);
-    scene.fog = new THREE.Fog(0xf4f2ff, 40, 95);
+    scene.background = new THREE.Color(options.background || 0x13131f);
+    scene.fog = new THREE.Fog(0x13131f, 50, 110);
 
-    const camera = new THREE.PerspectiveCamera(options.fov || 48, 1, 0.1, 1000);
-    camera.position.set(options.cameraX ?? 18, options.cameraY ?? 16, options.cameraZ ?? 28);
+    const camera = new THREE.PerspectiveCamera(options.fov || 42, 1, 0.1, 1000);
+    camera.position.set(options.cameraX ?? 24, options.cameraY ?? 18, options.cameraZ ?? 34);
     camera.lookAt(0, 0, 0);
 
-    scene.add(new THREE.HemisphereLight(0xffffff, 0xc4c1ff, 1.8));
-    const key = new THREE.DirectionalLight(0xffffff, 1.35);
-    key.position.set(12, 24, 18);
+    scene.add(new THREE.HemisphereLight(0x8a85ff, 0x1a1a2e, 1.2));
+    const key = new THREE.DirectionalLight(0xffffff, 0.9);
+    key.position.set(20, 30, 25);
     key.castShadow = true;
     scene.add(key);
-    const fill = new THREE.PointLight(PALETTE.teal, 1.2, 55);
-    fill.position.set(-12, 10, -10);
+    const fill = new THREE.PointLight(PALETTE.teal, 0.6, 70);
+    fill.position.set(-15, 12, -12);
     scene.add(fill);
+    const rim = new THREE.DirectionalLight(0x5efae4, 0.3);
+    rim.position.set(-15, 5, -20);
+    scene.add(rim);
 
     const machines = options.machines || [];
     addFactoryShell(scene, options.plant, machines);
@@ -384,7 +385,7 @@
         const hit = pick(event);
         if (hit && sceneObj && typeof sceneObj.flyTo === 'function') {
           const m = hit.object.userData.machine;
-          sceneObj.flyTo((m.posX ?? 0) * 1.3, (m.posZ ?? 0) * 1.3);
+          sceneObj.flyTo((m.posX ?? 0) * 1.6, (m.posZ ?? 0) * 1.6);
         }
       } else {
         clickTimer = setTimeout(() => {
@@ -429,7 +430,7 @@
         const m = mg.userData.machine || {};
         if (includes(m, ['agv'])) {
           const t = Date.now() * 0.0005 + i;
-          mg.position.x = (m.posX ?? 0) * 1.3 + Math.sin(t) * 0.5;
+          mg.position.x = (m.posX ?? 0) * 1.6 + Math.sin(t) * 0.5;
           mg.position.z = (m.posZ ?? 0) * 1.3 + Math.cos(t) * 0.5;
         }
       });
@@ -456,8 +457,8 @@
     resize();
     animate();
 
-    const defaultRadius = options.radius || 22;
-    const defaultCamY = options.cameraY ?? 16;
+    const defaultRadius = options.radius || 28;
+    const defaultCamY = options.cameraY ?? 18;
     let targetZoom = 1, flyTarget = null, flyProgress = 0;
 
     sceneObj = {

@@ -43,7 +43,7 @@
     const style = document.createElement('style');
     style.id = 'ym-shell-styles';
     style.textContent = `
-      :root { --sidebar-width: 80px; }
+      :root { --sidebar-width: 100px; }
 
       .ym-empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px 24px; text-align:center; }
       .ym-empty-state .material-symbols-outlined { font-size:48px; color:#c7c4d7; margin-bottom:12px; }
@@ -53,117 +53,176 @@
       .ym-empty-state a:hover, .ym-empty-state button:hover { opacity:.85; }
       .ym-nav-rail {
         position: fixed;
-        right: 0;
+        right: 12px;
         top: 50%;
         transform: translateY(-50%);
         width: var(--sidebar-width);
         z-index: 80;
         display: flex;
         flex-direction: column;
-        align-items: center;
-        gap: 2px;
-        padding: 12px 0;
-        background: rgba(255, 255, 255, 0.82);
-        backdrop-filter: blur(18px);
-        border-top: 1px solid rgba(199, 196, 215, 0.4);
-        border-bottom: 1px solid rgba(199, 196, 215, 0.4);
-        border-left: 1px solid rgba(199, 196, 215, 0.4);
-        border-radius: 16px 0 0 16px;
+        align-items: stretch;
+        gap: 0;
+        padding: 16px 8px;
+        background: rgba(25, 26, 40, 0.75);
+        backdrop-filter: blur(24px) saturate(1.4);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 20px;
         overflow-y: auto;
         scrollbar-width: none;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
       }
       .ym-nav-rail::-webkit-scrollbar { display: none; }
       .ym-nav-rail .ym-nav-section {
-        display:flex; flex-direction:column; align-items:center; gap:1px; width:100%; padding:3px 0;
+        display:flex; flex-direction:column; align-items:stretch; gap:2px; width:100%; padding:0 0 6px;
       }
       .ym-nav-rail .ym-nav-section + .ym-nav-section {
-        border-top:1px solid rgba(199,196,215,.25);
-        margin-top:3px;
-        padding-top:6px;
+        margin-top:6px;
+        padding-top:8px;
+        position:relative;
+      }
+      .ym-nav-rail .ym-nav-section + .ym-nav-section::before {
+        content:''; position:absolute; top:0; left:20%; right:20%;
+        height:1px; background:rgba(255,255,255,0.06);
+      }
+      .ym-nav-rail .ym-nav-section-label {
+        display:block;
+        padding:0 6px 8px 6px;
+        font:600 8px/1 Inter,system-ui,sans-serif;
+        letter-spacing:1.2px;
+        text-transform:uppercase;
+        color:rgba(255,255,255,0.25);
+        text-align:center;
       }
       .ym-nav-rail .ym-nav-link {
         position:relative;
-        width:44px;
-        height:44px;
+        width:100%;
+        min-height:52px;
         display:flex;
+        flex-direction:column;
         align-items:center;
         justify-content:center;
+        gap:3px;
         border-radius:12px;
-        color:#767586;
+        color:rgba(255,255,255,0.4);
         border:0;
         background:transparent;
         cursor:pointer;
         text-decoration:none;
-        transition:background .12s,color .12s,transform .12s;
+        transition:all .18s cubic-bezier(.4,0,.2,1);
         flex-shrink:0;
+        padding:6px 0;
+      }
+      .ym-nav-rail .ym-nav-link::before {
+        content:'';
+        position:absolute; left:-8px; top:50%; transform:translateY(-50%) scaleY(0);
+        width:3px; height:20px;
+        border-radius:0 3px 3px 0;
+        background:#413fd6;
+        transition:transform .2s cubic-bezier(.4,0,.2,1);
       }
       .ym-nav-rail .ym-nav-link:hover {
-        background:rgba(65,63,214,.08);
-        color:#413fd6;
-        transform:scale(1.05);
+        color:#fff;
+        background:rgba(255,255,255,0.06);
+        transform:translateX(-2px);
+      }
+      .ym-nav-rail .ym-nav-link:hover::before { transform:translateY(-50%) scaleY(1); }
+      .ym-nav-rail .ym-nav-link:hover .material-symbols-outlined {
+        transform:scale(1.15);
       }
       .ym-nav-rail .ym-nav-link.is-active {
-        background:#413fd6;
         color:#fff;
-        box-shadow:0 0 12px rgba(65,63,214,.3);
+        background:rgba(65,63,214,0.2);
       }
-      .ym-nav-rail .ym-nav-link .material-symbols-outlined { font-size:20px; line-height:1; }
+      .ym-nav-rail .ym-nav-link.is-active::before { transform:translateY(-50%) scaleY(1); }
+      .ym-nav-rail .ym-nav-link.is-active .material-symbols-outlined {
+        color:#fff;
+      }
+      .ym-nav-rail .ym-nav-link .material-symbols-outlined {
+        font-size:26px; line-height:1;
+        transition:transform .18s cubic-bezier(.4,0,.2,1);
+      }
+      .ym-nav-rail .ym-nav-label {
+        font:600 9px/1 Inter,system-ui,sans-serif;
+        letter-spacing:0.2px;
+        color:inherit;
+        opacity:0.7;
+      }
+      .ym-nav-rail .ym-nav-link.is-active .ym-nav-label { opacity:1; }
       .ym-nav-rail .ym-nav-badge {
-        position:absolute; top:-2px; right:-2px;
-        min-width:16px; height:16px;
+        position:absolute; top:2px; right:4px;
+        min-width:18px; height:18px;
         display:flex; align-items:center; justify-content:center;
         border-radius:9999px;
-        background:#ba1a1a; color:#fff;
+        background:linear-gradient(135deg,#ba1a1a,#e84545);
+        color:#fff;
         font:700 9px/1 Inter,system-ui,sans-serif;
-        padding:0 4px;
-        box-shadow:0 0 0 2px rgba(255,255,255,.9);
+        padding:0 5px;
+        box-shadow:0 0 0 2px rgba(25,26,40,0.9), 0 2px 8px rgba(186,26,26,0.4);
+        animation:ymBadgePop .3s cubic-bezier(.34,1.56,.64,1);
       }
+      @keyframes ymBadgePop { 0%{transform:scale(0)} 100%{transform:scale(1)} }
       .ym-nav-rail .ym-nav-kbd {
-        position:absolute; bottom:-1px; right:-1px;
-        background:rgba(118,117,134,.15);
-        color:#767586;
-        font:600 7px/1 Inter,system-ui,sans-serif;
-        padding:1px 3px;
-        border-radius:3px;
+        display:none;
+      }
+      .ym-nav-rail .ym-nav-link:hover .ym-nav-kbd {
+        display:block;
+        position:absolute; right:-20px; top:50%; transform:translateY(-50%);
+        background:rgba(255,255,255,0.1);
+        color:rgba(255,255,255,0.5);
+        font:500 7px/1 Inter,system-ui,sans-serif;
+        padding:2px 5px;
+        border-radius:4px;
         letter-spacing:.3px;
+        backdrop-filter:blur(4px);
       }
-      .ym-nav-rail .ym-nav-link.is-active .ym-nav-kbd {
-        background:rgba(255,255,255,.2);
-        color:rgba(255,255,255,.8);
-      }
-      .ym-nav-rail .ym-nav-link[data-tooltip]:hover::after {
-        content:attr(data-tooltip);
-        position:absolute; right:52px;
+      .ym-nav-rail .ym-nav-tooltip {
+        position:absolute;
+        right:calc(100% + 14px);
+        top:50%; transform:translateY(-50%);
         white-space:nowrap;
-        background:#191a28; color:#fff;
-        font:500 11px/1 Inter,system-ui,sans-serif;
-        padding:5px 9px; border-radius:6px;
-        pointer-events:none; z-index:99;
-        box-shadow:0 4px 12px rgba(0,0,0,.2);
+        background:rgba(25,26,40,0.95);
+        backdrop-filter:blur(8px);
+        color:#fff;
+        font:500 12px/1.3 Inter,system-ui,sans-serif;
+        padding:7px 12px;
+        border-radius:8px;
+        pointer-events:none;
+        z-index:99;
+        opacity:0;
+        transition:opacity .15s,transform .15s;
+        transform:translateY(-50%) translateX(6px);
+        border:1px solid rgba(255,255,255,0.06);
+        box-shadow:0 8px 24px rgba(0,0,0,0.3);
       }
-      .ym-nav-rail .ym-nav-sep {
-        width:20px; height:1px;
-        background:rgba(199,196,215,.3);
-        margin:2px 0;
-        flex-shrink:0;
+      .ym-nav-rail .ym-nav-tooltip::after {
+        content:''; position:absolute; right:-5px; top:50%; transform:translateY(-50%);
+        border:5px solid transparent; border-left-color:rgba(25,26,40,0.95);
+      }
+      .ym-nav-rail .ym-nav-link:hover .ym-nav-tooltip {
+        opacity:1; transform:translateY(-50%) translateX(0);
       }
       .ym-nav-rail .ym-shell-logout {
-        width:44px; height:44px;
-        display:flex; align-items:center; justify-content:center;
+        width:100%; height:48px;
+        display:flex; flex-direction:column;
+        align-items:center; justify-content:center;
+        gap:3px;
         border-radius:12px;
-        color:#ba1a1a;
+        color:rgba(186,26,26,0.5);
         border:0; background:transparent;
         cursor:pointer;
         text-decoration:none;
-        transition:background .12s,transform .12s;
+        transition:all .18s;
         flex-shrink:0;
-        margin-top:auto;
+        margin-top:8px;
+        padding:6px 0;
       }
       .ym-nav-rail .ym-shell-logout:hover {
-        background:rgba(186,26,26,.08);
-        transform:scale(1.05);
+        color:#e84545;
+        background:rgba(186,26,26,0.1);
       }
-      .ym-nav-rail .ym-shell-logout .material-symbols-outlined { font-size:20px; }
+      .ym-nav-rail .ym-shell-logout .material-symbols-outlined { font-size:22px; }
+      .ym-nav-rail .ym-shell-logout .ym-nav-label { color:inherit; opacity:0.6; }
+      .ym-nav-rail .ym-shell-logout:hover .ym-nav-label { opacity:1; }
 
       .ym-standard-topbar {
         position: fixed;
@@ -493,7 +552,7 @@
     document.head.appendChild(style);
   }
 
-  /* ─── Fixed navigation rail ─── */
+  /* ─── Enterprise navigation rail ─── */
   function normalizeRightRail() {
     if (shellExcludedPaths.includes(currentPath)) {
       document.querySelectorAll('.ym-nav-rail').forEach(el => el.remove());
@@ -508,23 +567,28 @@
       if (sections[item.section]) sections[item.section].push(item);
     });
 
-    function renderSection(items) {
+    const sectionLabels = { ops: 'Operations', intel: 'Intelligence', sys: 'System' };
+
+    function renderSection(items, label) {
       if (!items.length) return '';
-      return '<div class="ym-nav-section">' + items.map(item => {
+      return `<div class="ym-nav-section"><span class="ym-nav-section-label">${label}</span>${items.map(item => {
         const active = currentPath === item.path || (item.path !== '/dashboard' && currentPath.startsWith(item.path + '/'));
         const badgeHtml = item.badge !== undefined && item.badge > 0 ? `<span class="ym-nav-badge">${item.badge > 99 ? '99+' : item.badge}</span>` : '';
-        const kbdHtml = item.kbd ? `<span class="ym-nav-kbd">⌘${item.kbd}</span>` : '';
-        return `<a href="${item.path}" class="ym-nav-link ${active ? 'is-active' : ''}" data-tooltip="${item.label}" data-kbd="${item.kbd || ''}">
-          <span class="material-symbols-outlined">${item.icon}</span>${badgeHtml}${kbdHtml}
+        return `<a href="${item.path}" class="ym-nav-link ${active ? 'is-active' : ''}">
+          <span class="ym-nav-tooltip">${item.label}${item.kbd ? ' <span style="opacity:0.5;margin-left:4px">⌘'+item.kbd+'</span>' : ''}</span>
+          <span class="material-symbols-outlined">${item.icon}</span>${badgeHtml}
+          <span class="ym-nav-label">${item.label.replace(' ','\u00a0')}</span>
         </a>`;
-      }).join('') + '</div>';
+      }).join('')}</div>`;
     }
 
     const rail = document.createElement('aside');
     rail.className = 'ym-nav-rail';
     rail.setAttribute('aria-label', 'YantraMitra app navigation');
-    rail.innerHTML = renderSection(sections.ops) + renderSection(sections.intel) + renderSection(sections.sys)
-      + `<button type="button" class="ym-shell-logout" data-tooltip="Log out"><span class="material-symbols-outlined">logout</span></button>`;
+    rail.innerHTML = renderSection(sections.ops, 'Operations')
+      + renderSection(sections.intel, 'Intelligence')
+      + renderSection(sections.sys, 'System')
+      + `<button type="button" class="ym-shell-logout"><span class="material-symbols-outlined">logout</span><span class="ym-nav-label">Log\u00a0out</span></button>`;
     rail.querySelector('.ym-shell-logout').addEventListener('click', async () => {
       const ok = window.confirm('Log out of YantraMitra?');
       if (!ok) return;

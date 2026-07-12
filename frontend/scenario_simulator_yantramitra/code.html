@@ -33,11 +33,13 @@ tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-primary-
   .ym-preset-btn:hover { border-color: rgba(65,63,214,0.3); background: rgba(65,63,214,0.06); }
   .ym-preset-btn.active { background: #413fd6; color: #fff; border-color: #413fd6; }
   #ym-three-container canvas { border-radius: 0; }
+  @keyframes kpiSlideIn { 0%{opacity:0;transform:translateY(10px) scale(.95)} 100%{opacity:1;transform:translateY(0) scale(1)} }
+  .kpi-card { opacity:0; }
 </style>
 </head>
 <body class="font-body-md text-on-surface">
 <main class="pt-16 h-screen flex overflow-hidden">
-  <section class="w-[65%] h-full relative overflow-hidden bg-[#f8f7ff]" id="ym-viewport">
+  <section class="w-[72%] h-full relative overflow-hidden bg-[#13131f]" id="ym-viewport">
     <div class="absolute inset-0 z-0 flex items-center justify-center" id="ym-scene-loading">
       <div class="flex items-center gap-2 text-on-surface-variant" style="font-size:16px"><span class="material-symbols-outlined animate-spin text-primary" style="font-size:22px">sync</span> Loading factory floor...</div>
     </div>
@@ -66,7 +68,7 @@ tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-primary-
     </div>
     <div id="ym-machine-detail" class="absolute right-3 bottom-20 w-[340px] max-h-[400px] z-20 glass-dark rounded-xl p-4 overflow-y-auto custom-scrollbar hidden"></div>
   </section>
-  <section class="w-[35%] h-full flex flex-col overflow-y-auto custom-scrollbar bg-white/40 border-l border-outline-variant/30">
+  <section class="w-[28%] h-full flex flex-col overflow-y-auto custom-scrollbar bg-white/40 border-l border-outline-variant/30">
     <div class="p-5 pb-2 flex items-center justify-between">
       <div>
         <h2 class="font-bold text-on-surface leading-tight" style="font-size:38px;font-family:Geist,sans-serif;letter-spacing:-0.02em">Scenario Simulator</h2>
