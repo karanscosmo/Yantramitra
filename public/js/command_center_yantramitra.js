@@ -31,7 +31,8 @@
     };
     host.innerHTML = plants.slice(0, 5).map(plant => {
       const tone = statusTone(plant.status);
-      const image = images[String(plant.name).toLowerCase()] || plant.image || '/images/home-bengaluru-precision.jpg';
+      const plantKey = Object.keys(images).find(key => String(plant.name).toLowerCase().includes(key));
+      const image = images[plantKey] || plant.image || '/images/home-bengaluru-precision.jpg';
       return `
         <article class="glass-panel rounded-xl overflow-hidden group hover:-translate-y-1 transition-all duration-300">
           <div class="h-32 relative">
@@ -147,6 +148,24 @@
     document.getElementById('ym-profile-menu')?.addEventListener('click', () => { window.location.href = '/settings'; });
   }
 
+  function renderDistribution(plants) {
+    const host = document.getElementById('ym-dashboard-map');
+    if (!host) return;
+    const coords = { pune: [33, 61], ahmedabad: [25, 42], chennai: [65, 78], bengaluru: [57, 76], nagpur: [47, 56] };
+    host.querySelectorAll('.ym-network-pin').forEach(node => node.remove());
+    plants.forEach(plant => {
+      const key = Object.keys(coords).find(k => plant.name.toLowerCase().includes(k));
+      if (!key) return;
+      const [left, top] = coords[key];
+      const pin = document.createElement('button');
+      pin.className = 'ym-network-pin absolute w-3 h-3 rounded-full bg-primary shadow-[0_0_12px_rgba(65,63,214,.9)]';
+      pin.style.cssText += `;left:${left}%;top:${top}%`;
+      pin.title = `${plant.name} · ${plant.oee || 'n/a'}% OEE`;
+      pin.addEventListener('click', event => { event.stopPropagation(); window.location.href = '/plant/' + plant.id; });
+      host.appendChild(pin);
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', async () => {
     const user = await checkAuth();
     if (!user) return;
@@ -157,6 +176,7 @@
         get('/api/work-orders')
       ]);
       renderFacilities(plants);
+      renderDistribution(plants);
       renderAgentActivity({ alarms: summary.recentAlarms || [], plants, workOrders });
       wireNavigation();
     } catch (error) {

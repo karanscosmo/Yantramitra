@@ -157,9 +157,9 @@
 </div>
 </div>
 <div class="flex items-center gap-md">
-<button class="material-symbols-outlined text-primary-fixed-dim hover:bg-primary/10 p-2 rounded-full transition-colors">notifications</button>
-<button class="material-symbols-outlined text-primary-fixed-dim hover:bg-primary/10 p-2 rounded-full transition-colors">factory</button>
-<img class="w-8 h-8 rounded-full border border-primary/20" data-alt="Close-up professional portrait of a tech executive with a soft indigo lighting rim, styled in a dreamy industrial aesthetic with a subtle glassmorphism background effect. High-end, clean, and minimalist photography." src="/images/ym-operator-avatar.jpg"/>
+<button id="ym-map-notifications" class="material-symbols-outlined text-primary-fixed-dim hover:bg-primary/10 p-2 rounded-full transition-colors">notifications</button>
+<button id="ym-map-facilities" class="material-symbols-outlined text-primary-fixed-dim hover:bg-primary/10 p-2 rounded-full transition-colors">factory</button>
+<button id="ym-map-profile" class="rounded-full"><img class="w-8 h-8 rounded-full border border-primary/20" data-alt="Profile" src="/images/ym-operator-avatar.jpg"/></button>
 </div>
 </header>
 <!-- SideNavBar Shell (Right Rail) -->
@@ -363,7 +363,7 @@
 <div class="absolute inset-0 pointer-events-none z-[1] bg-[radial-gradient(circle_at_top_right,rgba(91,91,240,0.05),transparent)]"></div>
 </main>
 <!-- Footer Shell -->
-<footer class="fixed bottom-0 w-full bg-transparent border-t border-outline-variant/20 z-40">
+<footer class="hidden fixed bottom-0 w-full bg-transparent border-t border-outline-variant/20 z-40">
 <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center px-md py-4">
 <p class="font-body-md text-on-surface-variant text-xs">© 2024 YantraMitra Platform. All rights reserved.</p>
 <div class="flex gap-md mt-2 md:mt-0">

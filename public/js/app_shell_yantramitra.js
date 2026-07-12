@@ -615,7 +615,7 @@
   }
 
   function addRunDemoButtons() {
-    if (currentPath === '/dashboard') {
+    if (currentPath === '/dashboard' && !document.body.hasAttribute('data-no-demo')) {
       const header = document.querySelector('main header, main');
       if (header && !document.querySelector('.ym-demo-button')) {
         const btn = document.createElement('button');

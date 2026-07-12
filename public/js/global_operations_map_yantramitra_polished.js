@@ -100,6 +100,9 @@
       renderPlantList(filtered);
     });
     document.getElementById('ym-view-analytics')?.addEventListener('click', () => { window.location.href = '/reliability'; });
+    document.getElementById('ym-map-notifications')?.addEventListener('click', () => { window.location.href = '/anomaly'; });
+    document.getElementById('ym-map-facilities')?.addEventListener('click', () => { document.getElementById('ym-map-search')?.focus(); });
+    document.getElementById('ym-map-profile')?.addEventListener('click', () => { window.location.href = '/settings'; });
     document.getElementById('ym-export-report')?.addEventListener('click', () => {
       const rows = [['Facility', 'Location', 'OEE', 'Machines', 'Status'], ...plants.map(p => [p.name, p.location, p.oee || '', p._count?.machines || 0, p.status])];
       const url = URL.createObjectURL(new Blob([rows.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\n')], { type: 'text/csv' }));

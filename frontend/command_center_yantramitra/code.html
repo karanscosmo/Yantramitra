@@ -139,7 +139,7 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #c7c4d7; border-radius: 10px; }
     </style>
 </head>
-<body class="font-body-md text-on-surface overflow-x-hidden">
+<body class="font-body-md text-on-surface overflow-x-hidden" data-no-demo>
 <!-- Top Bar Navigation Shell -->
 <header class="fixed top-0 w-full h-16 z-50 bg-white/70 backdrop-blur-md border-b border-outline-variant/30 flex justify-between items-center px-md shadow-[0_8px_32px_0_rgba(65,63,214,0.1)]">
 <div class="flex items-center gap-sm">
@@ -204,80 +204,10 @@
 </div>
 <!-- KPI Strip -->
 <section class="col-span-12 grid grid-cols-1 md:grid-cols-4 gap-md">
-<!-- OEE Card -->
-<button data-kpi-route="/reliability" class="glass-panel p-md rounded-xl flex flex-col gap-xs group hover:border-primary/40 transition-colors text-left focus:ring-2 focus:ring-primary/40">
-<div class="flex justify-between items-start">
-<span class="font-label-caps text-label-caps text-on-surface-variant">OEE (GLOBAL AVG)</span>
-<span class="material-symbols-outlined text-secondary text-sm">trending_up</span>
-</button>
-<div class="flex items-baseline gap-xs">
-<span class="font-kpi-numeric text-[32px] text-primary">84.2%</span>
-<span class="text-xs text-secondary font-medium">+1.4% vs LY</span>
-</div>
-<div class="mt-xs h-12 w-full overflow-hidden flex items-end gap-[2px]">
-<!-- Sparkline Mockup -->
-<div class="w-full h-full relative">
-<svg class="w-full h-full" viewbox="0 0 100 30">
-<path d="M0,25 L10,20 L20,22 L30,15 L40,18 L50,10 L60,12 L70,5 L80,8 L90,2 L100,6" fill="none" stroke="#413fd6" stroke-linecap="round" stroke-width="1.5"></path>
-<path d="M0,25 L10,20 L20,22 L30,15 L40,18 L50,10 L60,12 L70,5 L80,8 L90,2 L100,6 L100,30 L0,30 Z" fill="url(#grad1)" opacity="0.1"></path>
-<defs>
-<lineargradient id="grad1" x1="0%" x2="0%" y1="0%" y2="100%">
-<stop offset="0%" style="stop-color:#413fd6;stop-opacity:1"></stop>
-<stop offset="100%" style="stop-color:#413fd6;stop-opacity:0"></stop>
-</lineargradient>
-</defs>
-</svg>
-</div>
-</div>
-</div>
-<!-- Open Incidents -->
-<button data-kpi-route="/anomaly" class="glass-panel p-md rounded-xl flex flex-col gap-xs group hover:border-primary/40 transition-colors text-left focus:ring-2 focus:ring-primary/40">
-<div class="flex justify-between items-start">
-<span class="font-label-caps text-label-caps text-on-surface-variant">OPEN INCIDENTS</span>
-<span class="material-symbols-outlined text-tertiary text-sm">warning</span>
-</button>
-<div class="flex items-baseline gap-xs">
-<span class="font-kpi-numeric text-[32px] text-on-surface">12</span>
-<span class="text-xs text-on-surface-variant/60 font-medium">4 resolving</span>
-</div>
-<div class="mt-xs h-12 w-full overflow-hidden flex items-end gap-[2px]">
-<svg class="w-full h-full" viewbox="0 0 100 30">
-<path d="M0,10 L15,15 L30,12 L45,20 L60,18 L75,25 L90,22 L100,28" fill="none" stroke="#774f00" stroke-linecap="round" stroke-width="1.5"></path>
-</svg>
-</div>
-</div>
-<!-- Critical Alerts -->
-<button data-kpi-route="/anomaly" class="glass-panel p-md rounded-xl flex flex-col gap-xs group hover:border-error/40 transition-colors text-left focus:ring-2 focus:ring-primary/40">
-<div class="flex justify-between items-start">
-<span class="font-label-caps text-label-caps text-on-surface-variant">CRITICAL ALERTS</span>
-<span class="material-symbols-outlined text-error text-sm">emergency</span>
-</button>
-<div class="flex items-baseline gap-xs">
-<span class="font-kpi-numeric text-[32px] text-error">3</span>
-<span class="text-xs text-error/80 font-medium">+1 new</span>
-</div>
-<div class="mt-xs h-12 w-full overflow-hidden flex items-end gap-[2px]">
-<svg class="w-full h-full" viewbox="0 0 100 30">
-<path d="M0,5 L20,8 L40,3 L60,7 L80,2 L100,5" fill="none" stroke="#ba1a1a" stroke-linecap="round" stroke-width="1.5"></path>
-</svg>
-</div>
-</div>
-<!-- Production Uptime -->
-<button data-kpi-route="/reliability" class="glass-panel p-md rounded-xl flex flex-col gap-xs group hover:border-secondary/40 transition-colors text-left focus:ring-2 focus:ring-primary/40">
-<div class="flex justify-between items-start">
-<span class="font-label-caps text-label-caps text-on-surface-variant">UPTIME</span>
-<span class="material-symbols-outlined text-secondary text-sm">bolt</span>
-</button>
-<div class="flex items-baseline gap-xs">
-<span class="font-kpi-numeric text-[32px] text-secondary">99.8%</span>
-<span class="text-xs text-on-surface-variant/60 font-medium">L30D Average</span>
-</div>
-<div class="mt-xs h-12 w-full overflow-hidden flex items-end gap-[2px]">
-<svg class="w-full h-full" viewbox="0 0 100 30">
-<path d="M0,5 L10,5 L20,5 L30,5 L40,5 L50,5 L60,5 L70,5 L80,5 L90,5 L100,5" fill="none" stroke="#006b5f" stroke-linecap="round" stroke-width="2"></path>
-</svg>
-</div>
-</div>
+<button data-kpi-route="/reliability" class="glass-panel p-md rounded-xl flex flex-col gap-xs text-left hover:border-primary/40 transition-colors"><div class="flex justify-between"><span class="font-label-caps text-label-caps text-on-surface-variant">OEE (GLOBAL AVG)</span><span class="material-symbols-outlined text-secondary">trending_up</span></div><div class="flex items-baseline gap-xs"><span class="font-kpi-numeric text-[32px] text-primary">84.2%</span><span class="text-xs text-secondary font-medium">+1.4% vs LY</span></div><svg class="mt-xs h-10 w-full" viewBox="0 0 100 30"><path d="M0,25 L20,22 L40,15 L60,18 L80,5 L100,6" fill="none" stroke="#413fd6" stroke-width="2"/></svg></button>
+<button data-kpi-route="/anomaly" class="glass-panel p-md rounded-xl flex flex-col gap-xs text-left hover:border-tertiary/40 transition-colors"><div class="flex justify-between"><span class="font-label-caps text-label-caps text-on-surface-variant">OPEN INCIDENTS</span><span class="material-symbols-outlined text-tertiary">warning</span></div><div class="flex items-baseline gap-xs"><span class="font-kpi-numeric text-[32px]">12</span><span class="text-xs text-on-surface-variant">4 resolving</span></div><svg class="mt-xs h-10 w-full" viewBox="0 0 100 30"><path d="M0,8 L20,12 L40,10 L60,20 L80,18 L100,26" fill="none" stroke="#774f00" stroke-width="2"/></svg></button>
+<button data-kpi-route="/anomaly" class="glass-panel p-md rounded-xl flex flex-col gap-xs text-left hover:border-error/40 transition-colors"><div class="flex justify-between"><span class="font-label-caps text-label-caps text-on-surface-variant">CRITICAL ALERTS</span><span class="material-symbols-outlined text-error">emergency</span></div><div class="flex items-baseline gap-xs"><span class="font-kpi-numeric text-[32px] text-error">3</span><span class="text-xs text-error">+1 new</span></div><svg class="mt-xs h-10 w-full" viewBox="0 0 100 30"><path d="M0,9 L20,7 L40,14 L60,6 L80,10 L100,5" fill="none" stroke="#ba1a1a" stroke-width="2"/></svg></button>
+<button data-kpi-route="/reliability" class="glass-panel p-md rounded-xl flex flex-col gap-xs text-left hover:border-secondary/40 transition-colors"><div class="flex justify-between"><span class="font-label-caps text-label-caps text-on-surface-variant">UPTIME</span><span class="material-symbols-outlined text-secondary">bolt</span></div><div class="flex items-baseline gap-xs"><span class="font-kpi-numeric text-[32px] text-secondary">99.8%</span><span class="text-xs text-on-surface-variant">L30D average</span></div><svg class="mt-xs h-10 w-full" viewBox="0 0 100 30"><path d="M0,8 L100,8" fill="none" stroke="#006b5f" stroke-width="3"/></svg></button>
 </section>
 <!-- Cross-plant Comparison Grid -->
 <div class="col-span-12 lg:col-span-8">
@@ -405,7 +335,7 @@
 </aside>
 </main>
 <!-- Footer Shell -->
-<footer class="w-full py-md mt-xl border-t border-outline-variant/20 bg-transparent">
+<footer class="hidden w-full py-md mt-xl border-t border-outline-variant/20 bg-transparent">
 <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center px-md">
 <span class="font-label-caps text-label-caps text-on-surface-variant">© 2024 YANTRAMITRA PLATFORM. ALL RIGHTS RESERVED.</span>
 <div class="flex gap-md mt-sm md:mt-0">

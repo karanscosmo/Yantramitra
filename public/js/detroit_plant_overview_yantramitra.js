@@ -141,6 +141,7 @@
         const firstMachine = document.querySelector('#ym-plant-floor-3d') ? window.__ymCurrentPlant?.machines?.[0] : null;
         window.location.href = firstMachine ? `/digital-twin?machine=${encodeURIComponent(firstMachine.name)}` : '/digital-twin';
       });
+      if (btn.textContent.includes('View Audit')) btn.addEventListener('click', () => { window.location.href = '/settings'; });
     });
   });
 })();
