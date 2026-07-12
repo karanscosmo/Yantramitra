@@ -8,10 +8,10 @@
   async function checkAuth() {
     try {
       const me = await get('/api/auth/me');
-      if (!me || !me.id) window.location.href = '/login';
+      if (!me || !me.id) window.location.href = '/';
       return me;
     } catch {
-      window.location.href = '/login';
+      window.location.href = '/';
       return null;
     }
   }

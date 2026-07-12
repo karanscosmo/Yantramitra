@@ -16,7 +16,8 @@
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.2.0",
-    "openai": "^6.46.0"
+    "openai": "^6.46.0",
+    "pdf-parse": "^2.4.5"
   },
   "devDependencies": {
     "prisma": "^5.22.0"

@@ -202,8 +202,8 @@
   }
 
   async function checkAuth() {
-    try { const me = await get('/api/auth/me'); if (!me || !me.id) window.location.href = '/login'; return me; }
-    catch { window.location.href = '/login'; return null; }
+    try { const me = await get('/api/auth/me'); if (!me || !me.id) window.location.href = '/'; return me; }
+    catch { window.location.href = '/'; return null; }
   }
 
   document.addEventListener('DOMContentLoaded', async () => {

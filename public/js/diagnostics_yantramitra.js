@@ -2,8 +2,8 @@
   async function api(path) { const r = await fetch(path); if (!r.ok) { const e = await r.json().catch(() => ({ error: r.statusText })); throw new Error(e.error || 'Request failed'); } return r.json(); }
 
   async function checkAuth() {
-    try { const me = await api('/api/auth/me'); if (!me || !me.id) window.location.href = '/login'; return me; }
-    catch { window.location.href = '/login'; return null; }
+    try { const me = await api('/api/auth/me'); if (!me || !me.id) window.location.href = '/'; return me; }
+    catch { window.location.href = '/'; return null; }
   }
 
   function getAssetId() {

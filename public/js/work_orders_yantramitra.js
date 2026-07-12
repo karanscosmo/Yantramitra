@@ -657,9 +657,9 @@
   document.addEventListener('DOMContentLoaded', async () => {
     try {
       const me = await get('/api/auth/me');
-      if (!me || !me.id) { window.location.href = '/login'; return; }
+      if (!me || !me.id) { window.location.href = '/'; return; }
       currentUser = me;
-    } catch { window.location.href = '/login'; return; }
+    } catch { window.location.href = '/'; return; }
 
     try {
       const machinesData = await get('/api/machines');

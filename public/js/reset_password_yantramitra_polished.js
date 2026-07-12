@@ -37,7 +37,7 @@
         errorEl.className = 'text-secondary text-sm mt-2';
         errorEl.textContent = 'Password reset successful! Redirecting to login...';
         errorEl.classList.remove('hidden');
-        setTimeout(() => window.location.href = '/login', 2000);
+        setTimeout(() => window.location.href = '/', 2000);
       } else {
         errorEl.textContent = data.error || 'Reset failed';
         errorEl.classList.remove('hidden');

@@ -341,6 +341,8 @@
     function animate() {
       const frame = requestAnimationFrame(animate);
       renderPlantFloor._frames.set(host, frame);
+      const sceneData = renderPlantFloor._scenes.get(host);
+      if (sceneData) sceneData._tickFly();
       const radius = (options.radius || 34) * zoom;
       camera.position.x = Math.sin(angle) * radius;
       camera.position.z = Math.cos(angle) * radius;
@@ -360,11 +362,36 @@
     resize();
     animate();
 
-    return {
-      renderer,
-      scene,
-      camera,
-      group,
+    const defaultRadius = options.radius || 34;
+    const defaultCamY = options.cameraY ?? 24;
+    let targetZoom = 1, flyTarget = null, flyProgress = 0;
+
+    const sceneObj = {
+      renderer, scene, camera, group,
+      flyTo(x, z) {
+        const targetAngle = Math.atan2(x, z);
+        targetZoom = 0.65;
+        flyTarget = { x, z, startAngle: angle, targetAngle, startZoom: zoom };
+        flyProgress = 0;
+      },
+      resetCamera() {
+        targetZoom = 1;
+        flyTarget = { x: 0, z: 0, startAngle: angle, targetAngle: 0.72, startZoom: zoom };
+        flyProgress = 0;
+      },
+      _tickFly() {
+        if (!flyTarget) return;
+        flyProgress += 0.035;
+        if (flyProgress >= 1) {
+          angle = flyTarget.targetAngle;
+          zoom = targetZoom;
+          flyTarget = null;
+          return;
+        }
+        const t = 1 - Math.pow(1 - flyProgress, 3);
+        angle = flyTarget.startAngle + (flyTarget.targetAngle - flyTarget.startAngle) * t;
+        zoom = flyTarget.startZoom + (targetZoom - flyTarget.startZoom) * t;
+      },
       destroy() {
         const frame = renderPlantFloor._frames.get(host);
         if (frame) cancelAnimationFrame(frame);
@@ -373,8 +400,11 @@
         host.innerHTML = '';
       }
     };
+    renderPlantFloor._scenes.set(host, sceneObj);
+    return sceneObj;
   }
 
   renderPlantFloor._frames = new WeakMap();
+  renderPlantFloor._scenes = new WeakMap();
   window.YMFactory3D = { renderPlantFloor, buildMachine };
 })();

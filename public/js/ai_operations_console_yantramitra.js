@@ -157,14 +157,27 @@
         const formData = new FormData();
         for (const f of fileAttachments) formData.append('files', f.file);
         formData.append('message', message);
+        const fileNames = fileAttachments.map(f => f.file.name).join(', ');
+        addMessage('', false, { id: 'ai_' + Date.now(), model: 'parsing', streaming: false });
+        const lastMsg = document.querySelector('[data-msgid="ai_' + Date.now() + '"]');
+        if (lastMsg) {
+          const textDiv = lastMsg.querySelector('.ai-response') || lastMsg.querySelector('[style*="font-size"]');
+          if (textDiv) textDiv.innerHTML = '<div class="flex items-center gap-2.5 text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-primary" style="font-size:20px">sync</span><span style="font-size:14px">Parsing ' + fileNames + '...</span></div>';
+        }
         setLoading(true);
         const resp = await fetch(API_UPLOAD, { method: 'POST', credentials: 'same-origin', body: formData, signal: abortController.signal });
         setLoading(false);
         fileAttachments = [];
         document.getElementById('ym-file-preview').innerHTML = '';
         document.getElementById('ym-file-preview').classList.add('hidden');
-        if (!resp.ok) { const err = await resp.json().catch(() => ({ error: 'Upload failed' })); addMessage(err.error || 'Upload failed. Please try again.', false, { model: 'error' }); return; }
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({ error: 'Upload failed' }));
+          if (lastMsg) lastMsg.remove();
+          addMessage(err.error || 'Upload failed. Please try again.', false, { model: 'error' });
+          return;
+        }
         const data = await resp.json();
+        if (lastMsg) lastMsg.remove();
         if (data.reply) { addMessage(data.reply, false, { model: data.model || 'llama-3.3-70b-versatile' }); chatHistory.push({ role: 'assistant', content: data.reply }); saveHistory(); }
         return;
       }
@@ -437,8 +450,8 @@
   }
 
   async function checkAuth() {
-    try { const r = await fetch('/api/auth/me', { credentials: 'same-origin' }); if (!r.ok) { window.location.href = '/login'; return null; } const me = await r.json(); if (!me || !me.id) { window.location.href = '/login'; return null; } return me; }
-    catch { window.location.href = '/login'; return null; }
+    try { const r = await fetch('/api/auth/me', { credentials: 'same-origin' }); if (!r.ok) { window.location.href = '/'; return null; } const me = await r.json(); if (!me || !me.id) { window.location.href = '/'; return null; } return me; }
+    catch { window.location.href = '/'; return null; }
   }
 
   document.addEventListener('DOMContentLoaded', async () => {

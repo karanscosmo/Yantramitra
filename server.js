@@ -775,8 +775,53 @@ app.patch('/api/plans/:id', authApi, requireRole('admin'), async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+const SEED_WORK_ORDERS = [
+  { title: 'Bearing Replacement', description: 'Replace worn main bearing on CNC spindle. Vibration analysis indicates imminent failure.', priority: 'critical', status: 'in_progress', assignedTo: 'Rahul Sharma', dueDate: new Date(Date.now() + 864e5).toISOString().split('T')[0] },
+  { title: 'Cooling Pump Inspection', description: 'Inspect and service coolant pump #3. Flow rate dropped 18% below baseline.', priority: 'high', status: 'in_progress', assignedTo: 'Anita Desai', dueDate: new Date(Date.now() + 2*864e5).toISOString().split('T')[0] },
+  { title: 'Hydraulic Leak Investigation', description: 'Hydraulic fluid leak detected near press station. Trace source and repair.', priority: 'high', status: 'open', assignedTo: 'Vikram Patel', dueDate: new Date(Date.now() + 864e5).toISOString().split('T')[0] },
+  { title: 'Robot Arm Calibration', description: 'End-effector positioning drift exceeds tolerance. Perform full 6-axis recalibration.', priority: 'medium', status: 'open', assignedTo: 'Sofia Khan', dueDate: new Date(Date.now() + 3*864e5).toISOString().split('T')[0] },
+  { title: 'Conveyor Belt Alignment', description: 'Belt tracking off by 12mm. Realign rollers and tensioner assembly.', priority: 'medium', status: 'open', assignedTo: 'Arun Nair', dueDate: new Date(Date.now() + 4*864e5).toISOString().split('T')[0] },
+  { title: 'Vibration Analysis', description: 'Scheduled vibration signature collection on all rotating equipment in Line A.', priority: 'low', status: 'completed', assignedTo: 'Rahul Sharma', dueDate: new Date(Date.now() - 864e5).toISOString().split('T')[0] },
+  { title: 'PLC Restart', description: 'PLC-04 in packaging section unresponsive. Perform controlled power cycle and verify program integrity.', priority: 'critical', status: 'in_progress', assignedTo: 'Meera Joshi', dueDate: new Date(Date.now()).toISOString().split('T')[0] },
+  { title: 'Emergency Shutdown Validation', description: 'Test E-stop circuit on all production lines after last week\'s false trip incident.', priority: 'high', status: 'open', assignedTo: 'Vikram Patel', dueDate: new Date(Date.now() + 864e5).toISOString().split('T')[0] },
+  { title: 'Lubrication System Refill', description: 'Central lubrication reservoir below 15%. Refill and check distribution lines.', priority: 'medium', status: 'waiting_parts', assignedTo: 'Dinesh Kumar', dueDate: new Date(Date.now() - 864e5).toISOString().split('T')[0] },
+  { title: 'Sensor Calibration', description: 'Annual calibration of all temperature and pressure sensors in furnace zone.', priority: 'medium', status: 'open', assignedTo: 'Anita Desai', dueDate: new Date(Date.now() + 5*864e5).toISOString().split('T')[0] },
+  { title: 'AGV Path Reconfiguration', description: 'Update AGV magnetic tape path around new storage rack installation in warehouse.', priority: 'low', status: 'open', assignedTo: 'Sofia Khan', dueDate: new Date(Date.now() + 7*864e5).toISOString().split('T')[0] },
+  { title: 'Compressor Overhaul', description: 'Scheduled 5000-hour overhaul of main air compressor. Replace seals, filters, and oil.', priority: 'high', status: 'waiting_parts', assignedTo: 'Arun Nair', dueDate: new Date(Date.now() + 864e5).toISOString().split('T')[0] },
+  { title: 'HMI Screen Replacement', description: 'Touchscreen on Line B HMI has dead zones. Replace with spare unit.', priority: 'medium', status: 'open', assignedTo: 'Meera Joshi', dueDate: new Date(Date.now() + 6*864e5).toISOString().split('T')[0] },
+  { title: 'Welding Robot Torch Cleaning', description: 'Wire feed inconsistency on welding robot #2. Clean torch nozzle and check feed mechanism.', priority: 'low', status: 'completed', assignedTo: 'Dinesh Kumar', dueDate: new Date(Date.now() - 2*864e5).toISOString().split('T')[0] },
+  { title: 'Boiler Tube Inspection', description: 'Ultrasonic thickness testing on boiler tubes in steam generation unit.', priority: 'high', status: 'open', assignedTo: 'Rahul Sharma', dueDate: new Date(Date.now() + 3*864e5).toISOString().split('T')[0] },
+  { title: 'Network Switch Replacement', description: 'Industrial switch SC-08 has intermittent link drops. Replace with managed PoE switch.', priority: 'critical', status: 'in_progress', assignedTo: 'Vikram Patel', dueDate: new Date(Date.now()).toISOString().split('T')[0] },
+  { title: 'Packaging Line Sanitization', description: 'Weekly CIP sanitation cycle for food-grade packaging line.', priority: 'medium', status: 'open', assignedTo: 'Anita Desai', dueDate: new Date(Date.now() + 864e5).toISOString().split('T')[0] },
+  { title: 'Motor Coupling Replacement', description: 'Coupling on conveyor motor M-07 shows wear marks. Replace before failure.', priority: 'high', status: 'open', assignedTo: 'Arun Nair', dueDate: new Date(Date.now() + 2*864e5).toISOString().split('T')[0] },
+  { title: 'Quality Inspection Protocol Update', description: 'Update QA inspection points for new product variant on Assembly Line 3.', priority: 'low', status: 'open', assignedTo: 'Sofia Khan', dueDate: new Date(Date.now() + 10*864e5).toISOString().split('T')[0] },
+  { title: 'Chiller Unit Service', description: 'Process chiller temperature stability degraded. Service compressor and check refrigerant level.', priority: 'high', status: 'waiting_parts', assignedTo: 'Meera Joshi', dueDate: new Date(Date.now() + 864e5).toISOString().split('T')[0] },
+  { title: 'CCTV Camera Maintenance', description: 'Clean and realign PTZ cameras on production floor. Replace faulty camera at zone 4.', priority: 'low', status: 'open', assignedTo: 'Dinesh Kumar', dueDate: new Date(Date.now() + 8*864e5).toISOString().split('T')[0] },
+  { title: 'Silo Level Sensor Replacement', description: 'Raw material silo level sensor giving erratic readings. Replace ultrasonic sensor.', priority: 'medium', status: 'open', assignedTo: 'Rahul Sharma', dueDate: new Date(Date.now() + 4*864e5).toISOString().split('T')[0] },
+  { title: 'Press Tool Die Change', description: 'Scheduled die change for stamping press. New part number P-4421 required from tomorrow\'s shift.', priority: 'high', status: 'open', assignedTo: 'Vikram Patel', dueDate: new Date(Date.now() + 864e5).toISOString().split('T')[0] },
+  { title: 'Fire Suppression System Test', description: 'Quarterly discharge test of FM-200 system in server room and electrical panel areas.', priority: 'high', status: 'open', assignedTo: 'Arun Nair', dueDate: new Date(Date.now() + 14*864e5).toISOString().split('T')[0] },
+  { title: 'Dust Extraction Filter Change', description: 'HEPA filters in dust extraction unit at capacity. Replace all 6 filter cartridges.', priority: 'medium', status: 'waiting_parts', assignedTo: 'Anita Desai', dueDate: new Date(Date.now() - 864e5).toISOString().split('T')[0] },
+];
+
 app.get('/api/work-orders', authApi, async (req, res) => {
   try {
+    const existing = await prisma.workOrder.count();
+    if (existing < 5) {
+      const machines = await prisma.machine.findMany({ take: 20 });
+      const seedData = SEED_WORK_ORDERS.map((wo, i) => ({
+        ...wo,
+        machineId: machines[i % machines.length]?.id || null,
+        createdBy: req.user.id,
+        createdAt: new Date(Date.now() - (SEED_WORK_ORDERS.length - i) * 864e5),
+        updatedAt: new Date(Date.now() - (SEED_WORK_ORDERS.length - i) * 432e5),
+      }));
+      const statuses = ['open', 'in_progress', 'completed', 'waiting_parts'];
+      const seedWithStatus = seedData.map((s, i) => ({
+        ...s,
+        status: s.status || statuses[i % statuses.length],
+      }));
+      await prisma.workOrder.createMany({ data: seedWithStatus });
+    }
     const orders = await prisma.workOrder.findMany({
       include: { machine: { select: { name: true } } },
       orderBy: { createdAt: 'desc' }
@@ -800,7 +845,7 @@ app.post('/api/work-orders', authApi, async (req, res) => {
 app.patch('/api/work-orders/:id', authApi, async (req, res) => {
   try {
     const data = pickAllowed(req.body, ['title', 'description', 'status', 'priority', 'assignedTo', 'dueDate']);
-    const statusError = validateEnum(data.status, ['open', 'in_progress', 'completed', 'blocked'], 'status');
+    const statusError = validateEnum(data.status, ['open', 'in_progress', 'completed', 'blocked', 'waiting_parts', 'approved', 'rejected', 'cancelled'], 'status');
     if (statusError) return res.status(400).json({ error: statusError });
     const priorityError = validateEnum(data.priority, ['low', 'medium', 'high', 'critical'], 'priority');
     if (priorityError) return res.status(400).json({ error: priorityError });
@@ -1319,9 +1364,27 @@ app.post('/api/ai-upload', authApi, upload.array('files', 5), async (req, res) =
     const fileTexts = [];
     for (const file of files) {
       try {
-        const content = fs.readFileSync(file.path, 'utf8');
-        fileTexts.push(`--- ${file.originalname} ---\n${content.slice(0, 3000)}`);
-      } catch { fileTexts.push(`--- ${file.originalname} ---\n(Binary or unreadable file - ${file.mimetype})`); }
+        const isText = file.mimetype && (
+          file.mimetype.startsWith('text/') ||
+          file.mimetype === 'application/json' ||
+          file.mimetype === 'application/csv' ||
+          file.mimetype === 'application/xml'
+        );
+        const ext = file.originalname.toLowerCase().split('.').pop();
+        const textExts = ['txt', 'csv', 'json', 'md', 'xml', 'html', 'log', 'yaml', 'yml', 'ini', 'cfg', 'env'];
+        if (file.mimetype === 'application/pdf' || ext === 'pdf') {
+          const pdfParse = require('pdf-parse');
+          const buf = fs.readFileSync(file.path);
+          const pdfData = await pdfParse(buf);
+          const text = (pdfData.text || '').slice(0, 5000);
+          fileTexts.push(`--- ${file.originalname} ---\n${text || '(No extractable text in PDF)'}`);
+        } else if (isText || textExts.includes(ext)) {
+          const content = fs.readFileSync(file.path, 'utf8');
+          fileTexts.push(`--- ${file.originalname} ---\n${content.slice(0, 5000)}`);
+        } else {
+          fileTexts.push(`--- ${file.originalname} ---\n(${file.mimetype || 'binary'} file - ${['png','jpg','jpeg','gif','webp','bmp','svg','tiff'].includes(ext) ? 'Image file uploaded. Describe what you see or ask about it.' : 'Binary content. I can process metadata but not the raw content.'})`);
+        }
+      } catch (e) { fileTexts.push(`--- ${file.originalname} ---\n(Unable to parse - ${e.message || file.mimetype})`); }
       try { fs.unlinkSync(file.path); } catch {}
     }
 
@@ -1337,13 +1400,14 @@ app.post('/api/ai-upload', authApi, upload.array('files', 5), async (req, res) =
     ]);
 
     const fileContext = fileTexts.join('\n\n');
-    const systemPrompt = `You are YantraNklan, YantraMitra's industrial AI copilot. The user has uploaded files with the following content:\n\n${fileContext}\n\n## Operational Context\nPlants: ${plants.map(p => p.name).join(', ')}\nMachines: ${machines.map(m => `${m.name} (${m.plant?.name})`).join(', ')}\nActive Alarms: ${alarms.length}\n\nAnalyze the uploaded files in context of plant operations. Use markdown formatting. Be specific and actionable.${message ? `\n\n## User Message\n${message}` : ''}`;
+    const fileSources = files.map(f => ({ name: f.originalname, type: f.mimetype || 'unknown', size: f.size }));
+    const systemPrompt = `You are YantraNklan, YantraMitra's industrial AI copilot. The user has uploaded files with the following content:\n\n${fileContext}\n\n## Operational Context\nPlants: ${plants.map(p => p.name).join(', ')}\nMachines: ${machines.map(m => `${m.name} (${m.plant?.name})`).join(', ')}\nActive Alarms: ${alarms.length}\n\nAnalyze the uploaded files in context of plant operations. When you quote or reference specific content, cite the source filename in brackets like [filename.pdf]. Use markdown formatting. Be specific and actionable.${message ? `\n\n## User Message\n${message}` : ''}`;
 
     const OpenAI = require('openai');
     const groq = new OpenAI({ apiKey, baseURL: GROQ_BASE_URL });
-    const completion = await groq.chat.completions.create({ model: GROQ_MODEL, messages: [{ role: 'system', content: systemPrompt }], max_tokens: 700, temperature: 0.7 });
+    const completion = await groq.chat.completions.create({ model: GROQ_MODEL, messages: [{ role: 'system', content: systemPrompt }], max_tokens: 800, temperature: 0.7 });
     const reply = completion.choices[0]?.message?.content || 'Files processed. What would you like to know?';
-    res.json({ reply, model: GROQ_MODEL });
+    res.json({ reply, model: GROQ_MODEL, sources: fileSources });
   } catch (e) {
     console.error('Upload error:', e.message);
     res.status(500).json({ error: 'Upload failed', message: e.message });

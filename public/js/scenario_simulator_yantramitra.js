@@ -192,9 +192,15 @@
     document.getElementById('ym-sim-status').textContent = 'RUNNING';
     document.getElementById('ym-sim-run').disabled = true;
 
+    const predEl = document.getElementById('ym-prediction-text');
+    predEl.innerHTML = '<div class="space-y-2"><div class="flex items-center gap-2 text-white/80" style="font-size:13px"><span class="material-symbols-outlined animate-spin" style="font-size:18px">sync</span> Simulation running...</div><div style="height:6px;background:rgba(255,255,255,0.2);border-radius:3px;overflow:hidden"><div id="ym-sim-progress" style="height:100%;width:0%;background:white;border-radius:3px;transition:width 0.5s"></div></div><p class="text-white/60" style="font-size:11px" id="ym-sim-estimate">Estimating completion...</p></div>';
+
+    const maxIter = 12;
     simTimer = setInterval(() => {
       simIteration++;
       document.getElementById('ym-iteration').textContent = '#' + simIteration;
+      document.getElementById('ym-sim-progress').style.width = Math.min(100, (simIteration / maxIter) * 100) + '%';
+      document.getElementById('ym-sim-estimate').textContent = `Iteration ${simIteration}/${maxIter} · ${Math.round((simIteration/maxIter)*100)}% complete`;
       const vals = getSliderValues();
       const kpis = computeKPIs(vals);
       renderKPIs(kpis);
@@ -202,7 +208,16 @@
       updateSceneEffects(vals);
       if (simIteration % 3 === 0) generatePrediction(vals, kpis);
       if (baselineKPIs) renderCompareButton();
-    }, 1200);
+      if (simIteration >= maxIter) {
+        clearInterval(simTimer);
+        simTimer = null;
+        simRunning = false;
+        document.getElementById('ym-sim-indicator').style.background = '#5efae4';
+        document.getElementById('ym-sim-status').textContent = 'COMPLETE';
+        document.getElementById('ym-sim-run').disabled = false;
+        generatePrediction(getSliderValues(), computeKPIs(getSliderValues()));
+      }
+    }, 800);
   }
 
   function pauseSimulation() {
@@ -301,7 +316,20 @@
     if (kpis.profit < 1000) insights.push('Profit margin is tight at ' + formatProfit(kpis.profit) + '. Focus on reducing maintenance cost and energy usage.');
 
     const confidence = Math.min(92, 65 + Math.round(kpis.oee * 0.2 + (100 - kpis.failureRate) * 0.1));
-    el.innerHTML = '<ul class="text-white/85 ml-4 list-disc" style="font-size:14px;line-height:1.7;margin-bottom:8px">' + insights.slice(0, 3).map(i => '<li style="margin-bottom:4px">' + i + '</li>').join('') + '</ul><p class="text-white/60 font-bold" style="font-size:12px">Confidence: ' + confidence + '% · Iteration #' + simIteration + '</p>';
+    const outputChange = ((kpis.throughput / (kpiHistory[0]?.throughput || kpis.throughput)) - 1) * 100;
+    const energyChange = ((kpis.energy / (kpiHistory[0]?.energy || kpis.energy)) - 1) * 100;
+    const downtimeChange = ((kpis.downtime / (kpiHistory[0]?.downtime || kpis.downtime)) - 1) * 100;
+    if (simIteration > 5) {
+      el.innerHTML = '<div class="space-y-2"><div class="grid grid-cols-2 gap-1.5 mb-2">' +
+        '<div class="bg-white/10 rounded-lg p-2 text-center"><p class="text-white/60 text-[9px] font-bold">OUTPUT</p><p class="text-white font-bold" style="font-size:16px">' + (outputChange >= 0 ? '↑' : '↓') + Math.abs(Math.round(outputChange)) + '%</p></div>' +
+        '<div class="bg-white/10 rounded-lg p-2 text-center"><p class="text-white/60 text-[9px] font-bold">ENERGY</p><p class="text-white font-bold" style="font-size:16px">' + (energyChange <= 0 ? '↓' : '↑') + Math.abs(Math.round(energyChange)) + '%</p></div>' +
+        '<div class="bg-white/10 rounded-lg p-2 text-center"><p class="text-white/60 text-[9px] font-bold">DOWNTIME</p><p class="text-white font-bold" style="font-size:16px">' + (downtimeChange <= 0 ? '↓' : '↑') + Math.abs(Math.round(downtimeChange)) + '%</p></div>' +
+        '<div class="bg-white/10 rounded-lg p-2 text-center"><p class="text-white/60 text-[9px] font-bold">CONFIDENCE</p><p class="text-white font-bold" style="font-size:16px">' + confidence + '%</p></div></div>' +
+        '<ul class="text-white/85 ml-3 list-disc" style="font-size:13px;line-height:1.6">' + insights.slice(0, 2).map(i => '<li style="margin-bottom:2px">' + i + '</li>').join('') + '</ul>' +
+        '<p class="text-white/50 font-bold text-center" style="font-size:10px;margin-top:4px">Iteration #' + simIteration + '</p></div>';
+    } else {
+      el.innerHTML = '<ul class="text-white/85 ml-4 list-disc" style="font-size:14px;line-height:1.7;margin-bottom:8px">' + insights.slice(0, 3).map(i => '<li style="margin-bottom:4px">' + i + '</li>').join('') + '</ul><p class="text-white/60 font-bold" style="font-size:12px">Confidence: ' + confidence + '% · Iteration #' + simIteration + '</p>';
+    }
   }
 
   function setupSliders() {
@@ -333,8 +361,8 @@
   }
 
   async function checkAuth() {
-    try { const r = await fetch('/api/auth/me', { credentials: 'same-origin' }); if (!r.ok) { window.location.href = '/login'; return null; } const me = await r.json(); if (!me || !me.id) { window.location.href = '/login'; return null; } return me; }
-    catch { window.location.href = '/login'; return null; }
+    try { const r = await fetch('/api/auth/me', { credentials: 'same-origin' }); if (!r.ok) { window.location.href = '/'; return null; } const me = await r.json(); if (!me || !me.id) { window.location.href = '/'; return null; } return me; }
+    catch { window.location.href = '/'; return null; }
   }
 
   document.addEventListener('DOMContentLoaded', async () => {

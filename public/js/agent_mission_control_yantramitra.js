@@ -373,8 +373,8 @@
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
-    try { const me = await get('/api/auth/me'); if (!me || !me.id) { window.location.href = '/login'; return; } }
-    catch { window.location.href = '/login'; return; }
+    try { const me = await get('/api/auth/me'); if (!me || !me.id) { window.location.href = '/'; return; } }
+    catch { window.location.href = '/'; return; }
     document.getElementById('ym-drawer-close')?.addEventListener('click', closeDrawer);
     document.getElementById('ym-drawer-backdrop')?.addEventListener('click', closeDrawer);
     document.getElementById('ym-new-mission-btn')?.addEventListener('click', () => openMissionModal(null));

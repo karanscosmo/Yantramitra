@@ -411,7 +411,7 @@
       const ok = window.confirm('Log out of YantraMitra?');
       if (!ok) return;
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
-      window.location.href = '/login';
+      window.location.href = '/';
     });
 
     document.body.appendChild(rail);

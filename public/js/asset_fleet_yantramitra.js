@@ -315,12 +315,12 @@
   document.addEventListener('DOMContentLoaded', async () => {
     try {
       const me = await get('/api/auth/me');
-      if (!me?.id) return window.location.href = '/login';
+      if (!me?.id) return window.location.href = '/';
       machines = await get('/api/machines');
       wireStaticControls();
       render();
     } catch {
-      window.location.href = '/login';
+      window.location.href = '/';
     }
   });
 })();
