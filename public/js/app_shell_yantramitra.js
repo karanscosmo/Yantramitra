@@ -18,6 +18,8 @@
   const currentPath = window.location.pathname;
   const authPaths = ['/login', '/signup', '/reset-password'];
   const shellExcludedPaths = ['/', ...authPaths];
+  const demoStorageKeys = ['ymDemoActive', 'ymDemoIndex', 'ymDemoPaused', 'ymDemoStartedAt'];
+  const demoTtlMs = 8 * 60 * 1000;
   const demoSteps = [
     { route: '/dashboard', target: 'h1, .font-headline-lg', caption: 'Global command center: live KPIs, open incidents, and agent activity across Indian facilities.' },
     { route: '/map', target: 'h1, .font-headline-lg', caption: 'Map view: all five facilities are pinned at real Indian city coordinates.' },
@@ -589,19 +591,28 @@
   function startDemo() {
     localStorage.setItem('ymDemoActive', '1');
     localStorage.setItem('ymDemoIndex', '0');
+    localStorage.setItem('ymDemoStartedAt', String(Date.now()));
     localStorage.removeItem('ymDemoPaused');
     window.location.href = demoSteps[0].route;
   }
 
   function stopDemo() {
-    localStorage.removeItem('ymDemoActive');
-    localStorage.removeItem('ymDemoIndex');
-    localStorage.removeItem('ymDemoPaused');
+    demoStorageKeys.forEach(key => localStorage.removeItem(key));
     document.querySelector('.ym-demo-overlay')?.remove();
+  }
+
+  function isPublicEntryPath(pathname) {
+    return shellExcludedPaths.includes(pathname) || pathname === '/onboarding';
+  }
+
+  function isDemoSessionFresh() {
+    const startedAt = Number(localStorage.getItem('ymDemoStartedAt') || '0');
+    return Number.isFinite(startedAt) && startedAt > 0 && Date.now() - startedAt < demoTtlMs;
   }
 
   function advanceDemo(index) {
     if (localStorage.getItem('ymDemoActive') !== '1') return;
+    if (!isDemoSessionFresh()) return stopDemo();
     if (localStorage.getItem('ymDemoPaused') === '1') return;
     localStorage.setItem('ymDemoIndex', String(index + 1));
     if (demoSteps[index + 1]) window.location.href = demoSteps[index + 1].route;
@@ -609,8 +620,14 @@
   }
 
   function runDemoIfActive() {
+    if (isPublicEntryPath(currentPath)) {
+      if (localStorage.getItem('ymDemoActive') === '1') stopDemo();
+      return;
+    }
     if (localStorage.getItem('ymDemoActive') !== '1') return;
+    if (!isDemoSessionFresh()) return stopDemo();
     const index = Number(localStorage.getItem('ymDemoIndex') || '0');
+    if (!Number.isInteger(index) || index < 0) return stopDemo();
     const step = demoSteps[index];
     if (!step) return stopDemo();
     if (currentPath !== step.route) {
