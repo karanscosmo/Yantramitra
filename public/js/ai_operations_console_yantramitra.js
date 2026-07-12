@@ -166,9 +166,23 @@
         const lastMsg = document.querySelector('[data-msgid="ai_' + Date.now() + '"]');
         if (lastMsg) {
           const textDiv = lastMsg.querySelector('.ai-response') || lastMsg.querySelector('[style*="font-size"]');
-          if (textDiv) textDiv.innerHTML = '<div class="flex items-center gap-2.5 text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-primary" style="font-size:20px">sync</span><span style="font-size:14px">Parsing ' + fileNames + '...</span></div>';
+          if (textDiv) {
+            textDiv.innerHTML = [
+              '<div class="space-y-2 py-2">',
+              '<div class="flex items-center gap-2.5 text-on-surface-variant"><span class="material-symbols-outlined text-primary" style="font-size:18px">upload_file</span><span style="font-size:13px;font-weight:600">Uploading ' + fileNames + '...</span></div>',
+              '<div class="w-full h-1.5 rounded-full bg-surface-container-high overflow-hidden"><div class="h-full rounded-full bg-primary transition-all" id="ym-upload-progress" style="width:25%"></div></div>',
+              '<div class="flex items-center gap-2.5 text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-primary" style="font-size:18px">sync</span><span style="font-size:12px" id="ym-upload-status">Parsing content...</span></div>',
+              '</div>'
+            ].join('');
+          }
         }
         setLoading(true);
+
+        /* Update progress stages */
+        setTimeout(() => { const p = document.getElementById('ym-upload-progress'); if(p) p.style.width = '50%'; }, 300);
+        setTimeout(() => { const s = document.getElementById('ym-upload-status'); if(s) s.textContent = 'Indexing documents...'; const p = document.getElementById('ym-upload-progress'); if(p) p.style.width = '75%'; }, 600);
+        setTimeout(() => { const s = document.getElementById('ym-upload-status'); if(s) s.textContent = 'Analyzing with AI...'; const p = document.getElementById('ym-upload-progress'); if(p) p.style.width = '90%'; }, 1000);
+
         const resp = await fetch(API_UPLOAD, { method: 'POST', credentials: 'same-origin', body: formData, signal: abortController.signal });
         setLoading(false);
         fileAttachments = [];

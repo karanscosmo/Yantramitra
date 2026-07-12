@@ -313,13 +313,77 @@
         controls.querySelector('[data-zoom="out"]').addEventListener('click', () => { scale = Math.max(scale / 1.2, 0.3); applyTransform(); });
         controls.querySelector('[data-zoom="reset"]').addEventListener('click', () => { scale = 1; tx = 0; ty = 0; applyTransform(); });
 
-        /* Node selection highlight */
+        /* Draggable nodes */
+        let dragNode = null, dragOffX = 0, dragOffY = 0;
         graphArea.querySelectorAll('.group').forEach(node => {
-          node.addEventListener('click', function(e) {
+          node.style.cursor = 'grab';
+          node.addEventListener('mousedown', function(e) {
+            e.stopPropagation();
+            dragNode = this;
+            const parent = this.parentElement || graphArea;
+            const px = parseInt(this.style.left) || 0;
+            const py = parseInt(this.style.top) || 0;
+            /* Reset panning if we're dragging a node */
+            isPanning = false;
+            /* Calculate click offset relative to node */
+            const rect = this.getBoundingClientRect();
+            dragOffX = e.clientX - rect.left;
+            dragOffY = e.clientY - rect.top;
+            this.style.cursor = 'grabbing';
+            this.style.transition = 'none';
+            this.style.zIndex = '20';
+            /* Bring node to front with slight scale */
+            this.style.transform = 'scale(1.08)';
+            /* Select on drag start */
             graphArea.querySelectorAll('.group').forEach(n => n.style.outline = 'none');
             this.style.outline = '2px solid #413fd6';
             this.style.outlineOffset = '3px';
             this.style.borderRadius = '9999px';
+          });
+        });
+        document.addEventListener('mousemove', function(e) {
+          if (!dragNode) return;
+          const parent = dragNode.parentElement || graphArea;
+          const parentRect = parent.getBoundingClientRect();
+          const x = (e.clientX - parentRect.left - dragOffX) / scale;
+          const y = (e.clientY - parentRect.top - dragOffY) / scale;
+          dragNode.style.left = Math.max(0, Math.min(parentRect.width / scale - 40, x)) + 'px';
+          dragNode.style.top = Math.max(0, Math.min(parentRect.height / scale - 40, y)) + 'px';
+        });
+        document.addEventListener('mouseup', function() {
+          if (dragNode) {
+            dragNode.style.cursor = 'grab';
+            dragNode.style.transition = '';
+            dragNode.style.zIndex = '';
+            dragNode.style.transform = '';
+            dragNode = null;
+          }
+        });
+
+        /* Node selection highlight */
+        graphArea.querySelectorAll('.group').forEach(node => {
+          node.addEventListener('click', function(e) {
+            if (dragNode) return;
+            graphArea.querySelectorAll('.group').forEach(n => n.style.outline = 'none');
+            this.style.outline = '2px solid #413fd6';
+            this.style.outlineOffset = '3px';
+            this.style.borderRadius = '9999px';
+          });
+        });
+
+        /* Animated edge glow on hover */
+        graphArea.querySelectorAll('.node-line').forEach((line, i) => {
+          line.style.transition = 'stroke-opacity .3s, stroke-width .3s';
+          const origOpacity = line.style.strokeOpacity || 0.3;
+          line.addEventListener('mouseenter', function() {
+            this.style.strokeOpacity = '0.9';
+            this.style.strokeWidth = '3';
+            this.style.filter = 'drop-shadow(0 0 6px rgba(65,63,214,0.5))';
+          });
+          line.addEventListener('mouseleave', function() {
+            this.style.strokeOpacity = origOpacity;
+            this.style.strokeWidth = '2';
+            this.style.filter = 'none';
           });
         });
       }
