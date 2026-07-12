@@ -28,6 +28,19 @@
       }
     } catch {}
 
+    try {
+      const machines = await get('/api/machines');
+      const link = document.getElementById('ym-diagnostics-link');
+      if (machines && machines.length > 0 && link) {
+        const firstMachine = machines[0];
+        link.href = '/diagnostics/' + encodeURIComponent(firstMachine.id);
+        const headerAsset = document.querySelector('.font-label-caps.text-primary');
+        if (headerAsset) headerAsset.textContent = firstMachine.name;
+        const healthEl = document.querySelector('.font-kpi-numeric.text-4xl');
+        if (healthEl) healthEl.textContent = Math.round(firstMachine.health);
+      }
+    } catch {}
+
     document.querySelectorAll('a[href="#"]').forEach(a => {
       a.addEventListener('click', e => {
         e.preventDefault();
