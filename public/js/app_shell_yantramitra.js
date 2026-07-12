@@ -42,66 +42,58 @@
     const style = document.createElement('style');
     style.id = 'ym-shell-styles';
     style.textContent = `
-      :root { --sidebar-width: 84px; }
-      @media (max-width: 768px) { :root { --sidebar-width: 56px; } }
-      @media (max-width: 480px) { :root { --sidebar-width: 48px; } }
+      :root { --sidebar-width: 80px; }
 
-      .ym-app-shell {
-        display: flex;
-        width: 100%;
-        min-height: 100vh;
-      }
       .ym-nav-rail {
         position: fixed;
         right: 0;
-        top: 0;
-        bottom: 0;
+        top: 50%;
+        transform: translateY(-50%);
         width: var(--sidebar-width);
         z-index: 80;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 6px;
-        padding: 72px 0 16px;
-        background: rgba(255, 255, 255, 0.85);
+        gap: 10px;
+        padding: 16px 0;
+        background: rgba(255, 255, 255, 0.80);
         backdrop-filter: blur(18px);
-        border-left: 1px solid rgba(199, 196, 215, 0.5);
+        border-top: 1px solid rgba(199, 196, 215, 0.4);
+        border-bottom: 1px solid rgba(199, 196, 215, 0.4);
+        border-left: 1px solid rgba(199, 196, 215, 0.4);
+        border-radius: 16px 0 0 16px;
         overflow-y: auto;
         scrollbar-width: none;
       }
       .ym-nav-rail::-webkit-scrollbar { display: none; }
       .ym-nav-rail a,
       .ym-nav-rail .ym-shell-logout {
-        width: calc(var(--sidebar-width) - 16px);
-        min-height: 48px;
+        width: 48px;
+        height: 48px;
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 2px;
-        border-radius: 12px;
-        color: #464555;
+        border-radius: 9999px;
+        color: #767586;
         border: 0;
         background: transparent;
         cursor: pointer;
         text-decoration: none;
-        font-size: 9px;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        line-height: 1.2;
         transition: background 0.15s ease, color 0.15s ease;
+        flex-shrink: 0;
       }
       .ym-nav-rail a:hover,
       .ym-nav-rail .ym-shell-logout:hover {
         background: rgba(65, 63, 214, 0.08);
         color: #413fd6;
       }
-      .ym-nav-rail a.is-active {
+      .ym-nav-rail a.is-active,
+      .ym-nav-rail .ym-shell-logout.is-active {
         background: #413fd6;
         color: #fff;
+        box-shadow: 0 0 15px rgba(65, 63, 214, 0.35);
       }
-      .ym-nav-rail .material-symbols-outlined { font-size: 22px; line-height: 1; margin-bottom: 1px; }
+      .ym-nav-rail .material-symbols-outlined { font-size: 22px; line-height: 1; }
       .ym-nav-rail .ym-shell-logout {
         margin-top: auto;
         color: #ba1a1a;
@@ -110,7 +102,6 @@
         background: rgba(186, 26, 26, 0.08);
         color: #ba1a1a;
       }
-      .ym-shell-label { white-space: nowrap; }
 
       .ym-standard-topbar {
         position: fixed;
@@ -388,12 +379,9 @@
 
       @media (max-width: 768px) {
         .ym-standard-search { display: none; }
-        .ym-nav-rail .ym-shell-label { font-size: 7px; }
         .ym-standard-title { min-width: auto; font-size: 11px; }
       }
       @media (max-width: 480px) {
-        .ym-nav-rail .material-symbols-outlined { font-size: 18px; }
-        .ym-nav-rail .ym-shell-label { font-size: 6px; }
         .ym-standard-title { display: none; }
       }
     `;
@@ -402,25 +390,23 @@
 
   /* ─── Fixed navigation rail ─── */
   function normalizeRightRail() {
-    const existingRails = Array.from(document.querySelectorAll('aside, nav')).filter(el => {
-      const cls = el.className || '';
-      return typeof cls === 'string' && cls.includes('right-4') && (cls.includes('72px') || cls.includes('rounded-full'));
-    });
     if (shellExcludedPaths.includes(currentPath)) {
-      existingRails.forEach(el => { el.style.display = 'none'; });
+      document.querySelectorAll('.ym-nav-rail').forEach(el => el.remove());
       return;
     }
 
-    const rail = existingRails[0] || document.createElement('aside');
+    const existing = document.querySelector('.ym-nav-rail');
+    if (existing) existing.remove();
+
+    const rail = document.createElement('aside');
     rail.className = 'ym-nav-rail';
     rail.setAttribute('aria-label', 'YantraMitra app navigation');
     rail.innerHTML = navItems.map(item => {
       const active = currentPath === item.path || (item.path !== '/dashboard' && currentPath.startsWith(item.path + '/'));
       return `<a href="${item.path}" title="${item.label}" aria-label="${item.label}" class="${active ? 'is-active' : ''}">
         <span class="material-symbols-outlined">${item.icon}</span>
-        <span class="ym-shell-label">${item.label}</span>
       </a>`;
-    }).join('') + `<button type="button" class="ym-shell-logout" title="Log out" aria-label="Log out"><span class="material-symbols-outlined">logout</span><span class="ym-shell-label">Log out</span></button>`;
+    }).join('') + `<button type="button" class="ym-shell-logout" title="Log out" aria-label="Log out"><span class="material-symbols-outlined">logout</span></button>`;
     rail.querySelector('.ym-shell-logout').addEventListener('click', async () => {
       const ok = window.confirm('Log out of YantraMitra?');
       if (!ok) return;
@@ -428,8 +414,7 @@
       window.location.href = '/login';
     });
 
-    existingRails.slice(1).forEach(el => { el.style.display = 'none'; });
-    if (!rail.parentNode) document.body.appendChild(rail);
+    document.body.appendChild(rail);
   }
 
   function pageTitle() {
