@@ -16,10 +16,11 @@
     }
   }
 
-  function projectWorld(lat, lng) {
+  function projectIndia(lat, lng) {
+    const minLat = 7.5, maxLat = 32.5, minLng = 68, maxLng = 90;
     return {
-      left: Math.max(3, Math.min(97, ((lng + 180) / 360) * 100)),
-      top: Math.max(6, Math.min(94, (1 - ((lat + 70) / 150)) * 100))
+      left: Math.max(18, Math.min(82, ((lng - minLng) / (maxLng - minLng)) * 100)),
+      top: Math.max(12, Math.min(88, (1 - (lat - minLat) / (maxLat - minLat)) * 100))
     };
   }
 
@@ -32,8 +33,8 @@
   function renderPins(plants) {
     const host = document.getElementById('pins-container');
     if (!host) return;
-    const projected = plants.map(plant => ({ plant, pos: projectWorld(plant.lat, plant.lng) }));
-    const hub = { left: 70.5, top: 51 };
+    const projected = plants.map(plant => ({ plant, pos: projectIndia(plant.lat, plant.lng) }));
+    const hub = { left: 55, top: 48 };
     host.innerHTML = `
       <svg class="absolute inset-0 w-full h-full pointer-events-none z-0" preserveAspectRatio="none" viewBox="0 0 1000 1000">
         ${projected.map(({ pos }) => `<path d="M ${hub.left * 10} ${hub.top * 10} Q ${(hub.left * 10 + pos.left * 10) / 2} ${Math.min(hub.top, pos.top) * 10 - 60} ${pos.left * 10} ${pos.top * 10}" fill="none" opacity="0.32" stroke="#413fd6" stroke-width="1.5"></path>`).join('')}

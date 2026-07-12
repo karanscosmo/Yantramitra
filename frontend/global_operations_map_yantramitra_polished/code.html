@@ -179,27 +179,26 @@
 <main class="h-screen w-screen map-container relative overflow-hidden pt-16">
 <!-- Background Map Visualization (High-end Geo Viz) -->
 <div class="absolute inset-0 z-0">
-<div class="w-full h-full opacity-90 bg-[radial-gradient(circle_at_72%_50%,rgba(94,250,228,.16),transparent_28%),radial-gradient(circle_at_50%_45%,rgba(91,91,240,.13),transparent_42%),linear-gradient(rgba(65,63,214,.06)_1px,transparent_1px),linear-gradient(90deg,rgba(65,63,214,.06)_1px,transparent_1px)] bg-[size:auto,auto,32px_32px,32px_32px]">
-<svg viewBox="0 0 1200 620" class="absolute inset-0 h-full w-full" aria-label="Global operations map" role="img" preserveAspectRatio="xMidYMid slice">
+<div class="w-full h-full opacity-95 bg-[radial-gradient(circle_at_55%_46%,rgba(94,250,228,.18),transparent_28%),radial-gradient(circle_at_50%_45%,rgba(91,91,240,.14),transparent_42%),linear-gradient(rgba(65,63,214,.06)_1px,transparent_1px),linear-gradient(90deg,rgba(65,63,214,.06)_1px,transparent_1px)] bg-[size:auto,auto,32px_32px,32px_32px]">
+<svg viewBox="0 0 1000 1000" class="absolute inset-0 h-full w-full" aria-label="India operations map" role="img" preserveAspectRatio="xMidYMid meet">
 <defs>
-<linearGradient id="ym-land" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f4ff"/><stop offset="1" stop-color="#d9d8ff"/></linearGradient>
+<linearGradient id="ym-land" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff4c8"/><stop offset=".45" stop-color="#c8fff7"/><stop offset="1" stop-color="#d9d8ff"/></linearGradient>
 <filter id="ym-map-shadow" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="10" stdDeviation="9" flood-color="#413fd6" flood-opacity=".12"/></filter>
 </defs>
-<rect width="1200" height="620" fill="rgba(255,255,255,.18)"/>
-<g fill="url(#ym-land)" stroke="#8b89f6" stroke-width="1.5" opacity=".92" filter="url(#ym-map-shadow)">
-<path d="M91 174 148 126 237 117 312 145 329 201 302 247 227 258 199 305 122 294 78 244Z"/>
-<path d="M257 316 325 315 365 365 348 443 298 514 253 477 247 407 222 357Z"/>
-<path d="M492 139 602 108 714 128 742 185 694 220 621 205 565 246 486 221 430 183Z"/>
-<path d="M643 251 719 242 797 279 822 348 767 390 691 361 638 304Z"/>
-<path d="M777 166 929 134 1066 169 1125 247 1073 314 958 286 884 338 813 293 820 226Z"/>
-<path d="M885 360 971 373 1034 430 1012 501 929 491 872 436Z"/>
-<path d="M941 501 1009 521 1049 568 995 590 925 558Z"/>
+<rect width="1000" height="1000" fill="rgba(255,255,255,.14)"/>
+<g filter="url(#ym-map-shadow)">
+<path d="M466 86 540 111 604 143 647 198 691 246 674 316 712 371 682 428 724 484 670 548 655 628 609 690 585 768 539 856 499 933 466 806 423 719 374 678 337 590 355 512 326 428 351 351 327 274 390 210Z" fill="url(#ym-land)" stroke="#413fd6" stroke-width="5" opacity=".88"/>
+<path d="M390 210 470 250 604 143 647 198 560 285 458 286Z" fill="#ffe6a9" opacity=".72"/>
+<path d="M351 351 458 286 560 285 674 316 636 410 492 400 385 430Z" fill="#bffff5" opacity=".72"/>
+<path d="M385 430 492 400 636 410 682 428 626 535 490 525 355 512Z" fill="#d8d7ff" opacity=".72"/>
+<path d="M355 512 490 525 626 535 655 628 585 768 499 933 466 806 374 678 337 590Z" fill="#d8fff8" opacity=".72"/>
+<path d="M470 250 500 322 492 400 490 525 466 806" fill="none" stroke="#8b89f6" stroke-width="2" opacity=".5"/>
+<path d="M351 351 636 410M355 512 626 535M374 678 609 690" fill="none" stroke="#8b89f6" stroke-width="2" opacity=".45"/>
 </g>
 <g fill="none" stroke="#c1c1ff" stroke-width="1" opacity=".38">
-<path d="M0 220H1200M0 310H1200M0 400H1200"/>
-<path d="M230 0V620M460 0V620M690 0V620M920 0V620"/>
+<path d="M0 250H1000M0 500H1000M0 750H1000"/>
+<path d="M250 0V1000M500 0V1000M750 0V1000"/>
 </g>
-<path d="M827 266 842 270 854 283 850 300 836 309 821 297 816 279Z" fill="#c8fff7" stroke="#006b5f" stroke-width="2" opacity=".95"/>
 </svg>
 </div>
 <!-- Interactive Map Pins -->

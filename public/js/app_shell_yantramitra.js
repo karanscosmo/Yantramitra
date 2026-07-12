@@ -61,6 +61,102 @@
         pointer-events: auto;
         scrollbar-width: none;
       }
+      body.ym-rail-collapsed .ym-shell-rail {
+        width: 52px;
+        right: 8px;
+        padding: 12px 4px;
+        opacity: .82;
+      }
+      body.ym-rail-collapsed .ym-shell-rail a,
+      body.ym-rail-collapsed .ym-shell-rail button {
+        width: 36px;
+        height: 36px;
+        flex-basis: 36px;
+      }
+      body.ym-rail-collapsed main {
+        margin-right: 64px !important;
+        padding-right: 72px !important;
+      }
+      body.ym-in-app main {
+        margin-right: 96px !important;
+        max-width: calc(100vw - 96px);
+      }
+      .ym-standard-topbar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 72px;
+        z-index: 95;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        padding: 0 28px;
+        border-bottom: 1px solid rgba(199,196,215,.36);
+        background: rgba(255,255,255,.88);
+        backdrop-filter: blur(18px);
+        box-shadow: 0 8px 32px rgba(65,63,214,.08);
+      }
+      body.ym-in-app { padding-top: 72px; }
+      body.ym-in-app > header:not(.ym-standard-topbar) { display: none !important; }
+      .ym-standard-topbar .ym-logo { height: 42px; flex: 0 0 auto; cursor: pointer; }
+      .ym-standard-title {
+        min-width: 180px;
+        font: 900 14px/1.2 Space Grotesk, Inter, system-ui, sans-serif;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: #464555;
+        white-space: nowrap;
+      }
+      .ym-standard-search {
+        flex: 1 1 420px;
+        max-width: 720px;
+        min-width: 240px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid rgba(199,196,215,.65);
+        border-radius: 9999px;
+        background: rgba(244,242,255,.72);
+        padding: 10px 16px;
+      }
+      .ym-standard-search input {
+        width: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: #191a28;
+        font: 700 15px/1.2 Inter, system-ui, sans-serif;
+      }
+      .ym-standard-actions {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 0 0 auto;
+      }
+      .ym-standard-icon {
+        width: 42px;
+        height: 42px;
+        border: 0;
+        border-radius: 9999px;
+        background: transparent;
+        color: #413fd6;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        position: relative;
+      }
+      .ym-standard-icon:hover { background: rgba(65,63,214,.1); }
+      .ym-standard-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 9999px;
+        border: 2px solid rgba(65,63,214,.18);
+        object-fit: cover;
+        cursor: pointer;
+      }
       .ym-shell-rail::-webkit-scrollbar { display: none; }
       .ym-shell-rail a,
       .ym-shell-rail button {
@@ -353,7 +449,7 @@
     const rail = existingRails[0] || document.createElement('aside');
     rail.className = 'ym-shell-rail';
     rail.setAttribute('aria-label', 'YantraMitra app navigation');
-    rail.innerHTML = navItems.map(item => {
+    rail.innerHTML = `<button type="button" class="ym-shell-toggle" title="Collapse sidebar" aria-label="Collapse sidebar"><span class="material-symbols-outlined">keyboard_tab</span></button>` + navItems.map(item => {
       const active = currentPath === item.path || (item.path !== '/dashboard' && currentPath.startsWith(item.path + '/'));
       return `<a href="${item.path}" title="${item.label}" aria-label="${item.label}" class="${active ? 'is-active' : ''}">
         <span class="material-symbols-outlined">${item.icon}</span>
@@ -365,13 +461,65 @@
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
       window.location.href = '/login';
     });
+    rail.querySelector('.ym-shell-toggle').addEventListener('click', () => {
+      document.body.classList.toggle('ym-rail-collapsed');
+    });
 
     existingRails.slice(1).forEach(el => { el.style.display = 'none'; });
     if (!rail.parentNode) document.body.appendChild(rail);
   }
 
+  function pageTitle() {
+    const map = {
+      '/dashboard': 'Global Command',
+      '/map': 'Plant Network',
+      '/assets': 'Asset Fleet',
+      '/digital-twin': 'Digital Twin',
+      '/reliability': 'Reliability Forecast',
+      '/maintenance': 'Maintenance Planner',
+      '/work-orders': 'Work Orders',
+      '/plans': 'Plan Review',
+      '/agents': 'Mission Control',
+      '/anomaly': 'Anomaly Investigation',
+      '/simulator': 'Scenario Simulator',
+      '/ai-console': 'AI Operations',
+      '/settings': 'Settings'
+    };
+    if (currentPath.startsWith('/plant/')) return 'Plant Overview';
+    if (currentPath.startsWith('/assets/')) return 'Asset Detail';
+    return map[currentPath] || document.title.replace(/\s*\|\s*YantraMitra.*/i, '') || 'Ops Intel';
+  }
+
+  function normalizeTopBar() {
+    if (shellExcludedPaths.includes(currentPath)) return;
+    document.querySelector('.ym-standard-topbar')?.remove();
+    const header = document.createElement('header');
+    header.className = 'ym-standard-topbar';
+    header.innerHTML = `
+      <img class="ym-logo" src="/logo.svg" alt="YantraMitra">
+      <div class="ym-standard-title">${pageTitle()}</div>
+      <label class="ym-standard-search">
+        <span class="material-symbols-outlined">search</span>
+        <input type="search" placeholder="Search operations, assets, agents... (⌘K)" aria-label="Search operations">
+      </label>
+      <div class="ym-standard-actions">
+        <a class="ym-ask-yantranklan" href="/ai-console"><img src="/images/yantranklan-avatar-ai.jpg" alt="YantraNklan"><span>Ask YantraNklan</span></a>
+        <button type="button" class="ym-standard-icon" data-ym-notifications aria-label="Notifications"><span class="material-symbols-outlined">notifications</span></button>
+        <button type="button" class="ym-standard-icon" data-ym-factory aria-label="Plant map"><span class="material-symbols-outlined">factory</span></button>
+        <img class="ym-standard-avatar" src="/images/ym-operator-avatar.jpg" alt="Profile">
+      </div>`;
+    document.body.prepend(header);
+    header.querySelector('.ym-logo').addEventListener('click', () => { window.location.href = '/dashboard'; });
+    header.querySelector('[data-ym-factory]').addEventListener('click', () => { window.location.href = '/map'; });
+    header.querySelector('.ym-standard-avatar').addEventListener('click', () => { window.location.href = '/settings'; });
+    header.querySelector('input').addEventListener('keydown', event => {
+      if (event.key === 'Enter' && event.currentTarget.value.trim()) openCommandPalette();
+    });
+  }
+
   function addYantraNklanEntry() {
     if (shellExcludedPaths.includes(currentPath)) return;
+    if (document.querySelector('.ym-standard-topbar')) return;
     if (document.querySelector('.ym-ask-yantranklan') || currentPath === '/ai-console') return;
     const link = document.createElement('a');
     link.href = '/ai-console';
@@ -540,6 +688,11 @@
         button.addEventListener('click', () => showModal('Decision Logged', '<p class="text-on-surface-variant">Rejection recorded in the review workflow. A revised plan can be generated from the incident replay.</p>'));
         return;
       }
+      if (/schedule|create order|new mission|schedule task|deploy scenario|restart|advance state|auto-resolve|re-scan|latest snapshot|clear filters|save changes|pause session|mark as complete|override/i.test(text)) {
+        button.dataset.ymWired = 'true';
+        button.addEventListener('click', () => showModal('Action Registered', `<p class="text-on-surface-variant">YantraMitra recorded <strong>${text || 'this action'}</strong> in the live operations workflow.</p>`));
+        return;
+      }
       const match = routeByText.find(([pattern]) => pattern.test(text));
       if (!match) return;
       button.dataset.ymWired = 'true';
@@ -653,7 +806,7 @@
     const unread = notes.filter(n => n.status === 'unread').length;
     const existingButtons = Array.from(document.querySelectorAll('header button, header a')).filter(el => {
       const icon = el.querySelector('.material-symbols-outlined') || (el.classList?.contains('material-symbols-outlined') ? el : null);
-      return icon?.textContent.trim() === 'notifications';
+      return icon?.textContent.trim() === 'notifications' || el.hasAttribute('data-ym-notifications');
     });
     const btn = existingButtons[0] || document.createElement('button');
     if (!existingButtons.length) {
@@ -795,6 +948,7 @@
     if (!shellExcludedPaths.includes(currentPath)) document.body.classList.add('ym-in-app');
     if (currentPath === '/digital-twin') document.body.classList.add('ym-digital-twin');
     injectStyles();
+    normalizeTopBar();
     normalizeRightRail();
     addYantraNklanEntry();
     cleanupInAppChrome();

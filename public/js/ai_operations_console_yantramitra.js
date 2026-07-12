@@ -109,7 +109,7 @@
 
     addMessage(message, true);
     
-    const input = document.querySelector('input[type="text"]');
+    const input = document.querySelector('main input[placeholder*="YantraNklan"], .chat-scroll ~ section input[type="text"], section input[placeholder*="operations"]');
     if (input) { input.value = ''; }
 
     addTypingIndicator();
@@ -191,7 +191,7 @@
     addWelcomeMessage();
 
     // Wire up the input
-    const input = document.querySelector('input[type="text"]');
+    const input = document.querySelector('main input[placeholder*="YantraNklan"], .chat-scroll ~ section input[type="text"], section input[placeholder*="operations"]');
     // Find the send button - it's the one with the "send" icon
     const allButtons = document.querySelectorAll('button');
     let sendButton = null;
@@ -224,7 +224,25 @@
         await doSend();
       });
     }
-    addSpeechToText(input, sendButton);
+    const existingMic = Array.from(document.querySelectorAll('main button')).find(btn => btn.textContent.trim() === 'mic');
+    if (existingMic && input) {
+      const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (Recognition) {
+        const recognition = new Recognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = 'en-IN';
+        recognition.onresult = event => {
+          let transcript = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) transcript += event.results[i][0].transcript;
+          input.value = transcript.trim();
+          input.focus();
+        };
+        existingMic.addEventListener('click', () => recognition.start());
+      }
+    } else {
+      addSpeechToText(input, sendButton);
+    }
 
     const context = new URLSearchParams(window.location.search).get('context');
     if (context && input) input.value = `Investigate ${context} using the latest alarms, sensor readings, and work orders.`;
