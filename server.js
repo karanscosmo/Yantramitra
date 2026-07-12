@@ -3,7 +3,15 @@ const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+const multer = require('multer');
+const fs = require('fs');
 const prisma = require('./lib/prisma');
+
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+const upload = multer({ dest: uploadsDir, limits: { fileSize: 10 * 1024 * 1024 } });
+
+const aiConversations = new Map();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -919,84 +927,15 @@ function normalizeLookupText(value) {
     .trim();
 }
 
-function buildYantraNklanFallback(message, contextSummary) {
-  const text = normalizeLookupText(message);
-  const alarms = contextSummary.activeAlarms || [];
-  const machines = contextSummary.machines || [];
-  const workOrders = contextSummary.workOrders || [];
-  const agents = contextSummary.agents || [];
-  const plants = contextSummary.plants || [];
-
-  const machineTerms = ['cnc', 'cell', 'machine', 'asset', 'pump', 'conveyor', 'robot', 'sensor'];
-  const candidateMachines = machines
-    .map(machine => {
-      const name = normalizeLookupText(machine.name);
-      const type = normalizeLookupText(machine.type);
-      const plant = normalizeLookupText(machine.plant || '');
-      const aiSummary = normalizeLookupText(machine.aiSummary || '');
-      const haystack = `${name} ${type} ${plant} ${aiSummary}`;
-      let score = 0;
-
-      if (text.includes(name)) score += 30;
-      if (text.includes(type)) score += 8;
-      if (text.includes(plant)) score += 6;
-      if (machineTerms.some(term => text.includes(term) && haystack.includes(term))) score += 4;
-
-      const tokens = text.split(' ').filter(token => token.length > 2 && !['what', 'where', 'when', 'current', 'status', 'health', 'summary', 'report', 'give', 'show', 'please', 'about', 'the', 'is', 'of', 'for', 'and'].includes(token));
-      tokens.forEach(token => {
-        if (haystack.includes(token)) score += 2;
-      });
-
-      return { machine, score };
-    })
-    .filter(entry => entry.score > 0)
-    .sort((a, b) => b.score - a.score);
-
-  const bestMachineEntry = candidateMachines[0];
-  const bestMachine = bestMachineEntry?.machine;
-
-  if (bestMachine) {
-    const relatedAlarms = alarms.filter(a => a.machine === bestMachine.name);
-    const relatedOrders = workOrders.filter(w => w.machine === bestMachine.name);
-    const mostUrgentAlarm = relatedAlarms[0];
-    const latestOrder = relatedOrders[0];
-    const statusLine = `${bestMachine.name} (${bestMachine.plant}) is ${bestMachine.status} with health ${bestMachine.health}%.`;
-    const riskLine = `Failure probability is ${bestMachine.failureProbability ?? 'not currently published'} and remaining useful life is ${bestMachine.remainingUsefulLife ?? 'not currently published'} days.`;
-    const alarmLine = mostUrgentAlarm ? `Most relevant alarm: ${mostUrgentAlarm.severity} - ${mostUrgentAlarm.title}.` : 'No active alarm is attached to this asset in the current snapshot.';
-    const orderLine = latestOrder ? `Latest linked work order: ${latestOrder.title} (${latestOrder.status}, ${latestOrder.priority}${latestOrder.assignedTo ? `, assigned to ${latestOrder.assignedTo}` : ''}).` : 'No linked work order was found in the current snapshot.';
-    return `YantraNklan fallback mode: ${statusLine} ${riskLine} ${alarmLine} ${orderLine}`;
-  }
-
-  if (text.includes('energy') || text.includes('co2') || text.includes('carbon')) {
-    const topPlant = [...plants].sort((a, b) => (b.energyUsage || 0) - (a.energyUsage || 0))[0];
-    const avgEnergy = plants.reduce((sum, plant) => sum + (plant.energyUsage || 0), 0) / Math.max(plants.length, 1);
-    const avgCo2 = plants.reduce((sum, plant) => sum + (plant.co2Tonnes || 0), 0) / Math.max(plants.length, 1);
-    return `YantraNklan fallback mode: ${topPlant ? `${topPlant.name} is currently the highest-energy site at ${topPlant.energyUsage} MWh, while the fleet average is ${avgEnergy.toFixed(1)} MWh.` : 'Energy benchmarks are not available.'} Fleet average CO₂ is ${avgCo2.toFixed(1)} tonnes.`;
-  }
-
-  if (text.includes('alarm') || text.includes('alert') || text.includes('incident') || text.includes('anomaly')) {
-    if (!alarms.length) return 'YantraNklan fallback mode: there are no active alarms in the current database snapshot.';
-    return `YantraNklan fallback mode: ${alarms.length} active alarms are in the current snapshot. Highest priority item: ${alarms[0].severity} - ${alarms[0].title} on ${alarms[0].machine}.`;
-  }
-
-  if (text.includes('work order') || text.includes('maintenance') || text.includes('plan')) {
-    if (!workOrders.length) return 'YantraNklan fallback mode: there are no recent work orders in the current database snapshot.';
-    return `YantraNklan fallback mode: ${workOrders.length} recent work orders are available. Latest: ${workOrders[0].title}, status ${workOrders[0].status}, priority ${workOrders[0].priority}, assigned to ${workOrders[0].assignedTo || 'unassigned'}.`;
-  }
-
-  if (text.includes('agent') || text.includes('mission')) {
-    if (!agents.length) return 'YantraNklan fallback mode: there are no active agent records in the current database snapshot.';
-    const firstAgent = agents[0];
-    return `YantraNklan fallback mode: ${firstAgent.name} is currently ${firstAgent.status} with mission progress ${firstAgent.progress}% and success rate ${firstAgent.successRate}.`;
-  }
-
-  return `YantraNklan fallback mode: I can see ${plants.length} plants, ${machines.length} machines, ${alarms.length} active alarms, ${workOrders.length} recent work orders, and ${agents.length} agents in the current operations database. Ask about a machine, alarm, or work order for a more specific lookup.`;
-}
-
 app.post('/api/ai-chat', authApi, rateLimit({ windowMs: 60 * 1000, max: 20, keyPrefix: 'ai-chat' }), async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, conversationId, history, attachmentContext } = req.body;
     if (!message) return res.status(400).json({ error: 'Message is required' });
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return res.status(503).json({ error: 'api_key_missing', message: 'OPENAI_API_KEY environment variable is not configured. Set it to enable AI chat.' });
+    }
 
     // Pull relevant context from the database
     const [machines, alarms, plants, agents, workOrders, plans, incidents] = await Promise.all([
@@ -1019,7 +958,7 @@ app.post('/api/ai-chat', authApi, rateLimit({ windowMs: 60 * 1000, max: 20, keyP
     ]);
 
     const contextSummary = {
-      plants: plants.map(p => ({ id: p.id, name: p.name, location: p.location, status: p.status, oee: p.oee, energyUsage: p.energyUsage, co2Tonnes: p.co2Tonnes, utilization: p.utilization })),
+      plants: plants.map(p => ({ id: p.id, name: p.name, location: p.location, status: p.status, oee: p.oee, energyUsage: p.energyUsage, co2Tonnes: p.co2Tonnes, utilization: p.utilization, lat: p.lat, lng: p.lng })),
       machines: machines.map(m => ({
         id: m.id,
         name: m.name,
@@ -1045,120 +984,207 @@ app.post('/api/ai-chat', authApi, rateLimit({ windowMs: 60 * 1000, max: 20, keyP
       incidents: incidents.map(i => ({ id: i.id, title: i.title, severity: i.severity, stage: i.stage, status: i.status, rootCause: i.rootCause, impactCost: i.impactCost, machine: i.machine?.name, timeline: i.timeline })),
     };
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return res.json({
-        reply: buildYantraNklanFallback(message, contextSummary),
-        model: 'fallback-data-lookup',
-        fallback: true,
-        warning: 'OPENAI_API_KEY is not configured, so YantraNklan answered from database context only.'
-      });
+    // Conversation memory
+    if (conversationId) {
+      if (!aiConversations.has(conversationId)) {
+        aiConversations.set(conversationId, { messages: [], created: Date.now() });
+      }
+      if (history && Array.isArray(history)) {
+        aiConversations.get(conversationId).messages = history.slice(-30);
+      }
     }
 
-    const plantList = plants.map(p => `- ${p.name} (${p.location}): ${p.status}, OEE ${p.oee || 'N/A'}%, Energy ${p.energyUsage || 'N/A'} MWh, CO2 ${p.co2Tonnes || 'N/A'}t`).join('\n');
-    const machineSummary = machines.slice(0, 15).map(m => `- ${m.name} (${m.plant}): ${m.status}, health ${m.health}%, type ${m.type}, failure prob ${m.failureProbability || 'N/A'}, RUL ${m.remainingUsefulLife || 'N/A'}d`).join('\n');
-    const alarmSummary = alarms.slice(0, 10).map(a => `- [${a.severity}] ${a.title} on ${a.machine}: ${a.message}`).join('\n');
-    const workOrderSummary = workOrders.slice(0, 10).map(w => `- ${w.title}: ${w.status}, ${w.priority}, assigned to ${w.assignedTo || 'unassigned'}`).join('\n');
+    const plantList = plants.map(p => `- ${p.name} (${p.location}): ${p.status}, OEE ${p.oee || 'N/A'}%, Energy ${p.energyUsage || 'N/A'} MWh, CO2 ${p.co2Tonnes || 'N/A'}t, Lat ${p.lat}, Lng ${p.lng}`).join('\n');
+    const machineSummary = machines.slice(0, 20).map(m => `- ${m.name} (${m.plant}): ${m.status}, health ${m.health}%, type ${m.type}, failure prob ${m.failureProbability || 'N/A'}, RUL ${m.remainingUsefulLife || 'N/A'}d`).join('\n');
+    const alarmSummary = alarms.slice(0, 15).map(a => `- [${a.severity}] ${a.title} on ${a.machine}: ${a.message}`).join('\n');
+    const workOrderSummary = workOrders.slice(0, 15).map(w => `- ${w.title}: ${w.status}, ${w.priority}, assigned to ${w.assignedTo || 'unassigned'}`).join('\n');
 
-    const systemPrompt = `You are YantraNklan, YantraMitra's industrial operations AI copilot. You have permanent real-time access to the complete Yantra Manufacturing Technologies Pvt. Ltd. operational dataset.
+    const systemPrompt = `You are YantraNklan, YantraMitra's industrial operations AI copilot with permanent real-time access to Yantra Manufacturing Technologies Pvt. Ltd.'s complete operational dataset.
 
 ## DATABASE CONTEXT (Current Snapshot)
 
 ### Plants (${plants.length} total):
 ${plantList || 'No plant data available'}
 
-### Key Machines (${machines.length} total, showing top 15):
+### Key Machines (${machines.length} total, showing top 20):
 ${machineSummary || 'No machine data available'}
 
 ### Active Alarms (${alarms.length} total):
 ${alarmSummary || 'No active alarms'}
 
-### Recent Work Orders (${workOrders.length} total, showing top 10):
+### Recent Work Orders (${workOrders.length} total, showing top 15):
 ${workOrderSummary || 'No work orders'}
 
 ### Agents (${agents.length} total):
-${agents.slice(0, 5).map(a => `- ${a.name}: ${a.type}, ${a.status}, progress ${a.progress}%`).join('\n') || 'No agents'}
+${agents.slice(0, 8).map(a => `- ${a.name}: ${a.type}, ${a.status}, progress ${a.progress}%, success rate ${a.successRate}%`).join('\n') || 'No agents'}
 
 ### Plans (${plans.length} total):
-${plans.slice(0, 5).map(p => `- ${p.title}: ${p.status}, ${p.priority}, ${p.type}`).join('\n') || 'No plans'}
+${plans.slice(0, 8).map(p => `- ${p.title}: ${p.status}, ${p.priority}, ${p.type}`).join('\n') || 'No plans'}
 
-## RESPONSE FORMAT REQUIREMENTS
-Always structure your answers professionally. When the question is about a specific machine, alarm, work order, or situation, format your response to include:
+### Incidents (${incidents.length} total):
+${incidents.slice(0, 8).map(i => `- ${i.title}: ${i.severity}, stage ${i.stage}, impact cost ₹${(i.impactCost || 0).toLocaleString()}`).join('\n') || 'No incidents'}
 
-1. **Summary** — A one-sentence overview of the situation.
-2. **Analysis** — Detailed breakdown using the available data.
-3. **Evidence** — Specific sensor readings, alarm data, or work order details that support the analysis.
-4. **Likely Cause** — The most probable root cause based on the evidence.
-5. **Risk Assessment** — Current risk level (Critical/High/Medium/Low) and why.
-6. **Recommendation** — Actionable next steps.
-7. **Affected Machines** — List of machines involved.
-8. **Suggested Work Order** — What kind of work order should be created.
-9. **Confidence** — How confident you are in the analysis (0-100%).
+${attachmentContext ? `\n### USER FILE ATTACHMENT\n\`\`\`\n${attachmentContext.slice(0, 4000)}\n\`\`\`\n` : ''}
 
-## RESPONSE STYLE
-- Use markdown formatting (headings, lists, bold, tables) for readability.
-- Include specific data points from the context above.
-- Do NOT say you don't have access to data — you have the full dataset above.
-- If the user asks about something not in the data, use your general knowledge of industrial operations to provide helpful guidance.
-- Be comprehensive. Never answer in a single sentence.
-- For comparison questions, always include a table.
-- For prediction questions, explain your reasoning.
-- Sign off naturally — do not add signature blocks.
-- Maximum response length: 500 words unless the user asks for more detail.
+## TOOLS / PAGE ROUTING
+You can suggest actions the user can take. When referencing data, use these exact URL patterns:
+- Plant details: [/plant/{plant.id}] or use plant name
+- Machine detail: [/assets/{machine.id}]
+- Work orders: [/work-orders]
+- Digital Twin: [/digital-twin?plant={plant.id}]
+- AI Console: [/ai-console]
+- Plans: [/plans]
+- Agents: [/agents]
+- Anomaly: [/anomaly]
+- Dashboard: [/dashboard]
+- Map: [/map]
+- Simulator: [/simulator]
 
-## EXAMPLE QUERIES YOU CAN HANDLE
-- "Why is CNC PN-102 overheating?"
-- "Show all critical alarms."
-- "Predict next bearing failure."
-- "Compare Pune and Chennai OEE."
-- "Generate maintenance plan for Turbine-7."
-- "Optimize energy usage across all plants."
-- "Explain downtime yesterday."
-- "Generate executive report."
-- "What is the current plant hierarchy?"
-- "How many machines are in warning state?"
-- "Which work orders are overdue?"
-- "What agents are active?"`;
+Include clickable links like: [View Work Orders](/work-orders) or [Pune Plant Details](/plant/{uuid})
+
+## RESPONSE RULES
+- Format with proper markdown (headings, bold, lists, tables).
+- Use tables for comparisons across plants or machines.
+- Always reference specific data points from the context above.
+- You have full data access — never say you don't have information.
+- For follow-up questions, use the conversation history for context.
+- Always provide actionable, specific recommendations.
+- For "create work order" requests, suggest using [/work-orders].
+- For failure predictions, explain reasoning with evidence.
+- Use Indian Rupee (₹) formatting for costs.
+- Maximum 600 words unless the user asks for more.
+- No signature blocks. No preamble about being an AI.`;
 
     const OpenAI = require('openai');
     const openai = new OpenAI({ apiKey });
 
     try {
+      const messages = [
+        { role: 'system', content: systemPrompt },
+        ...(aiConversations.get(conversationId)?.messages || history || []).slice(-20),
+        { role: 'user', content: message }
+      ];
+
       const completion = await openai.chat.completions.create({
         model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
-        ],
-        max_tokens: 500,
+        messages,
+        max_tokens: 700,
         temperature: 0.7,
       });
 
       const reply = completion.choices[0]?.message?.content || 'I apologize, but I was unable to generate a response. Please try again.';
+      if (conversationId) {
+        const conv = aiConversations.get(conversationId);
+        if (conv) { conv.messages.push({ role: 'user', content: message }, { role: 'assistant', content: reply }); }
+      }
       res.json({ reply, model: 'gpt-4o-mini' });
     } catch (e) {
       console.error('AI provider error:', e.message);
-      if (e.code === 'insufficient_quota' || (e.error && e.error.code === 'insufficient_quota') || e.status === 429) {
-        return res.json({
-          reply: buildYantraNklanFallback(message, contextSummary),
-          model: 'fallback-data-lookup',
-          fallback: true,
-          warning: 'OpenAI quota or rate limit blocked the LLM call, so YantraNklan answered from database context only.'
-        });
-      }
-      if (e.code === 'invalid_api_key' || e.status === 401) {
-        return res.json({
-          reply: buildYantraNklanFallback(message, contextSummary),
-          model: 'fallback-data-lookup',
-          fallback: true,
-          warning: 'OPENAI_API_KEY is invalid, so YantraNklan answered from database context only.'
-        });
-      }
       throw e;
     }
   } catch (e) {
     console.error('AI Chat error:', e.message);
     res.status(500).json({ error: 'ai_error', message: 'Failed to process AI chat request: ' + e.message });
+  }
+});
+
+// File upload endpoint
+app.post('/api/ai-upload', authApi, upload.array('files', 5), async (req, res) => {
+  try {
+    const files = req.files || [];
+    const { message } = req.body;
+    if (!files.length && !message) return res.status(400).json({ error: 'No files or message provided' });
+
+    const fileTexts = [];
+    for (const file of files) {
+      try {
+        const content = fs.readFileSync(file.path, 'utf8');
+        fileTexts.push(`--- ${file.originalname} ---\n${content.slice(0, 3000)}`);
+      } catch { fileTexts.push(`--- ${file.originalname} ---\n(Binary or unreadable file - ${file.mimetype})`); }
+      try { fs.unlinkSync(file.path); } catch {}
+    }
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return res.status(503).json({ error: 'api_key_missing', message: 'OPENAI_API_KEY not configured' });
+    }
+
+    const [plants, machines, alarms] = await Promise.all([
+      require('./lib/prisma').plant.findMany(),
+      require('./lib/prisma').machine.findMany({ take: 20, include: { plant: { select: { name: true } }, sensors: { take: 3 } } }),
+      require('./lib/prisma').alarm.findMany({ where: { status: 'active' }, take: 10, include: { machine: { select: { name: true } } } }),
+    ]);
+
+    const fileContext = fileTexts.join('\n\n');
+    const systemPrompt = `You are YantraNklan, YantraMitra's industrial AI copilot. The user has uploaded files with the following content:\n\n${fileContext}\n\n## Operational Context\nPlants: ${plants.map(p => p.name).join(', ')}\nMachines: ${machines.map(m => `${m.name} (${m.plant?.name})`).join(', ')}\nActive Alarms: ${alarms.length}\n\nAnalyze the uploaded files in context of plant operations. Use markdown formatting. Be specific and actionable.${message ? `\n\n## User Message\n${message}` : ''}`;
+
+    const OpenAI = require('openai');
+    const openai = new OpenAI({ apiKey });
+    const completion = await openai.chat.completions.create({ model: 'gpt-4o-mini', messages: [{ role: 'system', content: systemPrompt }], max_tokens: 700, temperature: 0.7 });
+    const reply = completion.choices[0]?.message?.content || 'Files processed. What would you like to know?';
+    res.json({ reply, model: 'gpt-4o-mini' });
+  } catch (e) {
+    console.error('Upload error:', e.message);
+    res.status(500).json({ error: 'Upload failed', message: e.message });
+  }
+});
+
+// Streaming AI chat endpoint
+app.post('/api/ai-chat/stream', authApi, rateLimit({ windowMs: 60 * 1000, max: 20, keyPrefix: 'ai-chat-stream' }), async (req, res) => {
+  try {
+    const { message, conversationId, history, attachmentContext } = req.body;
+    if (!message) return res.status(400).json({ error: 'Message is required' });
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) return res.status(503).json({ error: 'api_key_missing' });
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const [machines, alarms, plants, agents, workOrders, plans, incidents] = await Promise.all([
+      require('./lib/prisma').machine.findMany({ include: { plant: { select: { name: true, location: true, oee: true, energyUsage: true, co2Tonnes: true } }, sensors: { take: 4 }, components: { take: 2 } } }),
+      require('./lib/prisma').alarm.findMany({ where: { status: 'active' }, include: { machine: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 15 }),
+      require('./lib/prisma').plant.findMany(),
+      require('./lib/prisma').agent.findMany({ orderBy: { createdAt: 'desc' } }),
+      require('./lib/prisma').workOrder.findMany({ include: { machine: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 15 }),
+      require('./lib/prisma').plan.findMany({ orderBy: { createdAt: 'desc' }, take: 8 }),
+      require('./lib/prisma').operationalIncident.findMany({ include: { machine: { select: { name: true } } }, orderBy: { updatedAt: 'desc' }, take: 8 }),
+    ]);
+
+    if (conversationId) {
+      if (!aiConversations.has(conversationId)) aiConversations.set(conversationId, { messages: [], created: Date.now() });
+      if (history && Array.isArray(history)) aiConversations.get(conversationId).messages = history.slice(-30);
+    }
+
+    const plantList = plants.map(p => `- ${p.name} (${p.location}): OEE ${p.oee || 'N/A'}%, Energy ${p.energyUsage || 'N/A'} MWh, CO2 ${p.co2Tonnes || 'N/A'}t`).join('\n');
+    const machineSummary = machines.slice(0, 20).map(m => `- ${m.name} (${m.plant?.name}): ${m.status}, health ${m.health}%, RUL ${m.remainingUsefulLife || 'N/A'}d`).join('\n');
+
+    const systemPrompt = `You are YantraNklan, YantraMitra's industrial AI copilot.\n\n## LIVE DATA\nPlants:\n${plantList}\n\nMachines:\n${machineSummary}\n\nUse markdown. Include links like [View](/plant/{id}). Never say you lack data. Be specific.${attachmentContext ? `\n\n## FILE ATTACHMENT\n${attachmentContext.slice(0, 3000)}` : ''}`;
+
+    const OpenAI = require('openai');
+    const openai = new OpenAI({ apiKey });
+    const messages = [{ role: 'system', content: systemPrompt }, ...(aiConversations.get(conversationId)?.messages || []).slice(-20), { role: 'user', content: message }];
+
+    const stream = await openai.chat.completions.create({ model: 'gpt-4o-mini', messages, max_tokens: 700, temperature: 0.7, stream: true });
+
+    let fullReply = '';
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content || '';
+      if (content) { fullReply += content; res.write('data: ' + JSON.stringify({ content }) + '\n\n'); }
+    }
+
+    if (conversationId) {
+      const conv = aiConversations.get(conversationId);
+      if (conv) conv.messages.push({ role: 'user', content: message }, { role: 'assistant', content: fullReply });
+    }
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (e) {
+    console.error('Stream error:', e.message);
+    if (!res.headersSent) return res.status(500).json({ error: 'stream_error' });
+    res.write('data: ' + JSON.stringify({ error: e.message }) + '\n\n');
+    res.end();
   }
 });
 
