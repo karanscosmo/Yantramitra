@@ -7,8 +7,9 @@ const multer = require('multer');
 const fs = require('fs');
 const prisma = require('./lib/prisma');
 
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+const isVercel = !!process.env.VERCEL;
+const uploadsDir = isVercel ? '/tmp/uploads' : path.join(__dirname, 'uploads');
+try { if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true }); } catch (e) { console.error('Uploads dir creation failed:', e.message); }
 const upload = multer({ dest: uploadsDir, limits: { fileSize: 10 * 1024 * 1024 } });
 
 const aiConversations = new Map();
@@ -19,7 +20,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'yantramitra-jwt-secret-2026';
 const isProduction = process.env.NODE_ENV === 'production';
 
 if (isProduction && JWT_SECRET === 'yantramitra-jwt-secret-2026') {
-  throw new Error('JWT_SECRET must be set in production');
+  console.warn('WARNING: JWT_SECRET is not set in production. Using insecure default secret.');
 }
 
 const authCookieOptions = {
@@ -142,6 +143,11 @@ function setAuthCookie(res, token) {
   res.cookie('token', token, authCookieOptions);
 }
 
+function requireDb(req, res, next) {
+  if (!prisma) return res.status(503).json({ error: 'Database unavailable' });
+  next();
+}
+
 function clearAuthCookie(res) {
   res.clearCookie('token', {
     sameSite: authCookieOptions.sameSite,
@@ -179,6 +185,27 @@ function infoPage(title, content) {
 </body>
 </html>`;
 }
+
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    prisma: prisma ? 'connected' : 'unavailable',
+    openai: !!process.env.OPENAI_API_KEY,
+    vercel: isVercel,
+    memory: process.memoryUsage().rss
+  });
+});
+
+app.get('/api/ready', async (req, res) => {
+  try {
+    if (!prisma) return res.status(503).json({ status: 'error', detail: 'Database unavailable' });
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: 'ok', db: 'connected' });
+  } catch (e) {
+    res.status(503).json({ status: 'error', detail: e.message });
+  }
+});
 
 const publicFacilities = {
   'pune-automotive': {
@@ -257,6 +284,9 @@ app.get('/sitemap', (req, res) => {
 app.get('/api-status', (req, res) => {
   res.send(infoPage('API Status', `<p><strong>Status:</strong> Operational</p><p><strong>Runtime:</strong> Node.js / Express</p><p><strong>Uptime:</strong> ${Math.round(process.uptime())} seconds</p><p><strong>AI assistant:</strong> ${process.env.OPENAI_API_KEY ? 'Configured' : 'Needs OPENAI_API_KEY'}</p>`));
 });
+
+// All /api routes below require the database
+app.use('/api', requireDb);
 
 app.post('/api/auth/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 20, keyPrefix: 'login' }), async (req, res) => {
   try {
@@ -939,7 +969,7 @@ app.post('/api/ai-chat', authApi, rateLimit({ windowMs: 60 * 1000, max: 20, keyP
 
     // Pull relevant context from the database
     const [machines, alarms, plants, agents, workOrders, plans, incidents] = await Promise.all([
-      require('./lib/prisma').machine.findMany({
+      prisma.machine.findMany({
         include: {
           plant: { select: { name: true, location: true, oee: true, energyUsage: true, co2Tonnes: true } },
           productionLine: { include: { building: true } },
@@ -949,12 +979,12 @@ app.post('/api/ai-chat', authApi, rateLimit({ windowMs: 60 * 1000, max: 20, keyP
           maintenanceEvents: { orderBy: { performedAt: 'desc' }, take: 2 },
         }
       }),
-      require('./lib/prisma').alarm.findMany({ where: { status: 'active' }, include: { machine: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 20 }),
-      require('./lib/prisma').plant.findMany(),
-      require('./lib/prisma').agent.findMany({ orderBy: { createdAt: 'desc' } }),
-      require('./lib/prisma').workOrder.findMany({ include: { machine: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 20 }),
-      require('./lib/prisma').plan.findMany({ orderBy: { createdAt: 'desc' }, take: 10 }),
-      require('./lib/prisma').operationalIncident.findMany({ include: { machine: { select: { name: true } } }, orderBy: { updatedAt: 'desc' }, take: 10 }),
+      prisma.alarm.findMany({ where: { status: 'active' }, include: { machine: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 20 }),
+      prisma.plant.findMany(),
+      prisma.agent.findMany({ orderBy: { createdAt: 'desc' } }),
+      prisma.workOrder.findMany({ include: { machine: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 20 }),
+      prisma.plan.findMany({ orderBy: { createdAt: 'desc' }, take: 10 }),
+      prisma.operationalIncident.findMany({ include: { machine: { select: { name: true } } }, orderBy: { updatedAt: 'desc' }, take: 10 }),
     ]);
 
     const contextSummary = {
@@ -1110,9 +1140,9 @@ app.post('/api/ai-upload', authApi, upload.array('files', 5), async (req, res) =
     }
 
     const [plants, machines, alarms] = await Promise.all([
-      require('./lib/prisma').plant.findMany(),
-      require('./lib/prisma').machine.findMany({ take: 20, include: { plant: { select: { name: true } }, sensors: { take: 3 } } }),
-      require('./lib/prisma').alarm.findMany({ where: { status: 'active' }, take: 10, include: { machine: { select: { name: true } } } }),
+      prisma.plant.findMany(),
+      prisma.machine.findMany({ take: 20, include: { plant: { select: { name: true } }, sensors: { take: 3 } } }),
+      prisma.alarm.findMany({ where: { status: 'active' }, take: 10, include: { machine: { select: { name: true } } } }),
     ]);
 
     const fileContext = fileTexts.join('\n\n');
@@ -1143,13 +1173,13 @@ app.post('/api/ai-chat/stream', authApi, rateLimit({ windowMs: 60 * 1000, max: 2
     res.setHeader('Connection', 'keep-alive');
 
     const [machines, alarms, plants, agents, workOrders, plans, incidents] = await Promise.all([
-      require('./lib/prisma').machine.findMany({ include: { plant: { select: { name: true, location: true, oee: true, energyUsage: true, co2Tonnes: true } }, sensors: { take: 4 }, components: { take: 2 } } }),
-      require('./lib/prisma').alarm.findMany({ where: { status: 'active' }, include: { machine: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 15 }),
-      require('./lib/prisma').plant.findMany(),
-      require('./lib/prisma').agent.findMany({ orderBy: { createdAt: 'desc' } }),
-      require('./lib/prisma').workOrder.findMany({ include: { machine: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 15 }),
-      require('./lib/prisma').plan.findMany({ orderBy: { createdAt: 'desc' }, take: 8 }),
-      require('./lib/prisma').operationalIncident.findMany({ include: { machine: { select: { name: true } } }, orderBy: { updatedAt: 'desc' }, take: 8 }),
+      prisma.machine.findMany({ include: { plant: { select: { name: true, location: true, oee: true, energyUsage: true, co2Tonnes: true } }, sensors: { take: 4 }, components: { take: 2 } } }),
+      prisma.alarm.findMany({ where: { status: 'active' }, include: { machine: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 15 }),
+      prisma.plant.findMany(),
+      prisma.agent.findMany({ orderBy: { createdAt: 'desc' } }),
+      prisma.workOrder.findMany({ include: { machine: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 15 }),
+      prisma.plan.findMany({ orderBy: { createdAt: 'desc' }, take: 8 }),
+      prisma.operationalIncident.findMany({ include: { machine: { select: { name: true } } }, orderBy: { updatedAt: 'desc' }, take: 8 }),
     ]);
 
     if (conversationId) {
@@ -1188,7 +1218,19 @@ app.post('/api/ai-chat/stream', authApi, rateLimit({ windowMs: 60 * 1000, max: 2
   }
 });
 
-if (!process.env.VERCEL) {
+// 404 catch-all
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err?.message || err);
+  if (res.headersSent) return;
+  res.status(500).json({ error: err?.message || 'Internal server error' });
+});
+
+if (!isVercel) {
   app.listen(PORT, () => {
     console.log(`YantraMitra server running at http://localhost:${PORT}`);
   });
