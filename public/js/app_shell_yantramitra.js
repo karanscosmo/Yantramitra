@@ -202,9 +202,9 @@
         box-shadow: 0 10px 24px rgba(65, 63, 214, .12);
         position: relative;
         z-index: 2;
-      }
-      .ym-shell-toggle .material-symbols-outlined {
-        font-size: 21px;
+        font-size: 20px;
+        font-weight: 900;
+        line-height: 1;
       }
       .ym-shell-rail a.is-active {
         background: #413fd6;
@@ -510,7 +510,7 @@
     const rail = existingRails[0] || document.createElement('aside');
     rail.className = 'ym-shell-rail';
     rail.setAttribute('aria-label', 'YantraMitra app navigation');
-    rail.innerHTML = `<button type="button" class="ym-shell-toggle" title="Collapse sidebar" aria-label="Collapse sidebar"><span class="material-symbols-outlined">chevron_left</span></button>` + navItems.map(item => {
+    rail.innerHTML = `<button type="button" class="ym-shell-toggle" title="Collapse sidebar" aria-label="Collapse sidebar">‹</button>` + navItems.map(item => {
       const active = currentPath === item.path || (item.path !== '/dashboard' && currentPath.startsWith(item.path + '/'));
       return `<a href="${item.path}" title="${item.label}" aria-label="${item.label}" class="${active ? 'is-active' : ''}">
         <span class="material-symbols-outlined">${item.icon}</span>
@@ -527,8 +527,7 @@
       const collapsed = document.body.classList.contains('ym-rail-collapsed');
       toggle.title = collapsed ? 'Open sidebar' : 'Hide sidebar';
       toggle.setAttribute('aria-label', collapsed ? 'Open sidebar' : 'Hide sidebar');
-      const icon = toggle.querySelector('.material-symbols-outlined');
-      if (icon) icon.textContent = collapsed ? 'chevron_right' : 'chevron_left';
+      toggle.textContent = collapsed ? '›' : '‹';
     };
     if (localStorage.getItem('ymRailExpanded') !== '1') document.body.classList.add('ym-rail-collapsed');
     setRailState();
