@@ -171,17 +171,16 @@
     if (!main) return;
     main.innerHTML = `
       <section class="h-screen pt-6 px-md md:pr-32 relative overflow-hidden">
-        <div class="absolute top-24 left-md z-30 glass-panel rounded-2xl p-4 w-[min(360px,calc(100vw-32px))]">
+        <div class="absolute top-24 left-md z-30 glass-panel rounded-2xl p-4 w-[min(390px,calc(100vw-32px))]">
           <p class="text-[11px] uppercase tracking-[0.16em] text-primary font-bold">Interactive 3D Digital Twin</p>
-          <h1 class="text-3xl font-black text-on-surface mt-1">Live Indian Plant Floor</h1>
+          <h1 class="text-3xl font-black text-on-surface mt-1">Live 3D Machine Floor</h1>
           <select id="ym-plant-select" class="mt-4 w-full rounded-xl border border-outline-variant/50 bg-white/80 p-3 font-bold"></select>
           <p id="ym-plant-meta" class="text-sm text-on-surface-variant mt-3"></p>
         </div>
         <div id="ym-twin-canvas" class="absolute inset-0 bg-[#f4f2ff]"></div>
-        <div id="ym-twin-tooltip" class="fixed z-50 hidden rounded-lg bg-[#191a28] text-white text-xs font-bold px-3 py-2 pointer-events-none shadow-xl"></div>
         <aside id="ym-twin-inspector" class="fixed right-[104px] top-24 bottom-28 w-[360px] max-w-[calc(100vw-128px)] overflow-auto glass-panel rounded-2xl p-5 z-40 shadow-2xl"></aside>
         <div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 glass-panel rounded-full px-4 py-2 flex items-center gap-3 text-sm font-bold text-on-surface-variant">
-          <span class="material-symbols-outlined text-primary">3d_rotation</span> Drag to rotate · scroll to zoom · click a machine
+          <span class="material-symbols-outlined text-primary">3d_rotation</span> Drag to rotate · scroll to zoom · click a real machine
         </div>
       </section>`;
 
@@ -193,117 +192,39 @@
       select.appendChild(option);
     });
 
-    if (!window.THREE) {
-      document.getElementById('ym-twin-canvas').innerHTML = '<div class="h-full flex items-center justify-center text-center p-10"><div><p class="text-2xl font-black text-error">3D engine unavailable</p><p class="text-on-surface-variant mt-2">Three.js could not load. Check network/CDN access.</p></div></div>';
+    const canvasHost = document.getElementById('ym-twin-canvas');
+    if (!window.THREE || !window.YMFactory3D) {
+      canvasHost.innerHTML = '<div class="h-full flex items-center justify-center text-center p-10"><div><p class="text-2xl font-black text-error">3D engine unavailable</p><p class="text-on-surface-variant mt-2">Three.js could not load. Check network/CDN access.</p></div></div>';
       return;
     }
 
-    const canvasHost = document.getElementById('ym-twin-canvas');
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    canvasHost.appendChild(renderer.domElement);
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf4f2ff);
-    const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 1000);
-    camera.position.set(0, 26, 28);
-    camera.lookAt(0, 0, 0);
-    scene.add(new THREE.HemisphereLight(0xffffff, 0xc1c1ff, 2));
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
-    keyLight.position.set(14, 20, 10);
-    scene.add(keyLight);
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(44, 28), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.75 }));
-    floor.rotation.x = -Math.PI / 2;
-    scene.add(floor);
-    const grid = new THREE.GridHelper(44, 22, 0xc7c4d7, 0xe2e1f4);
-    scene.add(grid);
-    const raycaster = new THREE.Raycaster();
-    const pointer = new THREE.Vector2();
-    const tooltip = document.getElementById('ym-twin-tooltip');
-    let machineGroup = new THREE.Group();
-    scene.add(machineGroup);
-    let angle = 0;
-    let dragging = false;
-    let lastX = 0;
-
-    function resize() {
-      const rect = canvasHost.getBoundingClientRect();
-      renderer.setSize(rect.width, rect.height);
-      camera.aspect = rect.width / rect.height;
-      camera.updateProjectionMatrix();
-    }
-
-    function loadPlant(plantId) {
-      machineGroup.clear();
+    let floorScene = null;
+    function loadPlant(plantId, selectedMachine = null) {
       const plant = plants.find(p => p.id === plantId) || plants[0];
       const plantMachines = machines.filter(m => m.plantId === plant.id);
-      document.getElementById('ym-plant-meta').textContent = `${plant.location} · OEE ${plant.oee || 'n/a'}% · Uptime ${plant.uptime || 'n/a'}% · ${plantMachines.length} assets`;
-      plantMachines.forEach(machine => machineGroup.add(createMachineMesh(machine)));
-      renderInspector(plantMachines.find(m => m.status !== 'running') || plantMachines[0]);
+      document.getElementById('ym-plant-meta').textContent = `${plant.location} · OEE ${plant.oee || 'n/a'}% · Uptime ${plant.uptime || 'n/a'}% · ${plantMachines.length} real machines`;
+      if (floorScene) floorScene.destroy();
+      floorScene = window.YMFactory3D.renderPlantFloor({
+        host: canvasHost,
+        plant,
+        machines: plantMachines,
+        onSelect: machine => renderInspector(machine),
+        cameraY: 24,
+        radius: 34,
+        initialAngle: 0.72
+      });
+      renderInspector(selectedMachine || plantMachines.find(m => m.status !== 'running') || plantMachines[0]);
     }
 
-    renderer.domElement.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; });
-    window.addEventListener('pointerup', () => { dragging = false; });
-    window.addEventListener('pointermove', e => {
-      if (!dragging) return;
-      angle += (e.clientX - lastX) * 0.01;
-      lastX = e.clientX;
-    });
-    renderer.domElement.addEventListener('pointermove', e => {
-      if (dragging || !tooltip) return;
-      const rect = renderer.domElement.getBoundingClientRect();
-      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.setFromCamera(pointer, camera);
-      const hit = raycaster.intersectObjects(machineGroup.children, true).find(x => x.object.userData.machine);
-      if (!hit) {
-        tooltip.classList.add('hidden');
-        return;
-      }
-      const m = hit.object.userData.machine;
-      tooltip.textContent = `${m.name} · ${Math.round(m.health)}% health · ${m.status}`;
-      tooltip.style.left = `${Math.min(window.innerWidth - 260, e.clientX + 14)}px`;
-      tooltip.style.top = `${Math.max(80, e.clientY + 14)}px`;
-      tooltip.classList.remove('hidden');
-    });
-    renderer.domElement.addEventListener('pointerleave', () => tooltip?.classList.add('hidden'));
-    renderer.domElement.addEventListener('wheel', e => {
-      e.preventDefault();
-      camera.position.y = Math.max(13, Math.min(42, camera.position.y + e.deltaY * 0.02));
-      camera.position.z = Math.max(14, Math.min(48, camera.position.z + e.deltaY * 0.02));
-    }, { passive: false });
-    renderer.domElement.addEventListener('click', e => {
-      const rect = renderer.domElement.getBoundingClientRect();
-      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.setFromCamera(pointer, camera);
-      const hit = raycaster.intersectObjects(machineGroup.children, true).find(x => x.object.userData.machine);
-      if (hit) renderInspector(hit.object.userData.machine);
-    });
     select.addEventListener('change', () => loadPlant(select.value));
-    window.addEventListener('resize', resize);
-    resize();
     const requestedMachine = new URLSearchParams(window.location.search).get('machine');
     const requested = requestedMachine ? machines.find(m => m.name.toLowerCase() === requestedMachine.toLowerCase()) : null;
     if (requested) {
       select.value = requested.plantId;
-      loadPlant(requested.plantId);
-      renderInspector(requested);
+      loadPlant(requested.plantId, requested);
     } else {
       loadPlant(plants[0]?.id);
     }
-
-    function animate() {
-      requestAnimationFrame(animate);
-      camera.position.x = Math.sin(angle) * 28;
-      camera.position.z = Math.cos(angle) * 28;
-      camera.lookAt(0, 0, 0);
-      machineGroup.children.forEach(group => {
-        const fault = group.userData.machine?.status !== 'running';
-        if (fault) group.rotation.y += 0.01;
-      });
-      renderer.render(scene, camera);
-    }
-    animate();
   }
 
   document.addEventListener('DOMContentLoaded', async () => {

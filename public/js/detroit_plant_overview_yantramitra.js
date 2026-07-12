@@ -35,7 +35,51 @@
     if (node) node.textContent = value;
   }
 
+  function render3DFloor(plant) {
+    const host = document.getElementById('ym-plant-floor-3d');
+    const fallback = document.getElementById('ym-plant-floor-fallback');
+    if (!host) return;
+    const machines = plant.machines || [];
+    if (!window.THREE || !window.YMFactory3D || !machines.length) {
+      host.innerHTML = '';
+      if (fallback) {
+        fallback.classList.remove('hidden');
+        host.appendChild(fallback);
+      } else {
+        host.innerHTML = `<div class="h-full flex items-center justify-center text-center text-on-surface-variant font-bold">${plant.name} facility operating view unavailable.</div>`;
+      }
+      return;
+    }
+    const picked = machines.find(machine => machine.status !== 'running') || machines[0];
+    window.YMFactory3D.renderPlantFloor({
+      host,
+      plant,
+      machines,
+      cameraY: 22,
+      radius: 31,
+      initialAngle: 0.64,
+      pixelRatio: 1.45,
+      onSelect(machine) {
+        const alertHost = Array.from(document.querySelectorAll('.space-y-3')).find(node => node.closest('aside'));
+        if (!alertHost) return;
+        alertHost.insertAdjacentHTML('afterbegin', `<div class="p-3 rounded-xl bg-gradient-to-r from-secondary/10 to-transparent border-l-4 border-secondary">
+          <div class="flex justify-between items-start mb-1">
+            <span class="font-label-caps text-[10px] text-secondary">selected machine</span>
+            <span class="text-[10px] text-on-surface-variant">${plant.name}</span>
+          </div>
+          <h4 class="text-sm font-bold text-on-surface">${machine.name}</h4>
+          <p class="text-xs text-on-surface-variant mt-1">${machine.type.replace(/_/g, ' ')} · ${Math.round(machine.health || 0)}% health · ${machine.status}</p>
+        </div>`);
+      }
+    });
+    if (picked) {
+      const meta = document.querySelector('#ym-plant-floor-3d')?.closest('.glass-card')?.querySelector('p.text-on-surface-variant');
+      if (meta) meta.textContent = `${plant.location} - ${plant.domain || 'Industrial facility'} - ${machines.length} monitored machines. Click any 3D machine for live context.`;
+    }
+  }
+
   function renderPlant(plant) {
+    window.__ymCurrentPlant = plant;
     const metrics = metricRows(plant);
     document.title = `YantraMitra | ${plant.name}`;
     updateText('header .font-body-md', `${plant.name} - LIVE`);
@@ -48,11 +92,7 @@
     if (kpis[1]) kpis[1].innerHTML = `${plant.utilization || 0}<span class="text-lg font-normal text-on-surface-variant">%</span>`;
     if (kpis[2]) kpis[2].innerHTML = `${metrics.activeAlerts}<span class="text-lg font-normal text-on-surface-variant"> alerts</span>`;
 
-    const floorImage = Array.from(document.querySelectorAll('img')).find(img => img.src.includes('digital-twin') || img.src.includes('factory'));
-    if (floorImage) {
-      floorImage.src = plant.image || floorImage.src;
-      floorImage.alt = `${plant.name} facility operating view`;
-    }
+    render3DFloor(plant);
 
     const floorCaption = Array.from(document.querySelectorAll('p')).find(p => p.textContent.includes('Live operational status'));
     if (floorCaption) floorCaption.textContent = `${plant.location} - ${plant.domain || 'Industrial facility'} - ${metrics.machineCount} monitored machines.`;
@@ -105,7 +145,10 @@
 
     document.querySelectorAll('button').forEach(btn => {
       if (btn.textContent.includes('EXPORT')) btn.addEventListener('click', () => window.print());
-      if (btn.textContent.includes('ZOOM')) btn.addEventListener('click', () => window.location.href = '/digital-twin');
+      if (btn.textContent.includes('ZOOM')) btn.addEventListener('click', () => {
+        const firstMachine = document.querySelector('#ym-plant-floor-3d') ? window.__ymCurrentPlant?.machines?.[0] : null;
+        window.location.href = firstMachine ? `/digital-twin?machine=${encodeURIComponent(firstMachine.name)}` : '/digital-twin';
+      });
     });
   });
 })();
