@@ -1358,35 +1358,47 @@ Include clickable links like: [View Work Orders](/work-orders) or [Pune Plant De
 app.post('/api/ai-upload', authApi, upload.array('files', 5), async (req, res) => {
   try {
     const files = req.files || [];
-    const { message } = req.body;
+    const { message, conversationId } = req.body;
     if (!files.length && !message) return res.status(400).json({ error: 'No files or message provided' });
 
     const fileTexts = [];
     for (const file of files) {
       try {
-        const isText = file.mimetype && (
-          file.mimetype.startsWith('text/') ||
-          file.mimetype === 'application/json' ||
-          file.mimetype === 'application/csv' ||
-          file.mimetype === 'application/xml'
-        );
         const ext = file.originalname.toLowerCase().split('.').pop();
-        const textExts = ['txt', 'csv', 'json', 'md', 'xml', 'html', 'log', 'yaml', 'yml', 'ini', 'cfg', 'env'];
+        const buf = fs.readFileSync(file.path);
+        let text = '';
         if (file.mimetype === 'application/pdf' || ext === 'pdf') {
           const pdfParse = require('pdf-parse');
-          const buf = fs.readFileSync(file.path);
           const pdfData = await pdfParse(buf);
-          const text = (pdfData.text || '').slice(0, 5000);
-          fileTexts.push(`--- ${file.originalname} ---\n${text || '(No extractable text in PDF)'}`);
-        } else if (isText || textExts.includes(ext)) {
-          const content = fs.readFileSync(file.path, 'utf8');
-          fileTexts.push(`--- ${file.originalname} ---\n${content.slice(0, 5000)}`);
+          text = (pdfData.text || '(No extractable text in PDF)').slice(0, 8000);
+        } else if (ext === 'docx') {
+          const mammoth = require('mammoth');
+          const result = await mammoth.extractRawText({ buffer: buf });
+          text = (result.value || '(No extractable text in DOCX)').slice(0, 8000);
+        } else if (ext === 'xlsx' || ext === 'xls') {
+          const XLSX = require('xlsx');
+          const wb = XLSX.read(buf, { type: 'buffer' });
+          const sheets = wb.SheetNames.map(name => {
+            const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1 });
+            return `[Sheet: ${name}]\n${rows.slice(0, 50).map(r => r.join(', ')).join('\n')}`;
+          });
+          text = sheets.join('\n\n').slice(0, 8000);
+        } else if (file.mimetype && (file.mimetype.startsWith('text/') || file.mimetype === 'application/json' || file.mimetype === 'application/csv' || file.mimetype === 'application/xml')) {
+          text = buf.toString('utf8').slice(0, 8000);
+        } else if (['txt', 'csv', 'json', 'md', 'xml', 'html', 'log', 'yaml', 'yml', 'ini', 'cfg', 'env'].includes(ext)) {
+          text = buf.toString('utf8').slice(0, 8000);
+        } else if (['png','jpg','jpeg','gif','webp','bmp','svg','tiff'].includes(ext)) {
+          text = '[Image file: ' + file.originalname + ']';
         } else {
-          fileTexts.push(`--- ${file.originalname} ---\n(${file.mimetype || 'binary'} file - ${['png','jpg','jpeg','gif','webp','bmp','svg','tiff'].includes(ext) ? 'Image file uploaded. Describe what you see or ask about it.' : 'Binary content. I can process metadata but not the raw content.'})`);
+          text = '[Binary file: ' + file.originalname + ' (' + (file.mimetype || 'unknown') + ')]';
         }
-      } catch (e) { fileTexts.push(`--- ${file.originalname} ---\n(Unable to parse - ${e.message || file.mimetype})`); }
+        fileTexts.push(`--- ${file.originalname} ---\n${text}`);
+      } catch (e) { fileTexts.push(`--- ${file.originalname} ---\n(Unable to parse - ${e.message})`); }
       try { fs.unlinkSync(file.path); } catch {}
     }
+
+    const extractedText = fileTexts.join('\n\n');
+    const fileSources = files.map(f => ({ name: f.originalname, type: f.mimetype || 'unknown', size: f.size }));
 
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
@@ -1399,15 +1411,21 @@ app.post('/api/ai-upload', authApi, upload.array('files', 5), async (req, res) =
       prisma.alarm.findMany({ where: { status: 'active' }, take: 10, include: { machine: { select: { name: true } } } }),
     ]);
 
-    const fileContext = fileTexts.join('\n\n');
-    const fileSources = files.map(f => ({ name: f.originalname, type: f.mimetype || 'unknown', size: f.size }));
-    const systemPrompt = `You are YantraNklan, YantraMitra's industrial AI copilot. The user has uploaded files with the following content:\n\n${fileContext}\n\n## Operational Context\nPlants: ${plants.map(p => p.name).join(', ')}\nMachines: ${machines.map(m => `${m.name} (${m.plant?.name})`).join(', ')}\nActive Alarms: ${alarms.length}\n\nAnalyze the uploaded files in context of plant operations. When you quote or reference specific content, cite the source filename in brackets like [filename.pdf]. Use markdown formatting. Be specific and actionable.${message ? `\n\n## User Message\n${message}` : ''}`;
+    const systemPrompt = `You are YantraNklan, YantraMitra's industrial AI copilot. The user has uploaded files with the following content:\n\n${extractedText}\n\n## Operational Context\nPlants: ${plants.map(p => p.name).join(', ')}\nMachines: ${machines.map(m => `${m.name} (${m.plant?.name})`).join(', ')}\nActive Alarms: ${alarms.length}\n\nAnalyze the uploaded files in context of plant operations. When you quote or reference specific content, cite the source filename in brackets like [filename.pdf]. Use markdown formatting. Be specific and actionable.${message ? `\n\n## User Message\n${message}` : ''}`;
 
     const OpenAI = require('openai');
     const groq = new OpenAI({ apiKey, baseURL: GROQ_BASE_URL });
     const completion = await groq.chat.completions.create({ model: GROQ_MODEL, messages: [{ role: 'system', content: systemPrompt }], max_tokens: 800, temperature: 0.7 });
     const reply = completion.choices[0]?.message?.content || 'Files processed. What would you like to know?';
-    res.json({ reply, model: GROQ_MODEL, sources: fileSources });
+
+    if (conversationId) {
+      if (!aiConversations.has(conversationId)) aiConversations.set(conversationId, { messages: [], created: Date.now() });
+      const conv = aiConversations.get(conversationId);
+      conv.messages.push({ role: 'user', content: message || 'Uploaded files: ' + files.map(f => f.originalname).join(', ') }, { role: 'assistant', content: reply });
+      conv.attachmentContext = extractedText;
+    }
+
+    res.json({ reply, model: GROQ_MODEL, sources: fileSources, extractedText });
   } catch (e) {
     console.error('Upload error:', e.message);
     res.status(500).json({ error: 'Upload failed', message: e.message });

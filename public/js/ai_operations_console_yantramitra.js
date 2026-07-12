@@ -8,6 +8,7 @@
   let conversationId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   let chatHistory = [];
   let fileAttachments = [];
+  let documentContexts = [];
 
   function toast(msg, type) {
     const el = document.getElementById('ym-toast');
@@ -151,12 +152,15 @@
     abortController = new AbortController();
 
     try {
+      const attachmentContext = documentContexts.length > 0 ? documentContexts.map(d => d.text).join('\n\n') : '';
       let payload = { message, conversationId, history: chatHistory.slice(-20) };
+      if (attachmentContext) payload.attachmentContext = attachmentContext;
 
       if (fileAttachments.length > 0) {
         const formData = new FormData();
         for (const f of fileAttachments) formData.append('files', f.file);
         formData.append('message', message);
+        formData.append('conversationId', conversationId);
         const fileNames = fileAttachments.map(f => f.file.name).join(', ');
         addMessage('', false, { id: 'ai_' + Date.now(), model: 'parsing', streaming: false });
         const lastMsg = document.querySelector('[data-msgid="ai_' + Date.now() + '"]');
@@ -178,6 +182,10 @@
         }
         const data = await resp.json();
         if (lastMsg) lastMsg.remove();
+        if (data.extractedText) {
+          documentContexts.push({ text: data.extractedText, sources: data.sources || [], timestamp: Date.now() });
+          try { localStorage.setItem('ym_doc_contexts', JSON.stringify({ cid: conversationId, contexts: documentContexts.slice(-5) })); } catch {}
+        }
         if (data.reply) { addMessage(data.reply, false, { model: data.model || 'llama-3.3-70b-versatile' }); chatHistory.push({ role: 'assistant', content: data.reply }); saveHistory(); }
         return;
       }
@@ -434,7 +442,9 @@
     document.getElementById('ym-clear-chat')?.addEventListener('click', function() {
       if (streaming && abortController) { abortController.abort(); setLoading(false); }
       chatHistory = [];
+      documentContexts = [];
       try { localStorage.removeItem(CHAT_HISTORY_KEY + '_' + conversationId); } catch {}
+      try { localStorage.removeItem('ym_doc_contexts'); } catch {}
       showWelcome();
       fileAttachments = [];
       const preview = document.getElementById('ym-file-preview');

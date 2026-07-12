@@ -1,19 +1,20 @@
 (function() {
   const navItems = [
-    { path: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
-    { path: '/map', icon: 'public', label: 'Global Map' },
-    { path: '/assets', icon: 'precision_manufacturing', label: 'Assets' },
-    { path: '/digital-twin', icon: 'view_in_ar', label: 'Digital Twin' },
-    { path: '/reliability', icon: 'monitoring', label: 'Reliability' },
-    { path: '/maintenance', icon: 'event_note', label: 'Maintenance' },
-    { path: '/work-orders', icon: 'build', label: 'Work Orders' },
-    { path: '/plans', icon: 'approval', label: 'Plans' },
-    { path: '/agents', icon: 'smart_toy', label: 'Agents' },
-    { path: '/anomaly', icon: 'troubleshoot', label: 'Anomaly' },
-    { path: '/simulator', icon: 'science', label: 'Simulator' },
-    { path: '/ai-console', icon: 'psychology', label: 'YantraNklan' },
-    { path: '/settings', icon: 'settings', label: 'Settings' },
+    { path: '/dashboard', icon: 'dashboard', label: 'Dashboard', kbd: '1', section: 'ops' },
+    { path: '/map', icon: 'public', label: 'Global Map', kbd: '2', section: 'ops' },
+    { path: '/assets', icon: 'precision_manufacturing', label: 'Assets', kbd: '3', section: 'ops' },
+    { path: '/digital-twin', icon: 'view_in_ar', label: 'Digital Twin', kbd: '4', section: 'ops' },
+    { path: '/reliability', icon: 'monitoring', label: 'Reliability', kbd: '5', section: 'ops' },
+    { path: '/maintenance', icon: 'event_note', label: 'Maintenance', kbd: '6', section: 'ops' },
+    { path: '/work-orders', icon: 'build', label: 'Work Orders', kbd: '7', badge: 0, section: 'ops' },
+    { path: '/plans', icon: 'approval', label: 'Plans', kbd: '8', section: 'ops' },
+    { path: '/agents', icon: 'smart_toy', label: 'Agents', kbd: '9', section: 'intel' },
+    { path: '/anomaly', icon: 'troubleshoot', label: 'Anomaly', kbd: '0', badge: 0, section: 'intel' },
+    { path: '/simulator', icon: 'science', label: 'Simulator', kbd: '-', section: 'intel' },
+    { path: '/ai-console', icon: 'psychology', label: 'YantraNklan', kbd: '=', section: 'intel' },
+    { path: '/settings', icon: 'settings', label: 'Settings', kbd: "'", section: 'sys' },
   ];
+  let navBadgeData = { workOrders: 0, anomalies: 0 };
 
   const currentPath = window.location.pathname;
   const authPaths = ['/login', '/signup', '/reset-password'];
@@ -60,9 +61,9 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 10px;
-        padding: 16px 0;
-        background: rgba(255, 255, 255, 0.80);
+        gap: 2px;
+        padding: 12px 0;
+        background: rgba(255, 255, 255, 0.82);
         backdrop-filter: blur(18px);
         border-top: 1px solid rgba(199, 196, 215, 0.4);
         border-bottom: 1px solid rgba(199, 196, 215, 0.4);
@@ -72,42 +73,97 @@
         scrollbar-width: none;
       }
       .ym-nav-rail::-webkit-scrollbar { display: none; }
-      .ym-nav-rail a,
+      .ym-nav-rail .ym-nav-section {
+        display:flex; flex-direction:column; align-items:center; gap:1px; width:100%; padding:3px 0;
+      }
+      .ym-nav-rail .ym-nav-section + .ym-nav-section {
+        border-top:1px solid rgba(199,196,215,.25);
+        margin-top:3px;
+        padding-top:6px;
+      }
+      .ym-nav-rail .ym-nav-link {
+        position:relative;
+        width:44px;
+        height:44px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        border-radius:12px;
+        color:#767586;
+        border:0;
+        background:transparent;
+        cursor:pointer;
+        text-decoration:none;
+        transition:background .12s,color .12s,transform .12s;
+        flex-shrink:0;
+      }
+      .ym-nav-rail .ym-nav-link:hover {
+        background:rgba(65,63,214,.08);
+        color:#413fd6;
+        transform:scale(1.05);
+      }
+      .ym-nav-rail .ym-nav-link.is-active {
+        background:#413fd6;
+        color:#fff;
+        box-shadow:0 0 12px rgba(65,63,214,.3);
+      }
+      .ym-nav-rail .ym-nav-link .material-symbols-outlined { font-size:20px; line-height:1; }
+      .ym-nav-rail .ym-nav-badge {
+        position:absolute; top:-2px; right:-2px;
+        min-width:16px; height:16px;
+        display:flex; align-items:center; justify-content:center;
+        border-radius:9999px;
+        background:#ba1a1a; color:#fff;
+        font:700 9px/1 Inter,system-ui,sans-serif;
+        padding:0 4px;
+        box-shadow:0 0 0 2px rgba(255,255,255,.9);
+      }
+      .ym-nav-rail .ym-nav-kbd {
+        position:absolute; bottom:-1px; right:-1px;
+        background:rgba(118,117,134,.15);
+        color:#767586;
+        font:600 7px/1 Inter,system-ui,sans-serif;
+        padding:1px 3px;
+        border-radius:3px;
+        letter-spacing:.3px;
+      }
+      .ym-nav-rail .ym-nav-link.is-active .ym-nav-kbd {
+        background:rgba(255,255,255,.2);
+        color:rgba(255,255,255,.8);
+      }
+      .ym-nav-rail .ym-nav-link[data-tooltip]:hover::after {
+        content:attr(data-tooltip);
+        position:absolute; right:52px;
+        white-space:nowrap;
+        background:#191a28; color:#fff;
+        font:500 11px/1 Inter,system-ui,sans-serif;
+        padding:5px 9px; border-radius:6px;
+        pointer-events:none; z-index:99;
+        box-shadow:0 4px 12px rgba(0,0,0,.2);
+      }
+      .ym-nav-rail .ym-nav-sep {
+        width:20px; height:1px;
+        background:rgba(199,196,215,.3);
+        margin:2px 0;
+        flex-shrink:0;
+      }
       .ym-nav-rail .ym-shell-logout {
-        width: 48px;
-        height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 9999px;
-        color: #767586;
-        border: 0;
-        background: transparent;
-        cursor: pointer;
-        text-decoration: none;
-        transition: background 0.15s ease, color 0.15s ease;
-        flex-shrink: 0;
-      }
-      .ym-nav-rail a:hover,
-      .ym-nav-rail .ym-shell-logout:hover {
-        background: rgba(65, 63, 214, 0.08);
-        color: #413fd6;
-      }
-      .ym-nav-rail a.is-active,
-      .ym-nav-rail .ym-shell-logout.is-active {
-        background: #413fd6;
-        color: #fff;
-        box-shadow: 0 0 15px rgba(65, 63, 214, 0.35);
-      }
-      .ym-nav-rail .material-symbols-outlined { font-size: 22px; line-height: 1; }
-      .ym-nav-rail .ym-shell-logout {
-        margin-top: auto;
-        color: #ba1a1a;
+        width:44px; height:44px;
+        display:flex; align-items:center; justify-content:center;
+        border-radius:12px;
+        color:#ba1a1a;
+        border:0; background:transparent;
+        cursor:pointer;
+        text-decoration:none;
+        transition:background .12s,transform .12s;
+        flex-shrink:0;
+        margin-top:auto;
       }
       .ym-nav-rail .ym-shell-logout:hover {
-        background: rgba(186, 26, 26, 0.08);
-        color: #ba1a1a;
+        background:rgba(186,26,26,.08);
+        transform:scale(1.05);
       }
+      .ym-nav-rail .ym-shell-logout .material-symbols-outlined { font-size:20px; }
 
       .ym-standard-topbar {
         position: fixed;
@@ -447,15 +503,28 @@
     const existing = document.querySelector('.ym-nav-rail');
     if (existing) existing.remove();
 
+    const sections = { ops: [], intel: [], sys: [] };
+    navItems.forEach(item => {
+      if (sections[item.section]) sections[item.section].push(item);
+    });
+
+    function renderSection(items) {
+      if (!items.length) return '';
+      return '<div class="ym-nav-section">' + items.map(item => {
+        const active = currentPath === item.path || (item.path !== '/dashboard' && currentPath.startsWith(item.path + '/'));
+        const badgeHtml = item.badge !== undefined && item.badge > 0 ? `<span class="ym-nav-badge">${item.badge > 99 ? '99+' : item.badge}</span>` : '';
+        const kbdHtml = item.kbd ? `<span class="ym-nav-kbd">⌘${item.kbd}</span>` : '';
+        return `<a href="${item.path}" class="ym-nav-link ${active ? 'is-active' : ''}" data-tooltip="${item.label}" data-kbd="${item.kbd || ''}">
+          <span class="material-symbols-outlined">${item.icon}</span>${badgeHtml}${kbdHtml}
+        </a>`;
+      }).join('') + '</div>';
+    }
+
     const rail = document.createElement('aside');
     rail.className = 'ym-nav-rail';
     rail.setAttribute('aria-label', 'YantraMitra app navigation');
-    rail.innerHTML = navItems.map(item => {
-      const active = currentPath === item.path || (item.path !== '/dashboard' && currentPath.startsWith(item.path + '/'));
-      return `<a href="${item.path}" title="${item.label}" aria-label="${item.label}" class="${active ? 'is-active' : ''}">
-        <span class="material-symbols-outlined">${item.icon}</span>
-      </a>`;
-    }).join('') + `<button type="button" class="ym-shell-logout" title="Log out" aria-label="Log out"><span class="material-symbols-outlined">logout</span></button>`;
+    rail.innerHTML = renderSection(sections.ops) + renderSection(sections.intel) + renderSection(sections.sys)
+      + `<button type="button" class="ym-shell-logout" data-tooltip="Log out"><span class="material-symbols-outlined">logout</span></button>`;
     rail.querySelector('.ym-shell-logout').addEventListener('click', async () => {
       const ok = window.confirm('Log out of YantraMitra?');
       if (!ok) return;
@@ -464,6 +533,21 @@
     });
 
     document.body.appendChild(rail);
+
+    /* Update badges from API */
+    fetch('/api/work-orders?status=open,in_progress&_t=' + Date.now(), { credentials: 'same-origin' }).then(r => r.json()).then(orders => {
+      if (Array.isArray(orders)) {
+        const open = orders.filter(o => o.status === 'open' || o.status === 'in_progress').length;
+        const badge = rail.querySelector(`.ym-nav-link[href="/work-orders"] .ym-nav-badge`);
+        if (badge) { badge.textContent = open > 99 ? '99+' : open; badge.style.display = open > 0 ? 'flex' : 'none'; }
+      }
+    }).catch(() => {});
+    fetch('/api/alarms?status=active&_t=' + Date.now(), { credentials: 'same-origin' }).then(r => r.json()).then(alarms => {
+      if (Array.isArray(alarms) && alarms.length) {
+        const badge = rail.querySelector(`.ym-nav-link[href="/anomaly"] .ym-nav-badge`);
+        if (badge) { badge.textContent = alarms.length > 99 ? '99+' : alarms.length; badge.style.display = alarms.length > 0 ? 'flex' : 'none'; }
+      }
+    }).catch(() => {});
   }
 
   function pageTitle() {
@@ -902,6 +986,14 @@
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openCommandPalette(); }
       if (e.key === 'Escape') document.querySelector('.ym-modal-backdrop')?.remove();
       if (e.key === '/' && !e.target.closest('input, textarea, [contenteditable]')) { e.preventDefault(); openCommandPalette(); }
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey) {
+        const keyMap = { '1':0,'2':1,'3':2,'4':3,'5':4,'6':5,'7':6,'8':7,'9':8,'0':9,'-':10,'=':11,"'":12 };
+        const idx = keyMap[e.key];
+        if (idx !== undefined && navItems[idx]) {
+          e.preventDefault();
+          window.location.href = navItems[idx].path;
+        }
+      }
     });
   });
 })();

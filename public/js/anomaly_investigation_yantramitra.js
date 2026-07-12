@@ -258,4 +258,71 @@
       });
     });
   });
+
+  /* ─── Graph zoom / pan ─── */
+  const graphCard = document.querySelector('.glass-card:has(svg.node-line)') || document.querySelector('.glass-card:has(.node-line)');
+  if (graphCard) {
+    const graphArea = graphCard.querySelector('.flex-grow.relative');
+    if (graphArea) {
+      let scale = 1, tx = 0, ty = 0;
+      let isPanning = false, startX, startY;
+      const content = graphArea.querySelector('svg') || graphArea.querySelector('.absolute.inset-0');
+      if (content) {
+        graphArea.style.cursor = 'grab';
+        graphArea.style.overflow = 'hidden';
+        content.style.transformOrigin = 'center center';
+        content.style.transition = 'transform .15s ease';
+
+        function applyTransform() {
+          content.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+        }
+
+        graphArea.addEventListener('wheel', e => {
+          e.preventDefault();
+          const delta = e.deltaY > 0 ? 0.9 : 1.1;
+          const newScale = Math.min(Math.max(scale * delta, 0.3), 3);
+          const rect = graphArea.getBoundingClientRect();
+          const mx = e.clientX - rect.left - tx;
+          const my = e.clientY - rect.top - ty;
+          tx += mx * (1 - newScale / scale);
+          ty += my * (1 - newScale / scale);
+          scale = newScale;
+          applyTransform();
+        }, { passive: false });
+
+        graphArea.addEventListener('mousedown', e => {
+          if (e.target.closest('button, a, input, .group')) return;
+          isPanning = true; startX = e.clientX - tx; startY = e.clientY - ty;
+          graphArea.style.cursor = 'grabbing';
+        });
+        document.addEventListener('mousemove', e => {
+          if (!isPanning) return;
+          tx = e.clientX - startX; ty = e.clientY - startY;
+          applyTransform();
+        });
+        document.addEventListener('mouseup', () => {
+          if (isPanning) { isPanning = false; graphArea.style.cursor = 'grab'; }
+        });
+
+        /* Zoom controls */
+        const controls = document.createElement('div');
+        controls.className = 'absolute bottom-3 right-3 flex gap-1 z-10';
+        controls.innerHTML = '<button class="w-7 h-7 rounded-full bg-white/90 shadow text-xs font-bold hover:bg-white flex items-center justify-center" data-zoom="in">+</button><button class="w-7 h-7 rounded-full bg-white/90 shadow text-xs font-bold hover:bg-white flex items-center justify-center" data-zoom="out">−</button><button class="w-7 h-7 rounded-full bg-white/90 shadow text-xs font-bold hover:bg-white flex items-center justify-center" data-zoom="reset">↺</button>';
+        graphArea.appendChild(controls);
+        controls.querySelector('[data-zoom="in"]').addEventListener('click', () => { scale = Math.min(scale * 1.2, 3); applyTransform(); });
+        controls.querySelector('[data-zoom="out"]').addEventListener('click', () => { scale = Math.max(scale / 1.2, 0.3); applyTransform(); });
+        controls.querySelector('[data-zoom="reset"]').addEventListener('click', () => { scale = 1; tx = 0; ty = 0; applyTransform(); });
+
+        /* Node selection highlight */
+        graphArea.querySelectorAll('.group').forEach(node => {
+          node.addEventListener('click', function(e) {
+            graphArea.querySelectorAll('.group').forEach(n => n.style.outline = 'none');
+            this.style.outline = '2px solid #413fd6';
+            this.style.outlineOffset = '3px';
+            this.style.borderRadius = '9999px';
+          });
+        });
+      }
+    }
+  }
 })();
