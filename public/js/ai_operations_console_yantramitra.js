@@ -1,144 +1,125 @@
 (function() {
-  const API_URL = '/api/ai-chat';
-  let user = null;
+  const API_CHAT = '/api/ai-chat';
+  const CHAT_HISTORY_KEY = 'ym_chat_history';
 
-  async function checkAuth() {
-    try {
-      const r = await fetch('/api/auth/me');
-      if (!r.ok) { window.location.href = '/login'; return null; }
-      const me = await r.json();
-      if (!me || !me.id) { window.location.href = '/login'; return null; }
-      return me;
-    } catch { window.location.href = '/login'; return null; }
+  let user = null, streaming = false, abortController = null, recognition = null, micActive = false;
+  let conversationId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  let chatHistory = [];
+  let plantsCache = [];
+  let fileAttachments = [];
+
+  function toast(msg, type) {
+    const el = document.getElementById('ym-toast');
+    if (!el) return;
+    document.getElementById('ym-toast-msg').textContent = msg;
+    el.classList.remove('translate-y-32', 'opacity-0');
+    el.querySelector('.material-symbols-outlined').textContent = type === 'error' ? 'error' : 'check_circle';
+    clearTimeout(el._toastTimer);
+    el._toastTimer = setTimeout(() => el.classList.add('translate-y-32', 'opacity-0'), 3000);
   }
 
-  async function sendMessage(message) {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify({ message })
-    });
-    return response.json();
-  }
-
-  function escapeHtml(text) {
-    const d = document.createElement('div');
-    d.textContent = text;
-    return d.innerHTML;
-  }
+  function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
   function markdownToHtml(text) {
-    if (!text) return '';
+    if (!text) return '<p class="my-1 leading-relaxed text-sm"></p>';
     let html = escapeHtml(text);
-    html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="bg-surface-container rounded-lg p-3 text-xs font-mono my-2 overflow-x-auto border border-outline-variant/20"><code>$2</code></pre>');
-    html = html.replace(/### (.+)/g, '<h3 class="font-bold text-sm mt-3 mb-1">$1</h3>');
-    html = html.replace(/## (.+)/g, '<h2 class="font-bold text-base mt-3 mb-1">$1</h2>');
-    html = html.replace(/# (.+)/g, '<h1 class="font-bold text-lg mt-3 mb-1">$1</h1>');
+    html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="bg-surface-container rounded-lg p-3 my-2 overflow-x-auto border border-outline-variant/20 text-xs leading-relaxed"><code>$2</code></pre>');
+    html = html.replace(/### (.+)/g, '<h3 class="font-bold text-sm mt-3 mb-1 text-on-surface">$1</h3>');
+    html = html.replace(/## (.+)/g, '<h2 class="font-bold text-base mt-3 mb-1 text-on-surface">$1</h2>');
+    html = html.replace(/# (.+)/g, '<h1 class="font-bold text-lg mt-3 mb-1 text-on-surface">$1</h1>');
     html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-    html = html.replace(/^- (.+)/gm, '<li class="ml-4 list-disc text-sm">$1</li>');
-    html = html.replace(/^\d+\. (.+)/gm, '<li class="ml-4 list-decimal text-sm">$1</li>');
-    html = html.replace(/\|(.+)\|/g, function(match) {
-      const cells = match.split('|').filter(c => c.trim());
-      if (cells.every(c => /^[-:]+$/.test(c.trim()))) return '';
-      return '<span class="inline-block px-2 py-0.5">' + cells.join('</span><span class="inline-block px-2 py-0.5">') + '</span>';
-    });
-    html = html.replace(/\n{2,}/g, '</p><p class="my-2">');
+    html = html.replace(/`([^`]+)`/g, '<code class="bg-surface-container px-1 rounded text-[13px]">$1</code>');
+    html = html.replace(/^- (.+)/gm, '<li class="ml-4 list-disc text-sm text-on-surface">$1</li>');
+    html = html.replace(/^\d+\. (.+)/gm, '<li class="ml-4 list-decimal text-sm text-on-surface">$1</li>');
+    html = html.replace(/\n{2,}/g, '</p><p class="my-1.5">');
     html = html.replace(/\n/g, '<br/>');
-    html = '<p class="my-2">' + html + '</p>';
-    html = html.replace(/<p class="my-2"><\/p>/g, '');
+    html = '<p class="my-1.5 leading-relaxed text-sm">' + html + '</p>';
+    html = html.replace(/<p class="my-1\.5 leading-relaxed text-sm"><\/p>/g, '');
     return html;
   }
 
-  function addMessage(text, isUser, extra) {
-    const chatStream = document.querySelector('.chat-scroll');
-    if (!chatStream) return;
-
+  function addMessage(text, isUser, opts) {
+    const container = document.getElementById('ym-chat-messages');
+    if (!container) return;
+    opts = opts || {};
     const wrapper = document.createElement('div');
-    wrapper.className = isUser ? 'flex justify-end mb-3' : 'flex justify-start mb-3';
+    wrapper.className = 'flex ' + (isUser ? 'justify-end' : 'justify-start') + ' mb-3 msg-enter';
+    wrapper.dataset.msgId = opts.id || Date.now().toString(36);
 
     if (isUser) {
       const bubble = document.createElement('div');
-      bubble.className = 'max-w-[80%] glass-panel rounded-2xl rounded-tr-none px-md py-sm shadow-sm bg-primary/5 border border-primary/10';
-      bubble.innerHTML = '<p class="text-on-surface text-body-md">' + escapeHtml(text) + '</p>';
+      bubble.className = 'max-w-[80%] glass-panel rounded-2xl rounded-tr-none px-4 py-2.5 shadow-sm bg-primary/5 border border-primary/10';
+      bubble.innerHTML = '<p class="text-on-surface text-sm">' + escapeHtml(text) + '</p>';
       wrapper.appendChild(bubble);
     } else {
       const bubble = document.createElement('div');
-      bubble.className = 'max-w-[95%] flex gap-sm';
-
-      const avatarEl = document.createElement('img');
-      avatarEl.src = '/images/yantranklan-avatar-ai.jpg';
-      avatarEl.alt = 'YantraNklan';
-      avatarEl.className = 'w-10 h-10 rounded-full mt-1 shrink-0 border-2 border-secondary/30 self-start';
-
+      bubble.className = 'max-w-[92%] flex gap-2.5';
+      const avatar = document.createElement('img');
+      avatar.src = '/images/yantranklan-avatar-ai.jpg';
+      avatar.className = 'w-9 h-9 rounded-full mt-0.5 shrink-0 border-2 border-secondary/30 self-start';
       const contentDiv = document.createElement('div');
-      contentDiv.className = 'glass-panel rounded-2xl rounded-tl-none px-md py-sm shadow-sm border-l-4 border-l-secondary flex-1';
-
-      const nameEl = document.createElement('div');
-      nameEl.className = 'font-kpi-numeric text-kpi-numeric text-secondary mb-xs flex items-center gap-xs';
-      nameEl.innerHTML = 'YantraNklan' + (extra?.model ? ' <span class="text-[10px] text-on-surface-variant font-normal px-2 py-0.5 rounded bg-secondary/10">' + extra.model + '</span>' : '') + (extra?.warning ? ' <span class="text-[10px] text-tertiary font-normal">⚠️ ' + escapeHtml(extra.warning) + '</span>' : '');
-      contentDiv.appendChild(nameEl);
-
+      contentDiv.className = 'glass-panel rounded-2xl rounded-tl-none px-4 py-2.5 shadow-sm border-l-4 border-l-secondary flex-1 min-w-0';
+      const header = document.createElement('div');
+      header.className = 'flex items-center gap-1.5 mb-1 flex-wrap';
+      header.innerHTML = '<span class="font-kpi-numeric text-sm text-secondary">YantraNklan</span>';
+      if (opts.model) header.innerHTML += '<span class="text-[9px] text-on-surface-variant bg-secondary/10 px-1.5 py-0.5 rounded font-medium">' + escapeHtml(opts.model) + '</span>';
+      if (opts.fallback) header.innerHTML += '<span class="text-[9px] text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded font-medium">offline</span>';
+      contentDiv.appendChild(header);
       const textEl = document.createElement('div');
-      textEl.className = 'text-on-surface text-body-md leading-relaxed ai-response';
+      textEl.className = 'text-on-surface text-sm leading-relaxed ai-response';
       textEl.innerHTML = markdownToHtml(text);
       contentDiv.appendChild(textEl);
-
-      if (extra?.charts) {
-        const chartDiv = document.createElement('div');
-        chartDiv.className = 'mt-2 grid grid-cols-2 gap-2';
-        chartDiv.innerHTML = extra.charts;
-        contentDiv.appendChild(chartDiv);
-      }
-
-      if (extra?.tables) {
-        const tableDiv = document.createElement('div');
-        tableDiv.className = 'mt-2 overflow-x-auto';
-        tableDiv.innerHTML = extra.tables;
-        contentDiv.appendChild(tableDiv);
-      }
-
-      bubble.appendChild(avatarEl);
+      const actions = document.createElement('div');
+      actions.className = 'flex items-center gap-1 mt-1.5 pt-1.5 border-t border-outline-variant/10';
+      actions.innerHTML = [
+        '<button class="ym-action-btn text-on-surface-variant/50 hover:text-primary transition-colors p-1" title="Copy response" data-action="copy"><span class="material-symbols-outlined text-sm">content_copy</span></button>',
+        '<button class="ym-action-btn text-on-surface-variant/50 hover:text-primary transition-colors p-1" title="Regenerate" data-action="regenerate"><span class="material-symbols-outlined text-sm">refresh</span></button>'
+      ].join('');
+      actions.querySelector('[data-action="copy"]').addEventListener('click', function() {
+        navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard'));
+      });
+      actions.querySelector('[data-action="regenerate"]').addEventListener('click', function() {
+        const prevMsg = wrapper.previousElementSibling;
+        if (prevMsg && prevMsg.dataset.msgId) {
+          const userMsgEl = container.querySelector('[data-msgId="' + prevMsg.dataset.msgId + '"]');
+          if (userMsgEl) {
+            const userText = userMsgEl.textContent;
+            wrapper.remove();
+            handleSend(userText, true);
+          }
+        }
+      });
+      contentDiv.appendChild(actions);
+      bubble.appendChild(avatar);
       bubble.appendChild(contentDiv);
       wrapper.appendChild(bubble);
     }
-
-    chatStream.appendChild(wrapper);
-    chatStream.scrollTop = chatStream.scrollHeight;
+    container.appendChild(wrapper);
+    container.scrollTop = container.scrollHeight;
+    return wrapper;
   }
 
   function addTypingIndicator() {
-    const chatStream = document.querySelector('.chat-scroll');
-    if (!chatStream) return;
-    const existing = document.getElementById('typing-indicator');
-    if (existing) existing.remove();
-
+    removeTypingIndicator();
+    const container = document.getElementById('ym-chat-messages');
+    if (!container) return;
     const wrapper = document.createElement('div');
-    wrapper.className = 'flex justify-start mb-3';
+    wrapper.className = 'flex justify-start mb-3 msg-enter';
     wrapper.id = 'typing-indicator';
-
     const bubble = document.createElement('div');
-    bubble.className = 'max-w-[95%] flex gap-sm';
-
-    const avatarEl = document.createElement('img');
-    avatarEl.src = '/images/yantranklan-avatar-ai.jpg';
-    avatarEl.alt = 'YantraNklan';
-    avatarEl.className = 'w-10 h-10 rounded-full mt-1 shrink-0 border-2 border-secondary/30 self-start';
-
+    bubble.className = 'max-w-[92%] flex gap-2.5';
+    const avatar = document.createElement('img');
+    avatar.src = '/images/yantranklan-avatar-ai.jpg';
+    avatar.className = 'w-9 h-9 rounded-full mt-0.5 shrink-0 border-2 border-secondary/30 self-start';
     const contentDiv = document.createElement('div');
-    contentDiv.className = 'glass-panel rounded-2xl rounded-tl-none px-md py-sm shadow-sm border-l-4 border-l-secondary';
-
-    const dots = document.createElement('div');
-    dots.className = 'flex gap-1 items-center py-2 px-1';
-    dots.innerHTML = '<span class="w-2 h-2 bg-secondary rounded-full animate-bounce" style="animation-delay:0s"></span><span class="w-2 h-2 bg-secondary rounded-full animate-bounce" style="animation-delay:0.15s"></span><span class="w-2 h-2 bg-secondary rounded-full animate-bounce" style="animation-delay:0.3s"></span>';
-    contentDiv.appendChild(dots);
-
-    bubble.appendChild(avatarEl);
+    contentDiv.className = 'glass-panel rounded-2xl rounded-tl-none px-4 py-3 shadow-sm border-l-4 border-l-secondary';
+    contentDiv.innerHTML = '<div class="flex gap-1.5 items-center"><span class="w-2 h-2 bg-secondary rounded-full animate-bounce" style="animation-delay:0s;animation-duration:1.4s;animation-iteration-count:infinite;animation-timing-function:ease;animation-name:bounceDot"></span><span class="w-2 h-2 bg-secondary rounded-full animate-bounce" style="animation-delay:0.16s;animation-duration:1.4s;animation-iteration-count:infinite;animation-timing-function:ease;animation-name:bounceDot"></span><span class="w-2 h-2 bg-secondary rounded-full animate-bounce" style="animation-delay:0.32s;animation-duration:1.4s;animation-iteration-count:infinite;animation-timing-function:ease;animation-name:bounceDot"></span></div>';
+    bubble.appendChild(avatar);
     bubble.appendChild(contentDiv);
     wrapper.appendChild(bubble);
-    chatStream.appendChild(wrapper);
-    chatStream.scrollTop = chatStream.scrollHeight;
+    container.appendChild(wrapper);
+    container.scrollTop = container.scrollHeight;
   }
 
   function removeTypingIndicator() {
@@ -146,112 +127,321 @@
     if (el) el.remove();
   }
 
-  async function handleSend(message) {
-    if (!message.trim()) return;
-    addMessage(message, true);
-    const input = document.querySelector('main input[type="text"], .chat-scroll ~ section input[type="text"]');
+  function setLoadingState(loading) {
+    const input = document.getElementById('ym-chat-input');
+    const sendBtn = document.getElementById('ym-send-btn');
+    const cancelBtn = document.getElementById('ym-cancel-btn');
+    const micBtn = document.getElementById('ym-mic-btn');
+    if (loading) {
+      if (input) input.disabled = true;
+      if (sendBtn) { sendBtn.disabled = true; sendBtn.classList.add('hidden'); }
+      if (cancelBtn) cancelBtn.classList.remove('hidden');
+      if (micBtn) micBtn.style.display = 'none';
+      addTypingIndicator();
+    } else {
+      if (input) input.disabled = false;
+      if (sendBtn) { sendBtn.classList.remove('hidden'); updateSendButton(); }
+      if (cancelBtn) cancelBtn.classList.add('hidden');
+      if (micBtn) micBtn.style.removeProperty('display');
+      removeTypingIndicator();
+    }
+    streaming = loading;
+  }
+
+  async function handleSend(message, isRegen) {
+    if (!message.trim() || streaming) return;
+
+    if (!isRegen) {
+      addMessage(message, true, { id: 'u_' + Date.now() });
+      chatHistory.push({ role: 'user', content: message });
+    }
+
+    const input = document.getElementById('ym-chat-input');
     if (input) input.value = '';
-    addTypingIndicator();
+    setLoadingState(true);
+    abortController = new AbortController();
 
     try {
-      const data = await sendMessage(message);
-      removeTypingIndicator();
-      if (data.error === 'api_key_missing') {
-        addMessage('I need an OpenAI API key to provide intelligent responses. Currently answering from database context. ' + (data.message || ''), false, { model: 'db-fallback' });
-      } else if (data.error === 'api_quota_exceeded' || data.warning?.includes('quota')) {
-        addMessage(data.reply || 'I encountered a quota limitation. Here is what I know from the database:', false, { model: 'db-fallback', warning: 'API quota limited - using database context' });
-      } else if (data.error) {
-        addMessage('I encountered an error. ' + (data.detail || data.message || data.error), false, { model: 'error' });
-      } else {
-        addMessage(data.reply, false, { model: data.model || 'gpt-4o-mini', warning: data.warning });
+      let payload = { message, conversationId, history: chatHistory.slice(-20) };
+
+      if (fileAttachments.length > 0) {
+        const fileTexts = [];
+        for (const f of fileAttachments) {
+          let content = '';
+          if (f.type === 'text') {
+            content = await f.file.text().catch(() => '');
+          }
+          fileTexts.push(`--- ${f.file.name} ---\n${content || '(binary or unreadable file)'}`);
+        }
+        payload.attachmentContext = fileTexts.join('\n\n');
+        fileAttachments = [];
+        document.getElementById('ym-file-preview').innerHTML = '';
+        document.getElementById('ym-file-preview').classList.add('hidden');
       }
+
+      const resp = await fetch(API_CHAT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload),
+        signal: abortController.signal
+      });
+
+      setLoadingState(false);
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: 'Request failed' }));
+        addMessage(err.detail || err.message || 'Request failed. Please try again.', false, { model: 'error' });
+        return;
+      }
+
+      const data = await resp.json();
+
+      if (data.error === 'api_key_missing') {
+        addMessage(data.reply || 'OPENAI_API_KEY not configured. Configure it in your environment variables.', false, { model: 'offline', fallback: true });
+        chatHistory.push({ role: 'assistant', content: data.reply || '' });
+      } else if (data.reply) {
+        addMessage(data.reply, false, { model: data.model || 'gpt-4o-mini', fallback: data.fallback });
+        chatHistory.push({ role: 'assistant', content: data.reply });
+      } else {
+        addMessage('Received an unexpected response. Please try again.', false, { model: 'error' });
+      }
+      saveChatHistory();
     } catch (err) {
-      removeTypingIndicator();
-      addMessage('Connection error. Please check your network and try again.', false, { model: 'error' });
+      setLoadingState(false);
+      if (err.name === 'AbortError') {
+        addMessage('Response cancelled.', false, { model: 'cancelled' });
+      } else {
+        addMessage('Connection error. Please check your network and try again.', false, { model: 'error' });
+      }
     }
   }
 
-  function addWelcomeMessage() {
-    const chatStream = document.querySelector('.chat-scroll');
-    if (chatStream) chatStream.innerHTML = '';
-    const context = new URLSearchParams(window.location.search).get('context');
-    const welcome = context
-      ? `Hello! I'm YantraNklan. I see you came from the Digital Twin with context for **${context}**. I have full access to your plant's real-time operational data including:
+  function setupFileUpload() {
+    const fileInput = document.getElementById('ym-file-input');
+    const attachBtn = document.getElementById('ym-attach-btn');
+    const preview = document.getElementById('ym-file-preview');
+    if (!fileInput || !attachBtn || !preview) return;
 
-• **${plantsCount || 5}** plants with facility hierarchy
-• Machine health, OEE, and sensor readings
-• Active alarms and work orders
-• Maintenance history and digital twin state
-• Production KPIs and energy metrics
+    attachBtn.addEventListener('click', () => fileInput.click());
 
-Ask me to:
-- Investigate a specific machine or alarm
-- Predict failures or generate maintenance plans
-- Compare plant performance
-- Optimize energy usage or production
-- Generate executive reports
+    fileInput.addEventListener('change', function() {
+      for (const file of this.files) {
+        if (fileAttachments.some(f => f.file.name === file.name && f.file.size === file.size)) continue;
+        const isText = file.type.startsWith('text/') || file.name.match(/\.(txt|log|md|csv|json|xml|yaml|yml|js|py|html|css|env|cfg|ini|conf)$/i);
+        fileAttachments.push({ file, type: isText ? 'text' : 'binary' });
+        const chip = document.createElement('div');
+        chip.className = 'flex items-center gap-1 bg-surface-container rounded-lg px-2 py-1 text-[10px] font-medium border border-outline-variant/20';
+        chip.innerHTML = '<span class="material-symbols-outlined text-sm">description</span><span class="truncate max-w-[120px]">' + escapeHtml(file.name) + '</span><button class="ym-remove-file material-symbols-outlined text-sm text-on-surface-variant hover:text-error">close</button>';
+        chip.querySelector('.ym-remove-file').addEventListener('click', function() {
+          const idx = fileAttachments.findIndex(f => f.file.name === file.name && f.file.size === file.size);
+          if (idx > -1) fileAttachments.splice(idx, 1);
+          chip.remove();
+          if (fileAttachments.length === 0) preview.classList.add('hidden');
+        });
+        preview.appendChild(chip);
+        preview.classList.remove('hidden');
+      }
+      this.value = '';
+    });
+  }
 
-How can I help with ${context}?`
-      : "Hello! I'm **YantraNklan**, your operations AI assistant. I have access to your plant's real-time data including machines, alarms, work orders, and more.\n\nI can help you with:\n- **Investigate** why a machine is overheating or faulting\n- **Predict** the next bearing failure or maintenance need\n- **Compare** OEE and performance across plants\n- **Generate** maintenance plans and executive reports\n- **Optimize** energy usage and production throughput\n\nWhat would you like to explore?";
+  function setupMic() {
+    const micBtn = document.getElementById('ym-mic-btn');
+    const input = document.getElementById('ym-chat-input');
+    if (!micBtn || !input) return;
+
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Recognition) {
+      micBtn.style.opacity = '0.3';
+      micBtn.title = 'Speech recognition not supported in this browser';
+      return;
+    }
+
+    recognition = new Recognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-IN';
+
+    recognition.onstart = function() {
+      micActive = true;
+      micBtn.classList.add('ym-mic-active');
+      micBtn.textContent = 'mic_off';
+      toast('Listening...');
+    };
+
+    recognition.onend = function() {
+      micActive = false;
+      micBtn.classList.remove('ym-mic-active');
+      micBtn.textContent = 'mic';
+      if (input.value.trim()) updateSendButton();
+    };
+
+    recognition.onerror = function(event) {
+      micActive = false;
+      micBtn.classList.remove('ym-mic-active');
+      micBtn.textContent = 'mic';
+      if (event.error === 'not-allowed') {
+        toast('Microphone permission denied. Allow mic access in browser settings.', 'error');
+      } else if (event.error === 'no-speech') {
+        toast('No speech detected. Try again.', 'error');
+      } else {
+        toast('Mic error: ' + event.error, 'error');
+      }
+    };
+
+    recognition.onresult = function(event) {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          input.value = transcript.trim();
+          updateSendButton();
+        }
+      }
+      if (!event.results[event.results.length - 1]?.isFinal) {
+        input.value = transcript;
+      }
+    };
+
+    micBtn.addEventListener('click', function() {
+      if (micActive) { recognition.stop(); return; }
+      try { recognition.start(); }
+      catch (e) { if (e.name === 'InvalidStateError') { recognition.stop(); setTimeout(() => recognition.start(), 200); } }
+    });
+  }
+
+  function setupSuggestedPrompts() {
+    const container = document.getElementById('ym-suggested-pills');
+    if (!container) return;
+    const prompts = [
+      'Predict failure for CNC Cell PNA-01',
+      'Optimize Chennai SMT Line CHN-02',
+      'Energy usage report',
+      'Asset health summary',
+      'Compare Pune and Bengaluru OEE',
+      'Generate executive report'
+    ];
+    container.innerHTML = prompts.map(p =>
+      '<button class="ym-pill shrink-0 glass-panel px-3 py-1.5 rounded-full text-[10px] font-label-caps text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all border border-outline-variant/30 whitespace-nowrap">' + escapeHtml(p) + '</button>'
+    ).join('');
+    container.addEventListener('click', function(e) {
+      const btn = e.target.closest('.ym-pill');
+      if (!btn) return;
+      const input = document.getElementById('ym-chat-input');
+      if (input) { input.value = btn.textContent.trim(); updateSendButton(); input.focus(); }
+    });
+  }
+
+  function updateSendButton() {
+    const input = document.getElementById('ym-chat-input');
+    const btn = document.getElementById('ym-send-btn');
+    if (!input || !btn) return;
+    btn.disabled = !input.value.trim() || streaming;
+  }
+
+  function saveChatHistory() {
+    try { localStorage.setItem(CHAT_HISTORY_KEY + '_' + conversationId, JSON.stringify(chatHistory.slice(-50))); } catch {}
+  }
+
+  function loadChatHistory() {
+    try {
+      const saved = localStorage.getItem(CHAT_HISTORY_KEY + '_' + conversationId);
+      if (saved) { const parsed = JSON.parse(saved); if (Array.isArray(parsed)) { chatHistory = parsed; return true; } }
+    } catch {}
+    return false;
+  }
+
+  function restoreChatMessages() {
+    const container = document.getElementById('ym-chat-messages');
+    if (!container) return;
+    container.innerHTML = '';
+    for (const msg of chatHistory) {
+      if (msg.role === 'user') addMessage(msg.content, true, { id: 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 4) });
+      else if (msg.role === 'assistant') addMessage(msg.content, false, { id: 'ai_' + Date.now() + '_' + Math.random().toString(36).slice(2, 4), model: 'gpt-4o-mini' });
+    }
+    if (!chatHistory.length) showWelcome();
+  }
+
+  function showWelcome() {
+    const container = document.getElementById('ym-chat-messages');
+    if (!container) return;
+    container.innerHTML = '';
+    const welcome = "Hello! I'm **YantraNklan**, your YantraMitra AI operations copilot. I have real-time access to your plant data including machines, alarms, work orders, maintenance history, and digital twin state.\n\nI can help you with:\n- **Investigate** why a machine is overheating or faulting\n- **Predict** bearing failures and maintenance needs\n- **Compare** OEE and performance across all 5 plants\n- **Generate** maintenance plans and executive reports\n- **Optimize** energy usage and production throughput\n\nWhat would you like to explore?";
     addMessage(welcome, false, { model: 'connected' });
   }
 
-  let plantsCount = 5;
+  function setupClearChat() {
+    document.getElementById('ym-clear-chat')?.addEventListener('click', function() {
+      if (streaming && abortController) { abortController.abort(); setLoadingState(false); }
+      chatHistory = [];
+      try { localStorage.removeItem(CHAT_HISTORY_KEY + '_' + conversationId); } catch {}
+      showWelcome();
+      fileAttachments = [];
+      const preview = document.getElementById('ym-file-preview');
+      if (preview) { preview.innerHTML = ''; preview.classList.add('hidden'); }
+      toast('Conversation cleared');
+    });
+  }
+
+  function setupCancel() {
+    document.getElementById('ym-cancel-btn')?.addEventListener('click', function() {
+      if (abortController) abortController.abort();
+    });
+  }
+
+  async function checkAuth() {
+    try { const r = await fetch('/api/auth/me'); if (!r.ok) { window.location.href = '/login'; return null; } const me = await r.json(); if (!me || !me.id) { window.location.href = '/login'; return null; } return me; }
+    catch { window.location.href = '/login'; return null; }
+  }
 
   document.addEventListener('DOMContentLoaded', async () => {
     user = await checkAuth();
     if (!user) return;
-    try {
-      const plants = await fetch('/api/plants', { credentials: 'same-origin' }).then(r => r.json()).catch(() => []);
-      plantsCount = plants.length || 5;
-    } catch {}
-    addWelcomeMessage();
-    const input = document.querySelector('main input[type="text"], section input[placeholder*="operations"], section input[type="text"]');
-    const allButtons = document.querySelectorAll('button');
-    let sendButton = null;
-    allButtons.forEach(btn => {
-      const icon = btn.querySelector('.material-symbols-outlined');
-      if (icon && (icon.textContent.trim() === 'send' || icon.textContent.trim() === 'Send')) sendButton = btn;
-    });
 
-    async function doSend() {
-      const msg = input ? input.value.trim() : '';
-      if (msg) await handleSend(msg);
-    }
+    try { plantsCache = await (await fetch('/api/plants', { credentials: 'same-origin' })).json(); } catch {}
 
-    if (input) {
-      input.addEventListener('keydown', async e => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); await doSend(); }
-      });
-    }
-    if (sendButton) sendButton.addEventListener('click', async e => { e.preventDefault(); await doSend(); });
+    const input = document.getElementById('ym-chat-input');
+    const sendBtn = document.getElementById('ym-send-btn');
 
-    const existingMic = Array.from(document.querySelectorAll('main button')).find(btn => btn.textContent.trim() === 'mic');
-    if (existingMic && input) {
-      const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (Recognition) {
-        const recognition = new Recognition();
-        recognition.continuous = false;
-        recognition.interimResults = true;
-        recognition.lang = 'en-IN';
-        recognition.onresult = event => {
-          let transcript = '';
-          for (let i = event.resultIndex; i < event.results.length; i++) transcript += event.results[i][0].transcript;
-          input.value = transcript.trim(); input.focus();
-        };
-        existingMic.addEventListener('click', () => recognition.start());
+    if (!loadChatHistory()) showWelcome();
+    else restoreChatMessages();
+
+    setupSuggestedPrompts();
+    setupFileUpload();
+    setupMic();
+    setupClearChat();
+    setupCancel();
+
+    input?.addEventListener('input', updateSendButton);
+    input?.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const msg = this.value.trim();
+        if (msg && !streaming) {
+          this.value = '';
+          updateSendButton();
+          handleSend(msg);
+        }
       }
-    }
-
-    const context = new URLSearchParams(window.location.search).get('context');
-    if (context && input) input.value = 'Investigate ' + context + ' using the latest alarms, sensor readings, and work orders.';
-
-    document.querySelectorAll('.shrink-0.glass-panel, [class*="glass-panel"][class*="rounded-full"]').forEach(pill => {
-      pill.addEventListener('click', async () => {
-        const text = pill.textContent.trim();
-        if (input) { input.value = text; }
-        await handleSend(text);
-      });
     });
+
+    sendBtn?.addEventListener('click', function() {
+      const msg = input?.value.trim();
+      if (msg && !streaming) {
+        if (input) input.value = '';
+        updateSendButton();
+        handleSend(msg);
+      }
+    });
+
+    updateSendButton();
+
+    setInterval(function() {
+      const s = document.getElementById('ym-ai-status');
+      if (s) s.textContent = streaming ? 'Thinking...' : 'Online';
+      const d = document.getElementById('ym-ai-status-dot');
+      if (d) d.classList.toggle('status-pulse-teal', !streaming);
+    }, 2000);
   });
 })();
