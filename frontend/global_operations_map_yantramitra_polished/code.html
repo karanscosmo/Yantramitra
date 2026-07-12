@@ -152,7 +152,7 @@
 <div class="flex items-center gap-sm">
 <img src="/logo.svg" alt="YantraMitra" class="h-8 md:h-9"/>
 <div class="ml-lg relative group">
-<input class="bg-surface-container/50 border border-outline-variant/30 rounded-full px-md py-1.5 w-64 text-sm focus:ring-2 focus:ring-primary/50 transition-all outline-none" placeholder="Search operations (⌘K)" type="text"/>
+<input id="ym-map-search" class="bg-surface-container/50 border border-outline-variant/30 rounded-full px-md py-1.5 w-64 text-sm focus:ring-2 focus:ring-primary/50 transition-all outline-none" placeholder="Search facilities (⌘K)" type="search"/>
 <span class="material-symbols-outlined absolute right-3 top-2 text-outline-variant text-sm">search</span>
 </div>
 </div>
@@ -179,7 +179,8 @@
 <main class="h-screen w-screen map-container relative overflow-hidden pt-16">
 <!-- Background Map Visualization (High-end Geo Viz) -->
 <div class="absolute inset-0 z-0">
-<div class="w-full h-full grayscale opacity-40 mix-blend-multiply bg-no-repeat bg-center bg-contain bg-[url('/images/factory.svg')]" data-alt="A highly detailed minimalist 2D vector world map in a soft lavender and indigo color palette. The map uses thin, precise lines for borders and subtle dots for landmasses, creating a dreamy industrial aesthetic. The lighting is ethereal and airy, with soft ambient glows suggesting global connectivity." data-location="World" style="background-image: url('/images/factory.svg')">
+<div class="w-full h-full opacity-80 bg-[radial-gradient(circle_at_52%_44%,rgba(91,91,240,.13),transparent_38%),linear-gradient(rgba(65,63,214,.07)_1px,transparent_1px),linear-gradient(90deg,rgba(65,63,214,.07)_1px,transparent_1px)] bg-[size:auto,32px_32px,32px_32px]">
+<svg viewBox="0 0 1000 1000" class="absolute inset-0 h-full w-full" aria-label="India operations map" role="img"><path d="M465 130 L585 175 635 245 690 300 665 365 710 430 665 500 650 585 600 640 560 770 515 850 485 735 440 650 382 600 355 510 385 420 355 325 405 255Z" fill="#e1dfff" stroke="#5b5bf0" stroke-width="5" opacity=".8"/><path d="M470 180 L580 215M400 320 L660 350M390 450 L670 470M390 560 L640 590" stroke="#c1c1ff" stroke-width="3" opacity=".9"/></svg>
 </div>
 <!-- Interactive Map Pins -->
 <div id="pins-container"><!-- Global Network Lines -->
@@ -320,7 +321,7 @@
 </div>
 </div>
 <div class="p-sm pt-4 mt-auto">
-<button class="w-full bg-primary text-on-primary py-3 rounded-2xl font-label-caps shimmer flex items-center justify-center gap-2 glow-indigo">
+<button id="ym-add-facility" class="w-full bg-primary text-on-primary py-3 rounded-2xl font-label-caps shimmer flex items-center justify-center gap-2 glow-indigo">
 <span class="material-symbols-outlined text-sm">add_location_alt</span>
                     ADD NEW FACILITY
                 </button>
@@ -354,8 +355,8 @@
 </div>
 </div>
 <div class="flex gap-sm">
-<button class="bg-surface-container-low border border-outline-variant/30 text-on-surface-variant px-sm py-2 rounded-full font-label-caps text-[10px] hover:bg-primary/5 transition-all">VIEW ANALYTICS</button>
-<button class="bg-surface-container-low border border-outline-variant/30 text-on-surface-variant px-sm py-2 rounded-full font-label-caps text-[10px] hover:bg-primary/5 transition-all">EXPORT REPORT</button>
+<button id="ym-view-analytics" class="bg-surface-container-low border border-outline-variant/30 text-on-surface-variant px-sm py-2 rounded-full font-label-caps text-[10px] hover:bg-primary/5 transition-all">VIEW ANALYTICS</button>
+<button id="ym-export-report" class="bg-surface-container-low border border-outline-variant/30 text-on-surface-variant px-sm py-2 rounded-full font-label-caps text-[10px] hover:bg-primary/5 transition-all">EXPORT REPORT</button>
 </div>
 </div>
 <!-- Atmospheric Element: Gradient Overlay -->

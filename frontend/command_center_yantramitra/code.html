@@ -149,20 +149,20 @@
 </div>
 <div class="flex items-center gap-md">
 <div class="relative hidden md:block">
-<input class="w-80 h-10 px-md rounded-full border border-outline-variant/30 bg-surface/50 backdrop-blur focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none text-body-md" placeholder="Search facilities or agents (⌘K)" type="text"/>
+<input id="ym-dashboard-search" class="w-80 h-10 px-md pr-11 rounded-full border border-outline-variant/30 bg-surface/50 backdrop-blur focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none text-body-md" placeholder="Search facilities or agents (⌘K)" type="search"/>
 <span class="material-symbols-outlined absolute right-4 top-2 text-on-surface-variant/60" style="font-variation-settings: 'wght' 300">search</span>
 </div>
 <div class="flex items-center gap-xs">
-<button class="p-2 rounded-full hover:bg-primary/10 transition-colors relative">
+<button id="ym-notifications" aria-label="Open notifications" class="p-2 rounded-full hover:bg-primary/10 transition-colors relative">
 <span class="material-symbols-outlined text-primary">notifications</span>
 <span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
 </button>
-<button class="p-2 rounded-full hover:bg-primary/10 transition-colors">
+<button id="ym-facility-switcher" aria-label="Open facility switcher" class="p-2 rounded-full hover:bg-primary/10 transition-colors">
 <span class="material-symbols-outlined text-primary">factory</span>
 </button>
-<div class="ml-sm w-10 h-10 rounded-full border-2 border-primary/20 overflow-hidden">
+<button id="ym-profile-menu" aria-label="Open profile menu" class="ml-sm w-10 h-10 rounded-full border-2 border-primary/20 overflow-hidden">
 <img class="w-full h-full object-cover" data-alt="A professional plant manager's profile portrait in high-end photographic lighting, shallow depth of field, minimalist office background with soft indigo and teal lighting accents." src="/images/ym-operator-avatar.jpg"/>
-</div>
+</button>
 </div>
 </div>
 </header>
@@ -205,11 +205,11 @@
 <!-- KPI Strip -->
 <section class="col-span-12 grid grid-cols-1 md:grid-cols-4 gap-md">
 <!-- OEE Card -->
-<div class="glass-panel p-md rounded-xl flex flex-col gap-xs group hover:border-primary/40 transition-colors">
+<button data-kpi-route="/reliability" class="glass-panel p-md rounded-xl flex flex-col gap-xs group hover:border-primary/40 transition-colors text-left focus:ring-2 focus:ring-primary/40">
 <div class="flex justify-between items-start">
 <span class="font-label-caps text-label-caps text-on-surface-variant">OEE (GLOBAL AVG)</span>
 <span class="material-symbols-outlined text-secondary text-sm">trending_up</span>
-</div>
+</button>
 <div class="flex items-baseline gap-xs">
 <span class="font-kpi-numeric text-[32px] text-primary">84.2%</span>
 <span class="text-xs text-secondary font-medium">+1.4% vs LY</span>
@@ -231,11 +231,11 @@
 </div>
 </div>
 <!-- Open Incidents -->
-<div class="glass-panel p-md rounded-xl flex flex-col gap-xs group hover:border-primary/40 transition-colors">
+<button data-kpi-route="/anomaly" class="glass-panel p-md rounded-xl flex flex-col gap-xs group hover:border-primary/40 transition-colors text-left focus:ring-2 focus:ring-primary/40">
 <div class="flex justify-between items-start">
 <span class="font-label-caps text-label-caps text-on-surface-variant">OPEN INCIDENTS</span>
 <span class="material-symbols-outlined text-tertiary text-sm">warning</span>
-</div>
+</button>
 <div class="flex items-baseline gap-xs">
 <span class="font-kpi-numeric text-[32px] text-on-surface">12</span>
 <span class="text-xs text-on-surface-variant/60 font-medium">4 resolving</span>
@@ -247,11 +247,11 @@
 </div>
 </div>
 <!-- Critical Alerts -->
-<div class="glass-panel p-md rounded-xl flex flex-col gap-xs group hover:border-error/40 transition-colors">
+<button data-kpi-route="/anomaly" class="glass-panel p-md rounded-xl flex flex-col gap-xs group hover:border-error/40 transition-colors text-left focus:ring-2 focus:ring-primary/40">
 <div class="flex justify-between items-start">
 <span class="font-label-caps text-label-caps text-on-surface-variant">CRITICAL ALERTS</span>
 <span class="material-symbols-outlined text-error text-sm">emergency</span>
-</div>
+</button>
 <div class="flex items-baseline gap-xs">
 <span class="font-kpi-numeric text-[32px] text-error">3</span>
 <span class="text-xs text-error/80 font-medium">+1 new</span>
@@ -263,11 +263,11 @@
 </div>
 </div>
 <!-- Production Uptime -->
-<div class="glass-panel p-md rounded-xl flex flex-col gap-xs group hover:border-secondary/40 transition-colors">
+<button data-kpi-route="/reliability" class="glass-panel p-md rounded-xl flex flex-col gap-xs group hover:border-secondary/40 transition-colors text-left focus:ring-2 focus:ring-primary/40">
 <div class="flex justify-between items-start">
 <span class="font-label-caps text-label-caps text-on-surface-variant">UPTIME</span>
 <span class="material-symbols-outlined text-secondary text-sm">bolt</span>
-</div>
+</button>
 <div class="flex items-baseline gap-xs">
 <span class="font-kpi-numeric text-[32px] text-secondary">99.8%</span>
 <span class="text-xs text-on-surface-variant/60 font-medium">L30D Average</span>
@@ -297,18 +297,15 @@
 <div class="flex justify-between items-center mb-md">
 <h2 class="font-section-header text-section-header">Facility Distribution</h2>
 <div class="flex gap-2">
-<span class="px-3 py-1 bg-white/50 border border-outline-variant/30 rounded-full text-xs font-medium">Americas</span>
-<span class="px-3 py-1 bg-white/50 border border-outline-variant/30 rounded-full text-xs font-medium">EMEA</span>
-<span class="px-3 py-1 bg-primary text-on-primary rounded-full text-xs font-medium">APAC</span>
+<button data-region="americas" class="ym-region-tab px-3 py-1 bg-white/50 border border-outline-variant/30 rounded-full text-xs font-medium">Americas</button>
+<button data-region="emea" class="ym-region-tab px-3 py-1 bg-white/50 border border-outline-variant/30 rounded-full text-xs font-medium">EMEA</button>
+<button data-region="apac" class="ym-region-tab px-3 py-1 bg-primary text-on-primary rounded-full text-xs font-medium">APAC</button>
 </div>
 </div>
 <div class="flex-grow flex items-center justify-center">
-<div class="w-full h-full rounded-xl bg-surface-container-high/40 border border-outline-variant/20 flex items-center justify-center">
-<!-- Placeholder for a map or abstract node graph -->
-<div class="text-center opacity-40">
-<span class="material-symbols-outlined text-6xl text-primary">public</span>
-<p class="font-label-caps mt-2">Interactive Global Operations Map</p>
-</div>
+<div id="ym-dashboard-map" class="w-full h-full rounded-xl bg-[radial-gradient(circle_at_50%_55%,rgba(91,91,240,.14),transparent_48%),linear-gradient(135deg,#f4f2ff,#fff)] border border-outline-variant/20 relative overflow-hidden cursor-pointer" role="link" tabindex="0" aria-label="Open the interactive operations map">
+<div class="absolute inset-0 opacity-40 bg-[linear-gradient(rgba(65,63,214,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(65,63,214,.08)_1px,transparent_1px)] bg-[size:28px_28px]"></div>
+<p class="absolute left-4 bottom-3 text-[10px] font-label-caps text-primary">LIVE FACILITY NETWORK · OPEN MAP</p>
 </div>
 </div>
 </div>

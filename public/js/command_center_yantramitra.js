@@ -25,12 +25,17 @@
   function renderFacilities(plants) {
     const host = document.getElementById('ym-top-facilities');
     if (!host) return;
+    const images = {
+      pune: '/images/home-pune-automotive.jpg', ahmedabad: '/images/home-ahmedabad-process.jpg',
+      chennai: '/images/home-chennai-electronics.jpg', bengaluru: '/images/home-bengaluru-precision.jpg', nagpur: '/images/home-nagpur-logistics.jpg'
+    };
     host.innerHTML = plants.slice(0, 5).map(plant => {
       const tone = statusTone(plant.status);
+      const image = images[String(plant.name).toLowerCase()] || plant.image || '/images/home-bengaluru-precision.jpg';
       return `
         <article class="glass-panel rounded-xl overflow-hidden group hover:-translate-y-1 transition-all duration-300">
           <div class="h-32 relative">
-            <img class="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-500" src="${plant.image || '/images/factory.svg'}" alt="${plant.name} facility preview"/>
+            <img class="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-500" src="${image}" alt="${plant.name} facility preview"/>
             <div class="absolute inset-0 bg-gradient-to-t from-surface to-transparent"></div>
             <div class="absolute top-4 left-4 flex items-center gap-2">
               <div class="w-3 h-3 rounded-full ${tone.dot}"></div>
@@ -120,6 +125,26 @@
         btn.addEventListener('click', () => { window.location.href = '/agents'; });
       }
     });
+    document.querySelectorAll('[data-kpi-route]').forEach(card => card.addEventListener('click', () => { window.location.href = card.dataset.kpiRoute; }));
+    const map = document.getElementById('ym-dashboard-map');
+    if (map) {
+      const openMap = () => { window.location.href = '/map'; };
+      map.addEventListener('click', openMap);
+      map.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') openMap(); });
+    }
+    document.querySelectorAll('.ym-region-tab').forEach(tab => tab.addEventListener('click', () => {
+      document.querySelectorAll('.ym-region-tab').forEach(item => item.className = 'ym-region-tab px-3 py-1 bg-white/50 border border-outline-variant/30 rounded-full text-xs font-medium');
+      tab.className = 'ym-region-tab px-3 py-1 bg-primary text-on-primary rounded-full text-xs font-medium';
+      const host = document.getElementById('ym-top-facilities');
+      if (host) host.dataset.region = tab.dataset.region;
+    }));
+    const search = document.getElementById('ym-dashboard-search');
+    if (search) search.addEventListener('keydown', event => {
+      if (event.key === 'Enter' && search.value.trim()) window.location.href = '/map';
+    });
+    document.getElementById('ym-notifications')?.addEventListener('click', () => { window.location.href = '/anomaly'; });
+    document.getElementById('ym-facility-switcher')?.addEventListener('click', () => { window.location.href = '/map'; });
+    document.getElementById('ym-profile-menu')?.addEventListener('click', () => { window.location.href = '/settings'; });
   }
 
   document.addEventListener('DOMContentLoaded', async () => {

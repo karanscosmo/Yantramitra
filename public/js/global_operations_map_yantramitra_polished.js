@@ -91,6 +91,23 @@
     });
   }
 
+  function wireControls(plants) {
+    const search = document.getElementById('ym-map-search');
+    if (search) search.addEventListener('input', () => {
+      const query = search.value.trim().toLowerCase();
+      const filtered = plants.filter(plant => `${plant.name} ${plant.location} ${plant.domain || ''}`.toLowerCase().includes(query));
+      renderPins(filtered);
+      renderPlantList(filtered);
+    });
+    document.getElementById('ym-view-analytics')?.addEventListener('click', () => { window.location.href = '/reliability'; });
+    document.getElementById('ym-export-report')?.addEventListener('click', () => {
+      const rows = [['Facility', 'Location', 'OEE', 'Machines', 'Status'], ...plants.map(p => [p.name, p.location, p.oee || '', p._count?.machines || 0, p.status])];
+      const url = URL.createObjectURL(new Blob([rows.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\n')], { type: 'text/csv' }));
+      const link = document.createElement('a'); link.href = url; link.download = 'yantramitra-facility-report.csv'; link.click(); URL.revokeObjectURL(url);
+    });
+    document.getElementById('ym-add-facility')?.addEventListener('click', () => { window.location.href = '/settings'; });
+  }
+
   document.addEventListener('DOMContentLoaded', async () => {
     const user = await checkAuth();
     if (!user) return;
@@ -98,6 +115,7 @@
       const plants = await get('/api/plants');
       renderPins(plants);
       renderPlantList(plants);
+      wireControls(plants);
     } catch (error) {
       console.error('Plant map load failed', error);
     }

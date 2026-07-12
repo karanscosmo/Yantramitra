@@ -209,15 +209,15 @@
 <!-- MAIN WRAPPER -->
 <div class="flex w-full min-h-screen h-auto overflow-visible md:h-screen md:overflow-hidden">
 <!-- LEFT PANEL: 40% Glass Form Card -->
-<section class="w-full md:w-[40%] min-h-full flex flex-col justify-center items-center p-sm md:p-md relative z-10 after:hidden md:after:block md:after:absolute md:after:-right-5 md:after:top-0 md:after:h-full md:after:w-5 md:after:bg-gradient-to-r md:after:from-white/35 md:after:to-transparent">
-<div class="glass-surface inner-glow rounded-xl p-md md:p-lg w-full max-w-md shadow-lg border-outline-variant/30">
+<section class="w-full md:w-[40%] min-h-full md:min-h-0 md:h-full flex flex-col justify-center md:justify-start items-center p-sm md:px-md md:py-6 md:overflow-y-auto relative z-10 after:hidden md:after:block md:after:absolute md:after:-right-5 md:after:top-0 md:after:h-full md:after:w-5 md:after:bg-gradient-to-r md:after:from-white/35 md:after:to-transparent">
+<div class="glass-surface inner-glow rounded-xl p-md md:p-lg w-full max-w-md shadow-lg border-outline-variant/30 md:my-0">
 <!-- Branding -->
 <div class="mb-lg text-center md:text-left">
 <img src="/logo.svg" alt="YantraMitra" class="h-8 md:h-9 inline-block"/>
 <p class="mt-xs max-w-[330px] mx-auto md:mx-0 font-body-md text-body-md text-on-surface-variant">Join the next generation of industrial operations intelligence.</p>
 </div>
 <!-- Registration Form -->
-<form class="space-y-md" novalidate>
+<form class="space-y-sm" novalidate>
 <!-- Name -->
 <div>
 <label for="signup-name" class="block font-label-caps text-label-caps text-on-surface-variant mb-xs ml-1">FULL NAME</label>
@@ -250,7 +250,7 @@
 <div>
 <label for="password-input" class="block font-label-caps text-label-caps text-on-surface-variant mb-xs ml-1">PASSWORD</label>
 <div class="relative">
-<input name="password" autocomplete="new-password" required minlength="8" aria-describedby="password-help strength-label" class="auth-field w-full bg-white/40 border border-outline-variant/30 rounded-lg px-sm py-xs pr-11 font-body-md focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-all duration-200" id="password-input" placeholder="••••••••" type="password"/>
+<input name="password" autocomplete="new-password" required minlength="8" aria-describedby="strength-label" class="auth-field w-full bg-white/40 border border-outline-variant/30 rounded-lg px-sm py-xs pr-11 font-body-md focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-all duration-200" id="password-input" placeholder="••••••••" type="password"/>
 <button id="password-visibility" aria-label="Show password" aria-pressed="false" class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/40 rounded" type="button">
 <span class="material-symbols-outlined text-[18px]">visibility</span>
 </button>
@@ -264,7 +264,6 @@
 <div class="w-full h-1 bg-surface-variant rounded-full overflow-hidden">
 <div class="strength-meter-bar h-full w-0 bg-error-container" id="strength-bar"></div>
 </div>
-<p id="password-help" class="mt-1 text-[11px] text-on-surface-variant">Use 8+ characters with a mix of letters, numbers, and symbols.</p>
 </div>
 </div>
 <!-- Terms Checkbox -->
