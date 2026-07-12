@@ -509,15 +509,31 @@
     document.getElementById('ym-overdue-count').textContent = overdueOrders;
   }
 
+  let sortBy = 'status', sortAsc = true;
+  let pageSize = 10, currentPage = 1;
+
   function renderTable() {
     const tbody = document.getElementById('ym-table-body');
     const container = document.getElementById('ym-table-container');
     if (!tbody || !container) return;
     if (!filteredOrders.length) { container.style.display = 'none'; return; }
     container.style.display = 'block';
-    const statusOrder = { 'in_progress': 0, 'open': 1, 'blocked': 2, 'waiting_parts': 3, 'assigned': 4, 'approved': 5, 'cancelled': 6, 'completed': 7 };
-    const sorted = [...filteredOrders].sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
-    tbody.innerHTML = sorted.map(o => {
+
+    const sorted = [...filteredOrders].sort((a, b) => {
+      let va, vb;
+      if (sortBy === 'machine') { va = (a.machine?.name || '').toLowerCase(); vb = (b.machine?.name || '').toLowerCase(); }
+      else if (sortBy === 'plant') { const pa = machines.find(m => m.id === a.machineId); const pb = machines.find(m => m.id === b.machineId); va = (pa?.plant?.name || '').toLowerCase(); vb = (pb?.plant?.name || '').toLowerCase(); }
+      else if (sortBy === 'dueDate') { va = a.dueDate || ''; vb = b.dueDate || ''; }
+      else { va = (a[sortBy] || '').toString().toLowerCase(); vb = (b[sortBy] || '').toString().toLowerCase(); }
+      return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    });
+
+    const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const start = (currentPage - 1) * pageSize;
+    const page = sorted.slice(start, start + pageSize);
+
+    tbody.innerHTML = page.map(o => {
       const machineObj = machines.find(m => m.id === o.machineId);
       const plant = machineObj?.plant?.name || o.location || '—';
       return `<tr class="border-b border-outline-variant/10 hover:bg-primary/5 cursor-pointer transition-colors" data-order-id="${o.id}">
@@ -537,6 +553,19 @@
         const order = orders.find(o => o.id === id);
         if (order) openDrawer(order);
       });
+    });
+
+    document.getElementById('ym-table-info').textContent = sorted.length + ' orders' + (filteredOrders.length < orders.length ? ' (' + filteredOrders.length + ' filtered)' : '');
+    document.getElementById('ym-page-info').textContent = currentPage + ' / ' + totalPages;
+    document.getElementById('ym-page-prev').disabled = currentPage <= 1;
+    document.getElementById('ym-page-next').disabled = currentPage >= totalPages;
+
+    /* Update sort arrows */
+    document.querySelectorAll('#ym-orders-table th[data-sort]').forEach(th => {
+      const key = th.dataset.sort;
+      th.classList.toggle('is-sorted', key === sortBy);
+      const arrow = th.querySelector('.sort-arrow');
+      if (arrow) arrow.textContent = key === sortBy ? (sortAsc ? '\u25B2' : '\u25BC') : '\u25B2';
     });
   }
 
@@ -830,6 +859,26 @@
 
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && drawerOpen) closeDrawer();
+    });
+
+    /* Table sorting */
+    document.querySelectorAll('#ym-orders-table th[data-sort]').forEach(th => {
+      th.addEventListener('click', function() {
+        const key = this.dataset.sort;
+        if (sortBy === key) sortAsc = !sortAsc;
+        else { sortBy = key; sortAsc = true; }
+        currentPage = 1;
+        renderTable();
+      });
+    });
+
+    /* Pagination */
+    document.getElementById('ym-page-prev')?.addEventListener('click', () => {
+      if (currentPage > 1) { currentPage--; renderTable(); }
+    });
+    document.getElementById('ym-page-next')?.addEventListener('click', () => {
+      const total = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
+      if (currentPage < total) { currentPage++; renderTable(); }
     });
 
     window.addEventListener('popstate', () => {

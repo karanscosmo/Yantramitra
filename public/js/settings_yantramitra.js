@@ -87,7 +87,7 @@
           </div>
         </div>
         <div class="md:col-span-8 space-y-gutter">
-          <form class="glass-card rounded-xl p-md lg:p-xl" id="ym-profile-form">
+          <form class="glass-card rounded-xl p-md" id="ym-profile-form">
             <div class="flex justify-between items-center flex-wrap gap-md mb-xl">
               <h3 class="font-section-header text-section-header">Personal Information</h3>
               <div class="flex gap-sm">
@@ -208,7 +208,7 @@
         ['maintenanceReminders', 'Maintenance Reminders', 'Upcoming and overdue maintenance alerts for your assigned machines.', 'build'],
         ['anomalyDetections', 'Anomaly Detections', 'Real-time alerts when sensor readings deviate from expected patterns.', 'report_problem'],
       ];
-      host.innerHTML = `<div class="md:col-span-12 glass-card rounded-xl p-md lg:p-xl"><div class="flex items-center justify-between mb-md"><h3 class="font-section-header text-section-header">Notification Preferences</h3><span class="text-xs text-on-surface-variant">Changes save instantly</span></div><div class="space-y-sm">${items.map(([key, title, desc, icon]) => `
+      host.innerHTML = `<div class="md:col-span-12 glass-card rounded-xl p-md"><div class="flex items-center justify-between mb-sm"><h3 class="font-section-header text-section-header">Notification Preferences</h3><span class="text-xs text-on-surface-variant">Changes save instantly</span></div><div class="space-y-xs">${items.map(([key, title, desc, icon]) => `
         <label class="flex items-center justify-between gap-md rounded-xl border border-outline-variant/40 bg-white/60 p-md hover:bg-white/80 transition-colors cursor-pointer">
           <div class="flex items-center gap-3">
             <span class="material-symbols-outlined text-primary" style="font-size:22px">${icon}</span>
@@ -483,8 +483,8 @@
         return `<span class="flex items-center gap-1.5 text-xs font-bold"><span class="w-2 h-2 rounded-full ${color}"></span>${label}</span>`;
       };
 
-      host.innerHTML = `<div class="md:col-span-12 glass-card rounded-xl p-md lg:p-xl">
-        <div class="flex items-center justify-between mb-md">
+      host.innerHTML = `<div class="md:col-span-12 glass-card rounded-xl p-md">
+        <div class="flex items-center justify-between mb-sm">
           <h3 class="font-section-header text-section-header">Industrial Integrations</h3>
           <span class="text-xs text-on-surface-variant">${systems.filter(s => state(s.key) === 'connected').length}/${systems.length} connected</span>
         </div>
@@ -591,8 +591,8 @@
       const twoFA = p.twoFactorEnabled || false;
       host.innerHTML = `
         <div class="md:col-span-6 space-y-gutter">
-          <div class="glass-card rounded-xl p-md lg:p-xl">
-            <h3 class="font-section-header text-section-header mb-md">Change Password</h3>
+          <div class="glass-card rounded-xl p-md">
+            <h3 class="font-section-header text-section-header mb-sm">Change Password</h3>
             <form id="ym-password-form" class="space-y-3">
               <label class="block"><span class="font-bold text-sm text-on-surface-variant">Current Password</span><input name="currentPassword" type="password" class="w-full glass-input rounded-lg px-md py-2.5 mt-1 text-sm" required></label>
               <label class="block"><span class="font-bold text-sm text-on-surface-variant">New Password</span><input name="newPassword" id="ym-new-pw" type="password" class="w-full glass-input rounded-lg px-md py-2.5 mt-1 text-sm" required minlength="8"></label>
@@ -602,7 +602,7 @@
               <button type="submit" class="w-full rounded-lg bg-primary text-white font-bold py-2.5 hover:opacity-90 transition-all">Update Password</button>
             </form>
           </div>
-          <div class="glass-card rounded-xl p-md lg:p-xl">
+          <div class="glass-card rounded-xl p-md">
             <div class="flex items-center justify-between">
               <div><h3 class="font-section-header text-section-header">Two-Factor Authentication</h3><p class="text-xs text-on-surface-variant mt-0.5">Add an extra layer of security to your account.</p></div>
               <button id="ym-2fa-toggle" style="width:48px;height:28px;border-radius:999px;background:${twoFA ? '#413fd6' : '#c7c4d7'};position:relative;border:none;cursor:pointer;transition:background .2s"><div style="width:24px;height:24px;background:white;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.15);position:absolute;top:2px;left:${twoFA ? '22px' : '2px'};transition:left .2s"></div></button>

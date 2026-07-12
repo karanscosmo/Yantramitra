@@ -138,6 +138,9 @@
             0% { transform: translate(-100%, -100%) rotate(45deg); }
             100% { transform: translate(100%, 100%) rotate(45deg); }
         }
+        .sort-arrow { display:inline-block; font-size:8px; opacity:0.3; transition:opacity .15s; margin-left:2px; vertical-align:middle; }
+        th:hover .sort-arrow { opacity:0.7; }
+        th.is-sorted .sort-arrow { opacity:1; color:#413fd6; }
         .status-glow-teal { box-shadow: 0 0 12px rgba(94, 250, 228, 0.4); }
         .status-glow-amber { box-shadow: 0 0 12px rgba(255, 186, 75, 0.4); }
         .status-glow-coral { box-shadow: 0 0 12px rgba(186, 26, 26, 0.4); }
@@ -251,18 +254,26 @@
   <table class="w-full text-left" id="ym-orders-table">
     <thead>
       <tr class="text-on-surface-variant font-label-caps text-[11px] border-b border-outline-variant/10">
-        <th class="px-4 py-3 font-medium whitespace-nowrap">ID</th>
-        <th class="px-4 py-3 font-medium whitespace-nowrap">Asset</th>
-        <th class="px-4 py-3 font-medium whitespace-nowrap">Issue</th>
-        <th class="px-4 py-3 font-medium whitespace-nowrap">Priority</th>
-        <th class="px-4 py-3 font-medium whitespace-nowrap">Engineer</th>
-        <th class="px-4 py-3 font-medium whitespace-nowrap">Due Date</th>
-        <th class="px-4 py-3 font-medium whitespace-nowrap">Plant</th>
-        <th class="px-4 py-3 font-medium whitespace-nowrap">Status</th>
+        <th class="px-4 py-3 font-medium whitespace-nowrap cursor-pointer hover:text-primary transition-colors" data-sort="id">ID <span class="sort-arrow"></span></th>
+        <th class="px-4 py-3 font-medium whitespace-nowrap cursor-pointer hover:text-primary transition-colors" data-sort="machine">Asset <span class="sort-arrow"></span></th>
+        <th class="px-4 py-3 font-medium whitespace-nowrap cursor-pointer hover:text-primary transition-colors" data-sort="title">Issue <span class="sort-arrow"></span></th>
+        <th class="px-4 py-3 font-medium whitespace-nowrap cursor-pointer hover:text-primary transition-colors" data-sort="priority">Priority <span class="sort-arrow"></span></th>
+        <th class="px-4 py-3 font-medium whitespace-nowrap cursor-pointer hover:text-primary transition-colors" data-sort="assignedTo">Engineer <span class="sort-arrow"></span></th>
+        <th class="px-4 py-3 font-medium whitespace-nowrap cursor-pointer hover:text-primary transition-colors" data-sort="dueDate">Due Date <span class="sort-arrow"></span></th>
+        <th class="px-4 py-3 font-medium whitespace-nowrap cursor-pointer hover:text-primary transition-colors" data-sort="plant">Plant <span class="sort-arrow"></span></th>
+        <th class="px-4 py-3 font-medium whitespace-nowrap cursor-pointer hover:text-primary transition-colors" data-sort="status">Status <span class="sort-arrow"></span></th>
       </tr>
     </thead>
     <tbody id="ym-table-body"></tbody>
   </table>
+  <div class="flex items-center justify-between px-4 py-3 border-t border-outline-variant/10" id="ym-table-footer">
+    <span class="text-xs text-on-surface-variant" id="ym-table-info">0 orders</span>
+    <div class="flex items-center gap-1.5" id="ym-table-pagination">
+      <button class="p-1.5 rounded-lg hover:bg-primary/10 transition-colors material-symbols-outlined text-[18px] text-on-surface-variant" id="ym-page-prev" disabled>chevron_left</button>
+      <span class="text-xs font-bold text-on-surface-variant px-2" id="ym-page-info">1 / 1</span>
+      <button class="p-1.5 rounded-lg hover:bg-primary/10 transition-colors material-symbols-outlined text-[18px] text-on-surface-variant" id="ym-page-next" disabled>chevron_right</button>
+    </div>
+  </div>
 </div>
 <div class="flex items-center gap-xs flex-wrap mb-sm" id="ym-active-filters"></div>
 <div class="space-y-sm" id="ym-orders-list"></div>
