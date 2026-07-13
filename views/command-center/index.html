@@ -167,21 +167,18 @@
 </div>
 </header>
 <!-- Main Content Canvas -->
-<main class="pb-md pl-md max-w-screen-2xl mx-auto grid grid-cols-12 gap-gutter">
-<!-- Page Title & Atmosphere -->
+<main class="pl-md pb-md grid grid-cols-12 gap-gutter">
 <div class="col-span-12 mb-xs">
 <h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Global Command Center</h1>
 <p class="text-on-surface-variant/80 font-body-md">Monitoring 14 autonomous facilities across 3 continents.</p>
 </div>
-<!-- KPI Strip -->
 <section class="col-span-12 grid grid-cols-1 md:grid-cols-4 gap-md">
 <button data-kpi-route="/reliability" class="glass-panel p-md rounded-xl flex flex-col gap-xs text-left hover:border-primary/40 transition-colors"><div class="flex justify-between"><span class="font-label-caps text-label-caps text-on-surface-variant">OEE (GLOBAL AVG)</span><span class="material-symbols-outlined text-secondary">trending_up</span></div><div class="flex items-baseline gap-xs"><span class="font-kpi-numeric text-[32px] text-primary">84.2%</span><span class="text-xs text-secondary font-medium">+1.4% vs LY</span></div><svg class="mt-xs h-10 w-full" viewBox="0 0 100 30"><path d="M0,25 L20,22 L40,15 L60,18 L80,5 L100,6" fill="none" stroke="#413fd6" stroke-width="2"/></svg></button>
 <button data-kpi-route="/anomaly" class="glass-panel p-md rounded-xl flex flex-col gap-xs text-left hover:border-tertiary/40 transition-colors"><div class="flex justify-between"><span class="font-label-caps text-label-caps text-on-surface-variant">OPEN INCIDENTS</span><span class="material-symbols-outlined text-tertiary">warning</span></div><div class="flex items-baseline gap-xs"><span class="font-kpi-numeric text-[32px]">12</span><span class="text-xs text-on-surface-variant">4 resolving</span></div><svg class="mt-xs h-10 w-full" viewBox="0 0 100 30"><path d="M0,8 L20,12 L40,10 L60,20 L80,18 L100,26" fill="none" stroke="#774f00" stroke-width="2"/></svg></button>
 <button data-kpi-route="/anomaly" class="glass-panel p-md rounded-xl flex flex-col gap-xs text-left hover:border-error/40 transition-colors"><div class="flex justify-between"><span class="font-label-caps text-label-caps text-on-surface-variant">CRITICAL ALERTS</span><span class="material-symbols-outlined text-error">emergency</span></div><div class="flex items-baseline gap-xs"><span class="font-kpi-numeric text-[32px] text-error">3</span><span class="text-xs text-error">+1 new</span></div><svg class="mt-xs h-10 w-full" viewBox="0 0 100 30"><path d="M0,9 L20,7 L40,14 L60,6 L80,10 L100,5" fill="none" stroke="#ba1a1a" stroke-width="2"/></svg></button>
 <button data-kpi-route="/reliability" class="glass-panel p-md rounded-xl flex flex-col gap-xs text-left hover:border-secondary/40 transition-colors"><div class="flex justify-between"><span class="font-label-caps text-label-caps text-on-surface-variant">UPTIME</span><span class="material-symbols-outlined text-secondary">bolt</span></div><div class="flex items-baseline gap-xs"><span class="font-kpi-numeric text-[32px] text-secondary">99.8%</span><span class="text-xs text-on-surface-variant">L30D average</span></div><svg class="mt-xs h-10 w-full" viewBox="0 0 100 30"><path d="M0,8 L100,8" fill="none" stroke="#006b5f" stroke-width="3"/></svg></button>
 </section>
-<!-- Cross-plant Comparison Grid -->
-<div class="col-span-12 lg:col-span-8">
+<div class="col-span-12 lg:col-span-9">
 <div class="flex justify-between items-center mb-sm">
 <h2 class="font-section-header text-section-header text-on-surface">Top Facilities</h2>
 <button class="text-primary font-label-caps text-label-caps flex items-center gap-1 hover:underline">
@@ -191,10 +188,8 @@
 <div id="ym-top-facilities" class="grid grid-cols-1 md:grid-cols-3 gap-md">
 <div class="glass-panel rounded-xl p-md text-on-surface-variant">Loading live facilities...</div>
 </div>
-<!-- Secondary Content Layer: Map or Visualization -->
-<div class="mt-gutter glass-panel rounded-2xl p-md h-80 relative overflow-hidden group">
-
-<div class="relative z-10 h-full flex flex-col">
+<div class="mt-gutter grid grid-cols-3 gap-gutter">
+<div class="col-span-2 glass-panel rounded-2xl p-md relative overflow-hidden group">
 <div class="flex justify-between items-center mb-md">
 <h2 class="font-section-header text-section-header">Facility Distribution</h2>
 <div class="flex gap-2">
@@ -203,88 +198,14 @@
 <button data-region="apac" class="ym-region-tab px-3 py-1 bg-primary text-on-primary rounded-full text-xs font-medium">APAC</button>
 </div>
 </div>
-<div class="flex-grow flex items-center justify-center">
+<div class="flex items-center justify-center h-48">
 <div id="ym-dashboard-map" class="w-full h-full rounded-xl bg-[radial-gradient(circle_at_50%_55%,rgba(91,91,240,.14),transparent_48%),linear-gradient(135deg,#f4f2ff,#fff)] border border-outline-variant/20 relative overflow-hidden cursor-pointer" role="link" tabindex="0" aria-label="Open the interactive operations map">
 <div class="absolute inset-0 opacity-40 bg-[linear-gradient(rgba(65,63,214,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(65,63,214,.08)_1px,transparent_1px)] bg-[size:28px_28px]"></div>
 <p class="absolute left-4 bottom-3 text-[10px] font-label-caps text-primary">LIVE FACILITY NETWORK · OPEN MAP</p>
 </div>
 </div>
 </div>
-</div>
-</div>
-<!-- Right Panel: Agent Activity Feed -->
-<aside class="col-span-12 lg:col-span-4 flex flex-col gap-md">
-<div class="glass-panel rounded-2xl p-md flex flex-col h-full">
-<div class="flex justify-between items-center mb-md">
-<div class="flex items-center gap-xs">
-<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1">smart_toy</span>
-<h2 class="font-section-header text-[20px]">Agent Activity</h2>
-</div>
-<span class="px-2 py-1 bg-primary-container text-on-primary-container text-[10px] font-bold rounded">LIVE</span>
-</div>
-<div id="ym-agent-activity" class="space-y-sm flex-grow overflow-y-auto custom-scrollbar pr-xs">
-<!-- Activity 1 -->
-<div class="p-sm rounded-xl bg-white/40 border border-outline-variant/20 flex gap-sm hover:bg-white/60 transition-colors cursor-pointer">
-<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center flex-shrink-0">
-<span class="material-symbols-outlined text-on-secondary-container" style="font-variation-settings: 'FILL' 1">psychology</span>
-</div>
-<div>
-<p class="text-xs font-bold text-on-surface">Diagnostic Agent</p>
-<p class="text-xs text-on-surface-variant leading-relaxed">Analyzing Pump CNC Cell PNA-01 failure in Ahmedabad plant. Root cause identified: Cavitation.</p>
-<p class="text-[10px] text-primary mt-xs font-medium uppercase tracking-wider">Just Now</p>
-</div>
-</div>
-<!-- Activity 2 -->
-<div class="p-sm rounded-xl bg-white/40 border border-outline-variant/20 flex gap-sm hover:bg-white/60 transition-colors cursor-pointer">
-<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center flex-shrink-0 shadow-[0_0_10px_rgba(65,63,214,0.2)]">
-<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1">security</span>
-</div>
-<div>
-<p class="text-xs font-bold text-on-surface">Sentinel</p>
-<p class="text-xs text-on-surface-variant leading-relaxed">Security handshake completed with Chennai production network. All protocols green.</p>
-<p class="text-[10px] text-on-surface-variant/60 mt-xs font-medium uppercase tracking-wider">2m ago</p>
-</div>
-</div>
-<!-- Activity 3 -->
-<div class="p-sm rounded-xl bg-white/40 border border-outline-variant/20 flex gap-sm hover:bg-white/60 transition-colors cursor-pointer">
-<div class="w-10 h-10 rounded-full bg-tertiary-fixed-dim flex items-center justify-center flex-shrink-0">
-<span class="material-symbols-outlined text-on-tertiary-fixed-variant" style="font-variation-settings: 'FILL' 1">event_note</span>
-</div>
-<div>
-<p class="text-xs font-bold text-on-surface">Planner Agent</p>
-<p class="text-xs text-on-surface-variant leading-relaxed">Rescheduling shift B in Pune to optimize for incoming materials shipment.</p>
-<p class="text-[10px] text-on-surface-variant/60 mt-xs font-medium uppercase tracking-wider">12m ago</p>
-</div>
-</div>
-<!-- Activity 4 -->
-<div class="p-sm rounded-xl bg-white/40 border border-outline-variant/20 flex gap-sm hover:bg-white/60 transition-colors cursor-pointer">
-<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center flex-shrink-0">
-<span class="material-symbols-outlined text-on-secondary-container" style="font-variation-settings: 'FILL' 1">psychology</span>
-</div>
-<div>
-<p class="text-xs font-bold text-on-surface">Diagnostic Agent</p>
-<p class="text-xs text-on-surface-variant leading-relaxed">Predictive maintenance recommended for Conveyor L4 (Chennai) in next 48 hours.</p>
-<p class="text-[10px] text-on-surface-variant/60 mt-xs font-medium uppercase tracking-wider">24m ago</p>
-</div>
-</div>
-<!-- Activity 5 -->
-<div class="p-sm rounded-xl bg-white/40 border border-outline-variant/20 flex gap-sm hover:bg-white/60 transition-colors cursor-pointer">
-<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center flex-shrink-0">
-<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1">security</span>
-</div>
-<div>
-<p class="text-xs font-bold text-on-surface">Sentinel</p>
-<p class="text-xs text-on-surface-variant leading-relaxed">Detected and blocked unauthorized API call from external node IP 192.168.1.1.</p>
-<p class="text-[10px] text-on-surface-variant/60 mt-xs font-medium uppercase tracking-wider">1h ago</p>
-</div>
-</div>
-</div>
-<button class="mt-md w-full py-3 bg-surface-container-high rounded-xl text-on-surface font-label-caps hover:bg-primary/10 transition-colors flex items-center justify-center gap-2">
-                    OPEN AGENT TERMINAL <span class="material-symbols-outlined text-sm">terminal</span>
-</button>
-</div>
-<!-- Health Snapshot Mini Card -->
-<div class="glass-panel rounded-2xl p-md bg-primary-container/10 border-primary/20">
+<div class="col-span-1 glass-panel rounded-2xl p-md bg-primary-container/10 border-primary/20 flex flex-col justify-center">
 <h3 class="font-label-caps text-label-caps text-primary mb-sm">GLOBAL SYSTEM STATUS</h3>
 <div class="space-y-xs">
 <div class="flex justify-between items-center text-xs">
@@ -302,6 +223,73 @@
 <div class="bg-secondary w-[98%] h-full rounded-full"></div>
 </div>
 </div>
+</div>
+</div>
+</div>
+<aside class="col-span-12 lg:col-span-3 flex flex-col gap-md">
+<div class="glass-panel rounded-2xl p-md flex flex-col flex-1">
+<div class="flex justify-between items-center mb-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1">smart_toy</span>
+<h2 class="font-section-header text-[20px]">Agent Activity</h2>
+</div>
+<span class="px-2 py-1 bg-primary-container text-on-primary-container text-[10px] font-bold rounded">LIVE</span>
+</div>
+<div id="ym-agent-activity" class="space-y-sm flex-1 overflow-y-auto custom-scrollbar pr-xs">
+<div class="p-sm rounded-xl bg-white/40 border border-outline-variant/20 flex gap-sm hover:bg-white/60 transition-colors cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-on-secondary-container" style="font-variation-settings: 'FILL' 1">psychology</span>
+</div>
+<div>
+<p class="text-xs font-bold text-on-surface">Diagnostic Agent</p>
+<p class="text-xs text-on-surface-variant leading-relaxed">Analyzing Pump CNC Cell PNA-01 failure in Ahmedabad plant. Root cause identified: Cavitation.</p>
+<p class="text-[10px] text-primary mt-xs font-medium uppercase tracking-wider">Just Now</p>
+</div>
+</div>
+<div class="p-sm rounded-xl bg-white/40 border border-outline-variant/20 flex gap-sm hover:bg-white/60 transition-colors cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center flex-shrink-0 shadow-[0_0_10px_rgba(65,63,214,0.2)]">
+<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1">security</span>
+</div>
+<div>
+<p class="text-xs font-bold text-on-surface">Sentinel</p>
+<p class="text-xs text-on-surface-variant leading-relaxed">Security handshake completed with Chennai production network. All protocols green.</p>
+<p class="text-[10px] text-on-surface-variant/60 mt-xs font-medium uppercase tracking-wider">2m ago</p>
+</div>
+</div>
+<div class="p-sm rounded-xl bg-white/40 border border-outline-variant/20 flex gap-sm hover:bg-white/60 transition-colors cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed-dim flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-on-tertiary-fixed-variant" style="font-variation-settings: 'FILL' 1">event_note</span>
+</div>
+<div>
+<p class="text-xs font-bold text-on-surface">Planner Agent</p>
+<p class="text-xs text-on-surface-variant leading-relaxed">Rescheduling shift B in Pune to optimize for incoming materials shipment.</p>
+<p class="text-[10px] text-on-surface-variant/60 mt-xs font-medium uppercase tracking-wider">12m ago</p>
+</div>
+</div>
+<div class="p-sm rounded-xl bg-white/40 border border-outline-variant/20 flex gap-sm hover:bg-white/60 transition-colors cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-on-secondary-container" style="font-variation-settings: 'FILL' 1">psychology</span>
+</div>
+<div>
+<p class="text-xs font-bold text-on-surface">Diagnostic Agent</p>
+<p class="text-xs text-on-surface-variant leading-relaxed">Predictive maintenance recommended for Conveyor L4 (Chennai) in next 48 hours.</p>
+<p class="text-[10px] text-on-surface-variant/60 mt-xs font-medium uppercase tracking-wider">24m ago</p>
+</div>
+</div>
+<div class="p-sm rounded-xl bg-white/40 border border-outline-variant/20 flex gap-sm hover:bg-white/60 transition-colors cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1">security</span>
+</div>
+<div>
+<p class="text-xs font-bold text-on-surface">Sentinel</p>
+<p class="text-xs text-on-surface-variant leading-relaxed">Detected and blocked unauthorized API call from external node IP 192.168.1.1.</p>
+<p class="text-[10px] text-on-surface-variant/60 mt-xs font-medium uppercase tracking-wider">1h ago</p>
+</div>
+</div>
+</div>
+<button class="mt-md w-full py-3 bg-surface-container-high rounded-xl text-on-surface font-label-caps hover:bg-primary/10 transition-colors flex items-center justify-center gap-2">
+                    OPEN AGENT TERMINAL <span class="material-symbols-outlined text-sm">terminal</span>
+</button>
 </div>
 </aside>
 </main>
