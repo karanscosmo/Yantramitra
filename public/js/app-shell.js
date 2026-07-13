@@ -77,13 +77,13 @@
         align-items: stretch;
         gap: 0;
         padding: 20px 10px;
-        background: rgba(25, 26, 40, 0.75);
+        background: rgba(255, 255, 255, 0.92);
         backdrop-filter: blur(24px) saturate(1.4);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(229, 231, 235, 0.8);
         border-radius: 24px;
         overflow: visible;
         scrollbar-width: none;
-        box-shadow: 0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
+        box-shadow: 0 8px 40px rgba(0,0,0,0.08);
       }
       .ym-nav-rail .ym-nav-section {
         display:flex; flex-direction:column; align-items:stretch; gap:4px; width:100%; padding:0 0 8px;
@@ -95,7 +95,7 @@
       }
       .ym-nav-rail .ym-nav-section + .ym-nav-section::before {
         content:''; position:absolute; top:0; left:20%; right:20%;
-        height:1px; background:rgba(255,255,255,0.06);
+        height:1px; background:rgba(0,0,0,0.06);
       }
       .ym-nav-rail .ym-nav-section-label {
         display:block;
@@ -103,7 +103,7 @@
         font:600 9px/1 Inter,system-ui,sans-serif;
         letter-spacing:1.2px;
         text-transform:uppercase;
-        color:rgba(255,255,255,0.25);
+        color:#9CA3AF;
         text-align:center;
       }
       .ym-nav-rail .ym-nav-link {
@@ -116,7 +116,7 @@
         justify-content:center;
         gap:4px;
         border-radius:14px;
-        color:rgba(255,255,255,0.4);
+        color:#6B7280;
         border:0;
         background:transparent;
         cursor:pointer;
@@ -126,20 +126,20 @@
         padding:8px 0;
       }
       .ym-nav-rail .ym-nav-link:hover {
-        color:#fff;
-        background:rgba(255,255,255,0.08);
+        color:#4F46E5;
+        background:rgba(79,70,229,0.06);
         transform:scale(1.04);
       }
       .ym-nav-rail .ym-nav-link:hover .material-symbols-outlined {
         transform:scale(1.1);
       }
       .ym-nav-rail .ym-nav-link.is-active {
-        color:#fff;
-        background:rgba(65,63,214,0.25);
-        box-shadow:0 0 20px rgba(65,63,214,0.15), 0 2px 8px rgba(65,63,214,0.2);
+        color:#4338CA;
+        background:#EEF2FF;
+        box-shadow:0 0 12px rgba(67,56,202,0.1);
       }
       .ym-nav-rail .ym-nav-link.is-active .material-symbols-outlined {
-        color:#fff;
+        color:#4338CA;
       }
       .ym-nav-rail .ym-nav-link .material-symbols-outlined {
         font-size:28px; line-height:1;
@@ -161,7 +161,7 @@
         color:#fff;
         font:700 9px/1 Inter,system-ui,sans-serif;
         padding:0 5px;
-        box-shadow:0 0 0 2px rgba(25,26,40,0.9), 0 2px 8px rgba(186,26,26,0.4);
+        box-shadow:0 0 0 2px rgba(255,255,255,0.9), 0 2px 8px rgba(186,26,26,0.4);
         animation:ymBadgePop .3s cubic-bezier(.34,1.56,.64,1);
       }
       @keyframes ymBadgePop { 0%{transform:scale(0)} 100%{transform:scale(1)} }
@@ -191,34 +191,10 @@
       .ym-nav-rail .ym-nav-link:hover .ym-nav-tooltip {
         opacity:1; transform:translateY(-50%) translateX(0);
       }
-      .ym-nav-rail .ym-shell-logout {
-        width:100%; height:48px;
-        display:flex; flex-direction:column;
-        align-items:center; justify-content:center;
-        gap:4px;
-        border-radius:14px;
-        color:rgba(186,26,26,0.5);
-        border:0; background:transparent;
-        cursor:pointer;
-        text-decoration:none;
-        transition:all .2s;
-        flex-shrink:0;
-        margin-top:auto;
-        padding:8px 0;
-      }
-      .ym-nav-rail .ym-shell-logout:hover {
-        color:#e84545;
-        background:rgba(186,26,26,0.1);
-        transform:scale(1.04);
-      }
-      .ym-nav-rail .ym-shell-logout .material-symbols-outlined { font-size:24px; }
-      .ym-nav-rail .ym-shell-logout .ym-nav-label { color:inherit; opacity:0.6; }
-      .ym-nav-rail .ym-shell-logout:hover .ym-nav-label { opacity:1; }
-
       .ym-standard-topbar {
         position: fixed;
         left: 0;
-        right: calc(var(--sidebar-width) + var(--sidebar-gap));
+        right: var(--sidebar-width);
         top: 0;
         height: var(--header-height);
         z-index: 95;
@@ -354,6 +330,32 @@
         .ym-page-detail-drawer { width: 100% !important; right: 0 !important; }
       }
 
+      .ym-profile-wrap { position:relative; }
+      .ym-profile-dropdown {
+        position:absolute; top:calc(100% + 8px); right:0;
+        min-width:190px;
+        background:#fff;
+        border:1px solid rgba(229,231,235,0.8);
+        border-radius:12px;
+        box-shadow:0 12px 36px rgba(0,0,0,0.1);
+        padding:6px;
+        display:none;
+        z-index:1000;
+      }
+      .ym-profile-dropdown.is-open { display:block; }
+      .ym-dropdown-item {
+        display:flex; align-items:center; gap:10px;
+        padding:10px 12px; border-radius:8px;
+        font:600 13px/1 Inter,system-ui,sans-serif;
+        color:#374151; text-decoration:none;
+        border:0; background:transparent;
+        cursor:pointer; width:100%; box-sizing:border-box;
+        transition:background .15s;
+      }
+      .ym-dropdown-item:hover { background:#F3F4F6; }
+      .ym-dropdown-item .material-symbols-outlined { font-size:18px; }
+      .ym-dropdown-logout { color:#DC2626; }
+      .ym-dropdown-logout:hover { background:#FEF2F2; }
       body:not(.ym-no-status) .ym-standard-topbar + .ym-status-bar { display:flex; }
       body.ym-no-status .ym-status-bar { display:none; }
 
@@ -576,14 +578,7 @@
     rail.setAttribute('aria-label', 'YantraMitra app navigation');
     rail.innerHTML = renderSection(sections.ops, 'Operations')
       + renderSection(sections.intel, 'Intelligence')
-      + renderSection(sections.sys, 'System')
-      + `<button type="button" class="ym-shell-logout"><span class="material-symbols-outlined">logout</span><span class="ym-nav-label">Log\u00a0out</span></button>`;
-    rail.querySelector('.ym-shell-logout').addEventListener('click', async () => {
-      const ok = window.confirm('Log out of YantraMitra?');
-      if (!ok) return;
-      await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
-      window.location.href = '/';
-    });
+      + renderSection(sections.sys, 'System');
 
     document.body.appendChild(rail);
 
@@ -640,12 +635,34 @@
         <a class="ym-ask-yantranklan" href="/ai-console"><img src="/assets/images/yantranklan-avatar-ai.jpg" alt="YantraNklan"><span>Ask YantraNklan</span></a>
         <button type="button" class="ym-standard-icon" data-ym-notifications aria-label="Notifications"><span class="material-symbols-outlined">notifications</span></button>
         <button type="button" class="ym-standard-icon" data-ym-factory aria-label="Plant map"><span class="material-symbols-outlined">factory</span></button>
-        <img class="ym-standard-avatar" src="/assets/images/ym-operator-avatar.jpg" alt="Profile">
+        <div class="ym-profile-wrap">
+          <img class="ym-standard-avatar" src="/assets/images/ym-operator-avatar.jpg" alt="Profile">
+          <div class="ym-profile-dropdown">
+            <a href="/settings" class="ym-dropdown-item"><span class="material-symbols-outlined">settings</span>Settings</a>
+            <button type="button" class="ym-dropdown-item ym-dropdown-logout"><span class="material-symbols-outlined">logout</span>Log out</button>
+          </div>
+        </div>
       </div>`;
     document.body.prepend(header);
     header.querySelector('.ym-logo').addEventListener('click', () => { window.location.href = '/dashboard'; });
     header.querySelector('[data-ym-factory]').addEventListener('click', () => { window.location.href = '/map'; });
-    header.querySelector('.ym-standard-avatar').addEventListener('click', () => { window.location.href = '/settings'; });
+    header.querySelector('.ym-standard-avatar').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const dd = header.querySelector('.ym-profile-dropdown');
+      dd.classList.toggle('is-open');
+    });
+    header.querySelector('.ym-dropdown-logout').addEventListener('click', async () => {
+      header.querySelector('.ym-profile-dropdown').classList.remove('is-open');
+      const ok = window.confirm('Log out of YantraMitra?');
+      if (!ok) return;
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
+      window.location.href = '/';
+    });
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.ym-profile-wrap')) {
+        header.querySelector('.ym-profile-dropdown')?.classList.remove('is-open');
+      }
+    });
     header.querySelector('input').addEventListener('keydown', event => {
       if (event.key === 'Enter' && event.currentTarget.value.trim()) openCommandPalette();
     });
