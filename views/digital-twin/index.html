@@ -5,11 +5,9 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>YantraMitra | Live Ops 3D Digital Twin</title>
 <link rel="icon" href="/assets/icons/favicon.svg" type="image/svg+xml"/>
-<!-- Material Symbols -->
+<!-- Material Symbols & Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<!-- Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Geist:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script id="tailwind-config">
@@ -193,8 +191,8 @@
 <!-- 3D Digital Twin Viewer -->
 <div class="absolute inset-0 bg-[#f4f2ff] flex items-center justify-center overflow-hidden">
 <!-- Central Digital Twin Image -->
-<div class="relative w-full h-full max-w-7xl mx-auto flex items-center justify-center p-md">
-<img alt="Live Factory Floor Digital Twin" class="w-full h-full object-contain rounded-2xl shadow-2xl" src="/assets/images/home-pune-automotive.jpg"/>
+<div class="relative w-full h-full flex items-center justify-center">
+<img alt="Live Factory Floor Digital Twin" class="w-full h-full object-cover" src="/assets/images/home-pune-automotive.jpg"/>
 <!-- Interactive Nodes Overlay (Absolute positions matched to equipment in the image) -->
 <div class="absolute top-[42%] left-[45%]">
 <div class="pulse-node w-5 h-5 bg-primary rounded-full cursor-pointer flex items-center justify-center border-2 border-white" onclick="toggleInspector('CNC-Alpha-01')">
@@ -220,10 +218,10 @@
 </div>
 </div>
 <!-- Right Inspector Panel -->
-<aside class="fixed right-[calc(var(--sidebar-width)+16px)] top-24 bottom-32 w-80 glass-panel rounded-2xl p-md flex flex-col gap-md transition-transform translate-x-0 z-40" id="inspector-panel">
+<aside class="fixed right-[calc(var(--sidebar-width)+16px)] top-24 bottom-28 w-80 glass-panel rounded-2xl p-md flex flex-col gap-3 transition-transform translate-x-0 z-40" id="inspector-panel">
 <div class="flex justify-between items-start">
 <div>
-<h3 class="font-section-header text-section-header text-on-surface" id="asset-name">CNC Alpha 01</h3>
+<h3 class="text-base font-bold text-on-surface" id="asset-name">CNC Alpha 01</h3>
 <p class="font-label-caps text-label-caps text-secondary uppercase tracking-widest mt-1">Operational • 98.4% Eff.</p>
 </div>
 <button class="p-1 hover:bg-surface-variant rounded-lg" onclick="togglePanel()">
@@ -270,7 +268,7 @@
 </div>
 </div>
 </div>
-<button class="w-full py-sm bg-gradient-to-r from-primary to-primary-container text-on-primary rounded-xl font-bold shimmer-btn relative overflow-hidden glow-indigo flex items-center justify-center gap-2 group">
+<button class="w-full py-2 bg-gradient-to-r from-primary to-primary-container text-on-primary rounded-xl font-bold shimmer-btn relative overflow-hidden glow-indigo flex items-center justify-center gap-2 group">
 <span class="material-symbols-outlined text-sm">construction</span>
 <span>Open Maintenance Log</span>
 </button>
