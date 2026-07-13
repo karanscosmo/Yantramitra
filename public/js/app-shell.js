@@ -76,7 +76,7 @@
         flex-direction: column;
         align-items: stretch;
         gap: 0;
-        padding: 16px 8px;
+        padding: 20px 10px;
         background: rgba(25, 26, 40, 0.75);
         backdrop-filter: blur(24px) saturate(1.4);
         border: 1px solid rgba(255, 255, 255, 0.08);
@@ -85,13 +85,12 @@
         scrollbar-width: none;
         box-shadow: 0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
       }
-      .ym-nav-rail::-webkit-scrollbar { display: none; }
       .ym-nav-rail .ym-nav-section {
-        display:flex; flex-direction:column; align-items:stretch; gap:2px; width:100%; padding:0 0 6px;
+        display:flex; flex-direction:column; align-items:stretch; gap:4px; width:100%; padding:0 0 8px;
       }
       .ym-nav-rail .ym-nav-section + .ym-nav-section {
-        margin-top:6px;
-        padding-top:8px;
+        margin-top:8px;
+        padding-top:10px;
         position:relative;
       }
       .ym-nav-rail .ym-nav-section + .ym-nav-section::before {
@@ -100,8 +99,8 @@
       }
       .ym-nav-rail .ym-nav-section-label {
         display:block;
-        padding:0 6px 8px 6px;
-        font:600 8px/1 Inter,system-ui,sans-serif;
+        padding:0 4px 10px 4px;
+        font:600 9px/1 Inter,system-ui,sans-serif;
         letter-spacing:1.2px;
         text-transform:uppercase;
         color:rgba(255,255,255,0.25);
@@ -110,50 +109,41 @@
       .ym-nav-rail .ym-nav-link {
         position:relative;
         width:100%;
-        min-height:52px;
+        min-height:56px;
         display:flex;
         flex-direction:column;
         align-items:center;
         justify-content:center;
-        gap:3px;
-        border-radius:12px;
+        gap:4px;
+        border-radius:14px;
         color:rgba(255,255,255,0.4);
         border:0;
         background:transparent;
         cursor:pointer;
         text-decoration:none;
-        transition:all .18s cubic-bezier(.4,0,.2,1);
+        transition:all .2s cubic-bezier(.4,0,.2,1);
         flex-shrink:0;
-        padding:6px 0;
-      }
-      .ym-nav-rail .ym-nav-link::before {
-        content:'';
-        position:absolute; left:-8px; top:50%; transform:translateY(-50%) scaleY(0);
-        width:3px; height:20px;
-        border-radius:0 3px 3px 0;
-        background:#413fd6;
-        transition:transform .2s cubic-bezier(.4,0,.2,1);
+        padding:8px 0;
       }
       .ym-nav-rail .ym-nav-link:hover {
         color:#fff;
-        background:rgba(255,255,255,0.06);
-        transform:translateX(-2px);
+        background:rgba(255,255,255,0.08);
+        transform:scale(1.04);
       }
-      .ym-nav-rail .ym-nav-link:hover::before { transform:translateY(-50%) scaleY(1); }
       .ym-nav-rail .ym-nav-link:hover .material-symbols-outlined {
-        transform:scale(1.15);
+        transform:scale(1.1);
       }
       .ym-nav-rail .ym-nav-link.is-active {
         color:#fff;
-        background:rgba(65,63,214,0.2);
+        background:rgba(65,63,214,0.25);
+        box-shadow:0 0 20px rgba(65,63,214,0.15), 0 2px 8px rgba(65,63,214,0.2);
       }
-      .ym-nav-rail .ym-nav-link.is-active::before { transform:translateY(-50%) scaleY(1); }
       .ym-nav-rail .ym-nav-link.is-active .material-symbols-outlined {
         color:#fff;
       }
       .ym-nav-rail .ym-nav-link .material-symbols-outlined {
-        font-size:26px; line-height:1;
-        transition:transform .18s cubic-bezier(.4,0,.2,1);
+        font-size:28px; line-height:1;
+        transition:transform .2s cubic-bezier(.4,0,.2,1);
       }
       .ym-nav-rail .ym-nav-label {
         font:600 9px/1 Inter,system-ui,sans-serif;
@@ -163,7 +153,7 @@
       }
       .ym-nav-rail .ym-nav-link.is-active .ym-nav-label { opacity:1; }
       .ym-nav-rail .ym-nav-badge {
-        position:absolute; top:2px; right:4px;
+        position:absolute; top:0; right:0;
         min-width:18px; height:18px;
         display:flex; align-items:center; justify-content:center;
         border-radius:9999px;
@@ -175,20 +165,6 @@
         animation:ymBadgePop .3s cubic-bezier(.34,1.56,.64,1);
       }
       @keyframes ymBadgePop { 0%{transform:scale(0)} 100%{transform:scale(1)} }
-      .ym-nav-rail .ym-nav-kbd {
-        display:none;
-      }
-      .ym-nav-rail .ym-nav-link:hover .ym-nav-kbd {
-        display:block;
-        position:absolute; right:-20px; top:50%; transform:translateY(-50%);
-        background:rgba(255,255,255,0.1);
-        color:rgba(255,255,255,0.5);
-        font:500 7px/1 Inter,system-ui,sans-serif;
-        padding:2px 5px;
-        border-radius:4px;
-        letter-spacing:.3px;
-        backdrop-filter:blur(4px);
-      }
       .ym-nav-rail .ym-nav-tooltip {
         position:absolute;
         right:calc(100% + 14px);
@@ -198,15 +174,15 @@
         backdrop-filter:blur(8px);
         color:#fff;
         font:500 12px/1.3 Inter,system-ui,sans-serif;
-        padding:7px 12px;
-        border-radius:8px;
+        padding:8px 14px;
+        border-radius:10px;
         pointer-events:none;
-        z-index:99;
+        z-index:999;
         opacity:0;
-        transition:opacity .15s,transform .15s;
-        transform:translateY(-50%) translateX(6px);
-        border:1px solid rgba(255,255,255,0.06);
-        box-shadow:0 8px 24px rgba(0,0,0,0.3);
+        transition:opacity .2s,transform .2s;
+        transform:translateY(-50%) translateX(8px);
+        border:1px solid rgba(255,255,255,0.08);
+        box-shadow:0 12px 32px rgba(0,0,0,0.4);
       }
       .ym-nav-rail .ym-nav-tooltip::after {
         content:''; position:absolute; right:-5px; top:50%; transform:translateY(-50%);
@@ -219,22 +195,23 @@
         width:100%; height:48px;
         display:flex; flex-direction:column;
         align-items:center; justify-content:center;
-        gap:3px;
-        border-radius:12px;
+        gap:4px;
+        border-radius:14px;
         color:rgba(186,26,26,0.5);
         border:0; background:transparent;
         cursor:pointer;
         text-decoration:none;
-        transition:all .18s;
+        transition:all .2s;
         flex-shrink:0;
-        margin-top:8px;
-        padding:6px 0;
+        margin-top:auto;
+        padding:8px 0;
       }
       .ym-nav-rail .ym-shell-logout:hover {
         color:#e84545;
         background:rgba(186,26,26,0.1);
+        transform:scale(1.04);
       }
-      .ym-nav-rail .ym-shell-logout .material-symbols-outlined { font-size:22px; }
+      .ym-nav-rail .ym-shell-logout .material-symbols-outlined { font-size:24px; }
       .ym-nav-rail .ym-shell-logout .ym-nav-label { color:inherit; opacity:0.6; }
       .ym-nav-rail .ym-shell-logout:hover .ym-nav-label { opacity:1; }
 
