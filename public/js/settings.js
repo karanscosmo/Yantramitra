@@ -35,7 +35,7 @@
 
   function activateTab(name) {
     currentTab = name;
-    document.querySelectorAll('main .flex.gap-gutter button').forEach(btn => {
+    document.querySelectorAll('main .flex.gap-sm button').forEach(btn => {
       const active = btn.textContent.trim() === name;
       btn.className = active
         ? 'px-md py-3 rounded-full bg-primary text-on-primary shadow-lg shadow-primary/20 font-medium whitespace-nowrap'
@@ -911,7 +911,7 @@
   document.addEventListener('DOMContentLoaded', async () => {
     const user = await checkAuth();
     if (!user) return;
-    document.querySelectorAll('main .flex.gap-gutter button').forEach(btn => {
+    document.querySelectorAll('main .flex.gap-sm button').forEach(btn => {
       btn.addEventListener('click', () => {
         const name = btn.textContent.trim();
         if (name === currentTab) return;

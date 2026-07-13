@@ -506,6 +506,7 @@
       return true;
     });
     renderOrders();
+    renderFilters();
   }
 
   function renderStats() {

@@ -17,13 +17,13 @@ YantraMitra models a realistic five-plant Indian manufacturing company (Pune, Ah
 - **Command Center** — Global dashboard with plant OEE, active alarms, machine status, and executive summary across all five facilities
 - **Digital Twin** — Three.js 3D factory floor with clickable machines, HUD overlay (Active/Warning/Down/OEE), health inspector panel, and ambient animations
 - **AI Copilot (YantraNklan)** — Chat interface with live database context, file upload with text extraction (PDF/DOCX/XLSX/CSV/TXT/images), streaming responses, and conversation memory
-- **Work Orders** — Full CRUD, sortable column headers, pagination (10/page), detail drawer, auto-seed of 25 realistic industrial orders on first GET
+- **Work Orders** — Full CRUD, multi-select status/priority/location filters with URL persistence, search by ID/asset/engineer/plant/issue, sortable column headers, pagination (10/page), detail drawer, AI chat bar with natural language commands (show overdue/assign/create/filter), auto-seed of 25 realistic industrial orders on first GET
 - **Anomaly Investigation** — Graph-based root cause analysis with zoom/pan, draggable nodes, hypothesis highlighting, confidence bars, SVG edge glow animations
 - **Scenario Simulator** — 4 presets (Balanced/Energy Saver/Maximum Output/Maintenance Mode), animated KPI bars with stagger and direction flash, progress bar, AI-generated grid summary
-- **Agent Mission Control** — 9 AI agents with progress tracking, mission descriptions, success rates, and action history
+- **Agent Mission Control** — 9 AI agents with drag-and-drop status, live running missions, mission queue, activity feed, timeline, mission details, AI recommendations, system health, and detail drawer
 - **Asset Fleet & Diagnostics** — Machine health cards, telemetry readings, component breakdown, maintenance timeline, AI root-cause predictions with confidence scoring
 - **Plant Map** — Leaflet-based global map with real Indian city coordinates, facility status markers, and drill-down
-- **Settings** — 5 tabs (Profile, Notifications, Team & Roles, Integrations, Security) with full back-end API routes for invite/disable/reset-password
+- **Settings** — 5 tabs (Profile, Notifications, Team & Roles, Integrations, Security) with avatar upload/initials fallback, notification toggles, team invite/remove/role-change, integration connect/disconnect/test, password change/2FA/API keys/sessions/login history
 - **Global Command Palette** — Cmd+K / Ctrl+K / / search across plants, machines, work orders, agents, and incidents
 - **Keyboard Navigation** — ⌘1–⌘' for nav rail items, Escape for modal close
 - **Role-based Access** — Admin, plant manager, maintenance, operator, executive roles with permission boundaries
@@ -194,9 +194,10 @@ Set environment variables in Vercel dashboard:
 - `GET/PATCH /api/user/preferences` — Preferences
 
 ### Integrations
-- `POST /api/integrations/:key/connect` — Connect (SCADA, CMMS, ERP, Historian, MQTT)
+- `POST /api/integrations/:key/connect` — Connect (SAP, AzureIoT, MQTT, OPCUA, Email, Webhooks)
 - `POST /api/integrations/:key/disconnect` — Disconnect
 - `POST /api/integrations/:key/configure` — Configure
+- `POST /api/integrations/:key/test` — Test connection
 
 ## Route Map
 

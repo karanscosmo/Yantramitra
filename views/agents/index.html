@@ -108,10 +108,7 @@ body { background-color:#fbf8ff; background-image: radial-gradient(at 0% 0%, rgb
 <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-secondary pulsing-green"></span><h2 class="font-section-header text-sm font-bold">Running Missions</h2></div>
 <span class="text-[10px] text-primary font-bold">View All</span>
 </div>
-<div class="p-3 space-y-2 max-h-[260px] overflow-y-auto custom-scrollbar">
-<div class="glass-panel rounded-xl p-3 border-l-4 border-l-primary flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-primary">precision_manufacturing</span></div><div class="flex-1 min-w-0"><p class="text-xs font-bold truncate">Pune CNC Cell PM-01</p><p class="text-[10px] text-on-surface-variant">Diagnostic · Cavitation analysis · 87% confidence</p><div class="flex items-center gap-2 mt-1"><div class="flex-1 h-1 bg-surface-container rounded-full overflow-hidden"><div class="bg-primary h-full rounded-full" style="width:72%"></div></div><span class="text-[9px] font-bold text-primary">72%</span></div></div><div class="flex flex-col items-end gap-1 shrink-0"><span class="text-[9px] font-bold text-secondary">12 min</span><span class="text-[9px] text-on-surface-variant">ETA</span></div></div>
-<div class="glass-panel rounded-xl p-3 border-l-4 border-l-secondary flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-secondary">bolt</span></div><div class="flex-1 min-w-0"><p class="text-xs font-bold truncate">Chennai Edge Security Audit</p><p class="text-[10px] text-on-surface-variant">Sentinel · Network scan · 99% confidence</p><div class="flex items-center gap-2 mt-1"><div class="flex-1 h-1 bg-surface-container rounded-full overflow-hidden"><div class="bg-secondary h-full rounded-full" style="width:94%"></div></div><span class="text-[9px] font-bold text-secondary">94%</span></div></div><div class="flex flex-col items-end gap-1 shrink-0"><span class="text-[9px] font-bold text-secondary">24 min</span><span class="text-[9px] text-on-surface-variant">ETA</span></div></div>
-<div class="glass-panel rounded-xl p-3 border-l-4 border-l-tertiary flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-tertiary">event_note</span></div><div class="flex-1 min-w-0"><p class="text-xs font-bold truncate">Ahmedabad Batch Calibration</p><p class="text-[10px] text-on-surface-variant">Planner · Process optimization · 76% confidence</p><div class="flex items-center gap-2 mt-1"><div class="flex-1 h-1 bg-surface-container rounded-full overflow-hidden"><div class="bg-tertiary h-full rounded-full" style="width:58%"></div></div><span class="text-[9px] font-bold text-tertiary">58%</span></div></div><div class="flex flex-col items-end gap-1 shrink-0"><span class="text-[9px] font-bold text-tertiary">45 min</span><span class="text-[9px] text-on-surface-variant">ETA</span></div></div>
+<div class="p-3 space-y-2 max-h-[260px] overflow-y-auto custom-scrollbar" id="ym-running-missions">
 </div>
 </div>
 
@@ -132,36 +129,7 @@ body { background-color:#fbf8ff; background-image: radial-gradient(at 0% 0%, rgb
 <th class="py-2 pr-4 text-right">ETA</th>
 </tr>
 </thead>
-<tbody>
-<tr class="border-b border-outline-variant/10 hover:bg-primary/5 transition-colors">
-<td class="py-2.5 pl-4"><div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-secondary shrink-0"></span><span class="font-medium">Pune CNC Cell Diagnostics</span></div></td>
-<td class="py-2.5"><div class="flex items-center gap-1.5"><span class="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[8px] font-bold text-primary">DA</span>Diagnostic</div></td>
-<td class="py-2.5"><span class="px-1.5 py-0.5 rounded bg-error/10 text-error text-[9px] font-bold">CRITICAL</span></td>
-<td class="py-2.5"><span class="text-secondary font-bold">Running</span></td>
-<td class="py-2.5 pr-4 text-right text-on-surface-variant">12 min</td>
-</tr>
-<tr class="border-b border-outline-variant/10 hover:bg-primary/5 transition-colors">
-<td class="py-2.5 pl-4"><div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-tertiary shrink-0"></span><span class="font-medium">Ahmedabad Batch Calibration</span></div></td>
-<td class="py-2.5"><div class="flex items-center gap-1.5"><span class="w-5 h-5 rounded-full bg-secondary/20 flex items-center justify-center text-[8px] font-bold text-secondary">PL</span>Planner</div></td>
-<td class="py-2.5"><span class="px-1.5 py-0.5 rounded bg-tertiary/10 text-tertiary text-[9px] font-bold">HIGH</span></td>
-<td class="py-2.5"><span class="text-tertiary font-bold">Queued</span></td>
-<td class="py-2.5 pr-4 text-right text-on-surface-variant">45 min</td>
-</tr>
-<tr class="border-b border-outline-variant/10 hover:bg-primary/5 transition-colors">
-<td class="py-2.5 pl-4"><div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-secondary shrink-0"></span><span class="font-medium">Chennai SMT Line Inspection</span></div></td>
-<td class="py-2.5"><div class="flex items-center gap-1.5"><span class="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[8px] font-bold text-primary">IN</span>Inspection</div></td>
-<td class="py-2.5"><span class="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[9px] font-bold">MEDIUM</span></td>
-<td class="py-2.5"><span class="text-on-surface font-bold">Scheduled</span></td>
-<td class="py-2.5 pr-4 text-right text-on-surface-variant">2h</td>
-</tr>
-<tr class="hover:bg-primary/5 transition-colors">
-<td class="py-2.5 pl-4"><div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-on-surface-variant shrink-0"></span><span class="font-medium">Nagpur ASRS Inventory Sync</span></div></td>
-<td class="py-2.5"><div class="flex items-center gap-1.5"><span class="w-5 h-5 rounded-full bg-secondary/20 flex items-center justify-center text-[8px] font-bold text-secondary">LO</span>Logistics</div></td>
-<td class="py-2.5"><span class="px-1.5 py-0.5 rounded bg-on-surface-variant/10 text-on-surface-variant text-[9px] font-bold">LOW</span></td>
-<td class="py-2.5"><span class="text-on-surface-variant font-bold">Standby</span></td>
-<td class="py-2.5 pr-4 text-right text-on-surface-variant">6h</td>
-</tr>
-</tbody>
+<tbody id="ym-mission-queue-body"></tbody>
 </table>
 </div>
 </div>
@@ -172,13 +140,7 @@ body { background-color:#fbf8ff; background-image: radial-gradient(at 0% 0%, rgb
 <h2 class="font-section-header text-sm font-bold">Activity Feed</h2>
 <span class="text-[10px] text-on-surface-variant">Live Updates</span>
 </div>
-<div class="space-y-0.5 p-3 max-h-[160px] overflow-y-auto custom-scrollbar">
-<div class="flex items-start gap-2.5 py-1.5"><span class="w-1.5 h-1.5 rounded-full bg-secondary mt-1.5 shrink-0"></span><div class="min-w-0"><p class="text-xs truncate"><span class="font-bold">Sentinel</span> blocked unauthorized API call from external node</p><p class="text-[9px] text-on-surface-variant">2m ago</p></div></div>
-<div class="flex items-start gap-2.5 py-1.5"><span class="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0"></span><div class="min-w-0"><p class="text-xs truncate"><span class="font-bold">Diagnostic Agent</span> completed analysis on CNC Cell PNA-01</p><p class="text-[9px] text-on-surface-variant">8m ago</p></div></div>
-<div class="flex items-start gap-2.5 py-1.5"><span class="w-1.5 h-1.5 rounded-full bg-tertiary mt-1.5 shrink-0"></span><div class="min-w-0"><p class="text-xs truncate"><span class="font-bold">Planner Agent</span> rescheduled Shift B for incoming materials</p><p class="text-[9px] text-on-surface-variant">18m ago</p></div></div>
-<div class="flex items-start gap-2.5 py-1.5"><span class="w-1.5 h-1.5 rounded-full bg-secondary mt-1.5 shrink-0"></span><div class="min-w-0"><p class="text-xs truncate"><span class="font-bold">Sentinel</span> security handshake completed with Chennai network</p><p class="text-[9px] text-on-surface-variant">24m ago</p></div></div>
-<div class="flex items-start gap-2.5 py-1.5"><span class="w-1.5 h-1.5 rounded-full bg-on-surface-variant mt-1.5 shrink-0"></span><div class="min-w-0"><p class="text-xs truncate"><span class="font-bold">Maintenance Agent</span> flagged Conveyor L4 for predictive maintenance</p><p class="text-[9px] text-on-surface-variant">35m ago</p></div></div>
-</div>
+<div class="space-y-0.5 p-3 max-h-[160px] overflow-y-auto custom-scrollbar" id="ym-activity-feed"></div>
 </div>
 
 <!-- Timeline / Recent Events -->
@@ -187,12 +149,7 @@ body { background-color:#fbf8ff; background-image: radial-gradient(at 0% 0%, rgb
 <h2 class="font-section-header text-sm font-bold">Timeline</h2>
 <div class="flex items-center gap-1"><button class="px-2 py-1 bg-primary text-on-primary rounded-full text-[9px] font-bold">24h</button><button class="px-2 py-1 bg-white/50 border border-outline-variant/30 rounded-full text-[9px] font-bold">7d</button></div>
 </div>
-<div class="p-3 max-h-[140px] overflow-y-auto custom-scrollbar">
-<div class="relative pl-5 pb-1.5 border-l-2 border-primary/30"><div class="absolute -left-[9px] top-0 w-3.5 h-3.5 rounded-full bg-primary ring-2 ring-white"></div><p class="text-[10px] text-primary font-bold">10:23 AM</p><p class="text-xs">Diagnostic dispatched to Pune CNC Cell for cavitation analysis</p></div>
-<div class="relative pl-5 pb-1.5 border-l-2 border-secondary/30"><div class="absolute -left-[9px] top-0 w-3.5 h-3.5 rounded-full bg-secondary ring-2 ring-white"></div><p class="text-[10px] text-secondary font-bold">10:18 AM</p><p class="text-xs">Sentinel security scan complete across Chennai network</p></div>
-<div class="relative pl-5 pb-1.5 border-l-2 border-tertiary/30"><div class="absolute -left-[9px] top-0 w-3.5 h-3.5 rounded-full bg-tertiary ring-2 ring-white"></div><p class="text-[10px] text-tertiary font-bold">10:05 AM</p><p class="text-xs">Planner rescheduled Shift B for materials optimization</p></div>
-<div class="relative pl-5 border-l-2 border-on-surface-variant/30"><div class="absolute -left-[9px] top-0 w-3.5 h-3.5 rounded-full bg-on-surface-variant ring-2 ring-white"></div><p class="text-[10px] text-on-surface-variant font-bold">09:48 AM</p><p class="text-xs">Predictive maintenance triggered for Conveyor L4 in Chennai</p></div>
-</div>
+<div class="p-3 max-h-[140px] overflow-y-auto custom-scrollbar" id="ym-timeline"></div>
 </div>
 
 </div>
@@ -223,43 +180,13 @@ body { background-color:#fbf8ff; background-image: radial-gradient(at 0% 0%, rgb
 </div>
 
 <!-- Mission Details -->
-<div class="glass-panel rounded-xl p-4">
-<div class="flex items-center gap-2 mb-3"><span class="material-symbols-outlined text-sm text-primary">assignment</span><h3 class="font-section-header text-xs font-bold">Selected Mission Details</h3></div>
-<div class="space-y-2 text-xs">
-<div class="flex justify-between"><span class="text-on-surface-variant">Active Missions</span><span class="font-bold">14</span></div>
-<div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="bg-primary w-[72%] h-full rounded-full"></div></div>
-<div class="flex justify-between"><span class="text-on-surface-variant">Avg Completion</span><span class="text-secondary font-bold">94%</span></div>
-<div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="bg-secondary w-[94%] h-full rounded-full"></div></div>
-<div class="flex justify-between"><span class="text-on-surface-variant">Avg Response</span><span class="font-bold">1.2s</span></div>
-<div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="bg-primary w-[96%] h-full rounded-full"></div></div>
-<div class="pt-2 border-t border-outline-variant/20"><p class="text-[10px] text-on-surface-variant mb-1">Current Focus</p><p class="text-xs font-medium">Pune CNC Cell cavitation requires urgent diagnostic analysis. 3 agents dispatched.</p></div>
-</div>
-</div>
+<div class="glass-panel rounded-xl p-4" id="ym-mission-details"></div>
 
 <!-- AI Recommendations -->
-<div class="glass-panel rounded-xl p-4">
-<div class="flex items-center gap-2 mb-3"><span class="material-symbols-outlined text-sm text-primary">auto_awesome</span><h3 class="font-section-header text-xs font-bold">AI Recommendations</h3></div>
-<div class="space-y-2">
-<div class="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl p-3 border border-primary/20"><div class="flex items-center gap-1.5 mb-1"><span class="material-symbols-outlined text-xs text-primary">insights</span><span class="text-[10px] font-bold">Operations</span></div><p class="text-[10px] text-on-surface-variant">OEE improved 1.4% in 24h. Pune and Chennai driving gains. Ahmedabad batch quality needs attention.</p></div>
-<div class="bg-gradient-to-br from-tertiary/5 to-tertiary/10 rounded-xl p-3 border border-tertiary/20"><div class="flex items-center gap-1.5 mb-1"><span class="material-symbols-outlined text-xs text-tertiary">warning</span><span class="text-[10px] font-bold">Bottleneck</span></div><p class="text-[10px] text-on-surface-variant">CNC Cell PNA-01 cavitation may reduce throughput 12% if unresolved within 4 hours.</p></div>
-<div class="bg-gradient-to-br from-secondary/5 to-secondary/10 rounded-xl p-3 border border-secondary/20"><div class="flex items-center gap-1.5 mb-1"><span class="material-symbols-outlined text-xs text-secondary">anomaly</span><span class="text-[10px] font-bold">Anomaly</span></div><p class="text-[10px] text-on-surface-variant">Conveyor L4 vibration deviates 8.3% from baseline. Inspection recommended.</p></div>
-</div>
-</div>
+<div class="glass-panel rounded-xl p-4" id="ym-ai-recommendations"></div>
 
 <!-- System Health -->
-<div class="glass-panel rounded-xl p-4">
-<div class="flex items-center gap-2 mb-3"><span class="material-symbols-outlined text-sm text-primary">monitor_heart</span><h3 class="font-section-header text-xs font-bold">System Health</h3></div>
-<div class="space-y-2 text-xs">
-<div class="flex justify-between items-center py-1"><span class="text-on-surface-variant">Cloud Infrastructure</span><span class="text-secondary font-bold text-[11px]">99.99%</span></div>
-<div class="w-full h-1 bg-surface-container rounded-full overflow-hidden"><div class="bg-secondary w-full h-full rounded-full"></div></div>
-<div class="flex justify-between items-center py-1"><span class="text-on-surface-variant">Edge Connectivity</span><span class="text-secondary font-bold text-[11px]">98.4%</span></div>
-<div class="w-full h-1 bg-surface-container rounded-full overflow-hidden"><div class="bg-secondary w-[98%] h-full rounded-full"></div></div>
-<div class="flex justify-between items-center py-1"><span class="text-on-surface-variant">Agent Network</span><span class="text-primary font-bold text-[11px]">100%</span></div>
-<div class="w-full h-1 bg-surface-container rounded-full overflow-hidden"><div class="bg-primary w-full h-full rounded-full"></div></div>
-<div class="flex justify-between items-center py-1"><span class="text-on-surface-variant">API Latency</span><span class="text-tertiary font-bold text-[11px]">42ms</span></div>
-<div class="w-full h-1 bg-surface-container rounded-full overflow-hidden"><div class="bg-tertiary w-[88%] h-full rounded-full"></div></div>
-</div>
-</div>
+<div class="glass-panel rounded-xl p-4" id="ym-system-health"></div>
 
 </div>
 
