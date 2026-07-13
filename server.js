@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+const crypto = require('crypto');
 const prisma = require('./services/prisma');
 
 const isVercel = !!process.env.VERCEL;
@@ -20,8 +21,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'yantramitra-jwt-secret-2026';
 const isProduction = process.env.NODE_ENV === 'production';
 
 if (isProduction && JWT_SECRET === 'yantramitra-jwt-secret-2026') {
-  console.warn('WARNING: JWT_SECRET is not set in production. Using insecure default secret.');
+  throw new Error('JWT_SECRET must be set in production.');
 }
+
+const allowedTeamRoles = ['admin', 'operator', 'maintenance', 'plant_manager', 'executive'];
+const allowedIntegrationKeys = ['SCADA', 'CMMS', 'ERP', 'Historian', 'MQTT'];
 
 const authCookieOptions = {
   httpOnly: true,
@@ -51,6 +55,7 @@ app.use((req, res, next) => {
   return res.status(403).json({ error: 'Cross-origin request blocked' });
 });
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(uploadsDir));
 
 const rateBuckets = new Map();
 function rateLimit({ windowMs, max, keyPrefix }) {
@@ -131,6 +136,42 @@ function pickAllowed(source, allowedFields) {
 function validateEnum(value, allowedValues, fieldName) {
   if (value == null || allowedValues.includes(value)) return null;
   return `${fieldName} must be one of: ${allowedValues.join(', ')}`;
+}
+
+function generateApiKey() {
+  return `ym_${crypto.randomBytes(24).toString('base64url')}`;
+}
+
+function maskApiKey(key) {
+  if (!key) return 'ym_...';
+  return `${key.slice(0, 10)}...${key.slice(-4)}`;
+}
+
+function safePrefs(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function safeIntegrations(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function unlinkUploadedUrl(url) {
+  if (!url || typeof url !== 'string' || !url.startsWith('/uploads/')) return;
+  const filePath = path.join(uploadsDir, path.basename(url));
+  fs.unlink(filePath, () => {});
+}
+
+function maskedUserSettings(user) {
+  const prefs = safePrefs(user?.prefs);
+  const apiKeys = Array.isArray(prefs.apiKeys) ? prefs.apiKeys : [];
+  const loginHistory = Array.isArray(prefs.loginHistory) ? prefs.loginHistory : [];
+  return {
+    prefs,
+    integrations: safeIntegrations(user?.integrations),
+    sessions: Array.isArray(user?.sessions) ? user.sessions : [],
+    apiKeys: apiKeys.map(k => ({ ...k, key: k.keyPreview || maskApiKey(k.key) })),
+    loginHistory,
+  };
 }
 
 function servePage(pageName) {
@@ -591,6 +632,7 @@ app.patch('/api/alarms/:id/resolve', authApi, async (req, res) => {
       where: { id: req.params.id },
       data: { status: 'resolved', resolvedAt: new Date() }
     });
+    await createAudit(req.user.id, 'alarm.resolved', 'Alarm', alarm.id, { machineId: alarm.machineId });
     res.json(alarm);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -721,6 +763,7 @@ app.post('/api/agents', authApi, async (req, res) => {
     if (!data.status) data.status = 'active';
     data.progress = Math.max(0, Math.min(100, Number(data.progress) || 0));
     const agent = await prisma.agent.create({ data });
+    await createAudit(req.user.id, 'agent.created', 'Agent', agent.id, { name: agent.name, type: agent.type });
     res.status(201).json(agent);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -735,6 +778,7 @@ app.patch('/api/agents/:id', authApi, async (req, res) => {
       where: { id: req.params.id },
       data
     });
+    await createAudit(req.user.id, 'agent.updated', 'Agent', agent.id, data);
     res.json(agent);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -755,6 +799,7 @@ app.post('/api/plans', authApi, async (req, res) => {
     data.priority = data.priority || 'medium';
     data.createdBy = req.user.id;
     const plan = await prisma.plan.create({ data });
+    await createAudit(req.user.id, 'plan.created', 'Plan', plan.id, { title: plan.title, status: plan.status });
     res.status(201).json(plan);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -771,6 +816,7 @@ app.patch('/api/plans/:id', authApi, requireRole('admin'), async (req, res) => {
       data.approvedAt = new Date();
     }
     const plan = await prisma.plan.update({ where: { id: req.params.id }, data });
+    await createAudit(req.user.id, 'plan.updated', 'Plan', plan.id, data);
     res.json(plan);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -838,6 +884,7 @@ app.post('/api/work-orders', authApi, async (req, res) => {
     data.priority = data.priority || 'medium';
     data.createdBy = req.user.id;
     const order = await prisma.workOrder.create({ data, include: { machine: { select: { name: true } } } });
+    await createAudit(req.user.id, 'work_order.created', 'WorkOrder', order.id, { title: order.title, priority: order.priority });
     res.status(201).json(order);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -853,6 +900,7 @@ app.patch('/api/work-orders/:id', authApi, async (req, res) => {
       where: { id: req.params.id },
       data
     });
+    await createAudit(req.user.id, 'work_order.updated', 'WorkOrder', order.id, data);
     res.json(order);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -1015,7 +1063,7 @@ app.get('/api/user/profile', authApi, async (req, res) => {
   } catch { res.status(401).json({ error: 'Invalid token' }); }
 });
 
-app.get('/api/team', authApi, async (req, res) => {
+app.get('/api/team', authApi, requireRole('admin'), async (req, res) => {
   try {
     const users = await prisma.user.findMany({
       select: { id: true, email: true, name: true, role: true, avatar: true, phone: true, prefs: true, createdAt: true },
@@ -1029,11 +1077,7 @@ app.get('/api/team', authApi, async (req, res) => {
 app.get('/api/user/preferences', authApi, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.user.id }, select: { prefs: true, integrations: true, sessions: true } });
-    res.json({
-      prefs: user?.prefs || {},
-      integrations: user?.integrations || {},
-      sessions: user?.sessions || []
-    });
+    res.json(maskedUserSettings(user));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -1041,11 +1085,11 @@ app.patch('/api/user/preferences', authApi, async (req, res) => {
   try {
     const current = await prisma.user.findUnique({ where: { id: req.user.id }, select: { prefs: true, integrations: true, sessions: true } });
     const data = {};
-    if (req.body.prefs) data.prefs = { ...(current?.prefs || {}), ...req.body.prefs };
-    if (req.body.integrations) data.integrations = { ...(current?.integrations || {}), ...req.body.integrations };
+    if (req.body.prefs) data.prefs = { ...safePrefs(current?.prefs), ...req.body.prefs };
+    if (req.body.integrations) data.integrations = { ...safeIntegrations(current?.integrations), ...req.body.integrations };
     if (req.body.sessions) data.sessions = req.body.sessions;
     const user = await prisma.user.update({ where: { id: req.user.id }, data, select: { prefs: true, integrations: true, sessions: true } });
-    res.json(user);
+    res.json(maskedUserSettings(user));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -1075,6 +1119,7 @@ app.patch('/api/user/profile', authApi, async (req, res) => {
     const user = await prisma.user.update({ where: { id: req.user.id }, data, select: { id: true, email: true, name: true, role: true, avatar: true, phone: true } });
     const newToken = jwt.sign({ id: user.id, email: user.email, name: user.name, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
     setAuthCookie(res, newToken);
+    await createAudit(req.user.id, 'user.profile_updated', 'User', user.id, Object.keys(data));
     res.json(user);
   } catch { res.status(401).json({ error: 'Invalid token' }); }
 });
@@ -1082,46 +1127,69 @@ app.patch('/api/user/profile', authApi, async (req, res) => {
 app.post('/api/user/profile/photo', authApi, upload.single('photo'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    if (!req.file.mimetype || !req.file.mimetype.startsWith('image/')) {
+      unlinkUploadedUrl('/uploads/' + req.file.filename);
+      return res.status(400).json({ error: 'Profile photo must be an image' });
+    }
     const url = '/uploads/' + req.file.filename;
+    const current = await prisma.user.findUnique({ where: { id: req.user.id }, select: { avatar: true } });
     await prisma.user.update({ where: { id: req.user.id }, data: { avatar: url } });
+    unlinkUploadedUrl(current?.avatar);
+    await createAudit(req.user.id, 'user.photo_updated', 'User', req.user.id, {});
     res.json({ url });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.patch('/api/team/:id', authApi, async (req, res) => {
+app.delete('/api/user/profile/photo', authApi, async (req, res) => {
+  try {
+    const current = await prisma.user.findUnique({ where: { id: req.user.id }, select: { avatar: true } });
+    await prisma.user.update({ where: { id: req.user.id }, data: { avatar: null } });
+    unlinkUploadedUrl(current?.avatar);
+    await createAudit(req.user.id, 'user.photo_removed', 'User', req.user.id, {});
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.patch('/api/team/:id', authApi, requireRole('admin'), async (req, res) => {
   try {
     const { role, status } = req.body;
+    if (role && !allowedTeamRoles.includes(role)) return res.status(400).json({ error: 'Invalid role' });
+    const existing = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!existing) return res.status(404).json({ error: 'User not found' });
     const data = {};
     if (role) data.role = role;
-    if (status) data.status = status;
-    const user = await prisma.user.update({ where: { id: req.params.id }, data, select: { id: true, email: true, name: true, role: true, avatar: true, phone: true, createdAt: true } });
-    res.json(user);
+    if (status) data.prefs = { ...safePrefs(existing.prefs), status };
+    const user = await prisma.user.update({ where: { id: req.params.id }, data, select: { id: true, email: true, name: true, role: true, avatar: true, phone: true, prefs: true, createdAt: true } });
+    await createAudit(req.user.id, 'team.user_updated', 'User', user.id, { role, status });
+    res.json({ ...user, status: user.prefs?.status || 'active', assignedPlants: user.prefs?.assignedPlants || [] });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/team/:id/disable', authApi, async (req, res) => {
+app.post('/api/team/:id/disable', authApi, requireRole('admin'), async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!user) return res.status(404).json({ error: 'User not found' });
-    const prefs = (user.prefs || {});
+    const prefs = safePrefs(user.prefs);
     prefs.status = 'disabled';
     await prisma.user.update({ where: { id: req.params.id }, data: { prefs } });
+    await createAudit(req.user.id, 'team.user_disabled', 'User', req.params.id, {});
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/team/:id/enable', authApi, async (req, res) => {
+app.post('/api/team/:id/enable', authApi, requireRole('admin'), async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!user) return res.status(404).json({ error: 'User not found' });
-    const prefs = (user.prefs || {});
+    const prefs = safePrefs(user.prefs);
     delete prefs.status;
     await prisma.user.update({ where: { id: req.params.id }, data: { prefs } });
+    await createAudit(req.user.id, 'team.user_enabled', 'User', req.params.id, {});
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/team/:id/reset-password', authApi, async (req, res) => {
+app.post('/api/team/:id/reset-password', authApi, requireRole('admin'), async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -1129,20 +1197,22 @@ app.post('/api/team/:id/reset-password', authApi, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.delete('/api/team/:id', authApi, async (req, res) => {
+app.delete('/api/team/:id', authApi, requireRole('admin'), async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!user) return res.status(404).json({ error: 'User not found' });
     if (user.id === req.user.id) return res.status(400).json({ error: 'Cannot remove yourself' });
     await prisma.user.delete({ where: { id: req.params.id } });
+    await createAudit(req.user.id, 'team.user_deleted', 'User', req.params.id, { email: user.email });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/team/invite', authApi, async (req, res) => {
+app.post('/api/team/invite', authApi, requireRole('admin'), async (req, res) => {
   try {
     const { name, email, role, assignedPlants } = req.body;
     if (!name || !email) return res.status(400).json({ error: 'Name and email are required' });
+    if (role && !allowedTeamRoles.includes(role)) return res.status(400).json({ error: 'Invalid role' });
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) return res.status(400).json({ error: 'User with this email already exists' });
     const password = await bcrypt.hash('Welcome@123', 10);
@@ -1150,6 +1220,7 @@ app.post('/api/team/invite', authApi, async (req, res) => {
       data: { name, email, password, role: role || 'operator', prefs: { assignedPlants: assignedPlants || [], invitedBy: req.user.id, invitedAt: new Date().toISOString() } },
       select: { id: true, email: true, name: true, role: true, createdAt: true }
     });
+    await createAudit(req.user.id, 'team.user_invited', 'User', user.id, { email: user.email, role: user.role });
     res.json(user);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -1157,12 +1228,12 @@ app.post('/api/team/invite', authApi, async (req, res) => {
 app.post('/api/integrations/:key/connect', authApi, async (req, res) => {
   try {
     const { key } = req.params;
-    const allowed = ['SCADA', 'CMMS', 'ERP', 'Historian', 'MQTT'];
-    if (!allowed.includes(key)) return res.status(400).json({ error: 'Unknown integration' });
+    if (!allowedIntegrationKeys.includes(key)) return res.status(400).json({ error: 'Unknown integration' });
     const current = await prisma.user.findUnique({ where: { id: req.user.id }, select: { integrations: true } });
-    const integrations = { ...(current?.integrations || {}) };
+    const integrations = { ...safeIntegrations(current?.integrations) };
     integrations[key] = { ...(integrations[key] || {}), state: 'connected', lastSync: new Date().toISOString(), health: Math.floor(85 + Math.random() * 15), latency: Math.floor(5 + Math.random() * 150) + 'ms' };
     const user = await prisma.user.update({ where: { id: req.user.id }, data: { integrations }, select: { integrations: true } });
+    await createAudit(req.user.id, 'integration.connected', 'Integration', key, {});
     res.json(user);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -1170,10 +1241,12 @@ app.post('/api/integrations/:key/connect', authApi, async (req, res) => {
 app.post('/api/integrations/:key/disconnect', authApi, async (req, res) => {
   try {
     const { key } = req.params;
+    if (!allowedIntegrationKeys.includes(key)) return res.status(400).json({ error: 'Unknown integration' });
     const current = await prisma.user.findUnique({ where: { id: req.user.id }, select: { integrations: true } });
-    const integrations = { ...(current?.integrations || {}) };
+    const integrations = { ...safeIntegrations(current?.integrations) };
     integrations[key] = { ...(integrations[key] || {}), state: 'disconnected', lastSync: integrations[key]?.lastSync || '—' };
     const user = await prisma.user.update({ where: { id: req.user.id }, data: { integrations }, select: { integrations: true } });
+    await createAudit(req.user.id, 'integration.disconnected', 'Integration', key, {});
     res.json(user);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -1181,12 +1254,75 @@ app.post('/api/integrations/:key/disconnect', authApi, async (req, res) => {
 app.post('/api/integrations/:key/configure', authApi, async (req, res) => {
   try {
     const { key } = req.params;
+    if (!allowedIntegrationKeys.includes(key)) return res.status(400).json({ error: 'Unknown integration' });
     const { endpoint, apiKey, interval } = req.body;
     const current = await prisma.user.findUnique({ where: { id: req.user.id }, select: { integrations: true } });
-    const integrations = { ...(current?.integrations || {}) };
-    integrations[key] = { ...(integrations[key] || {}), endpoint, apiKey, interval, configured: true };
+    const integrations = { ...safeIntegrations(current?.integrations) };
+    const next = { ...(integrations[key] || {}), endpoint, interval, configured: true };
+    if (apiKey) {
+      next.apiKeyLast4 = String(apiKey).slice(-4);
+      next.apiKeyHash = crypto.createHash('sha256').update(String(apiKey)).digest('hex');
+      delete next.apiKey;
+    }
+    integrations[key] = next;
     const user = await prisma.user.update({ where: { id: req.user.id }, data: { integrations }, select: { integrations: true } });
+    await createAudit(req.user.id, 'integration.configured', 'Integration', key, { endpoint: endpoint || null, interval: interval || null, hasApiKey: !!apiKey });
     res.json(user);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/integrations/:key/test', authApi, async (req, res) => {
+  try {
+    const { key } = req.params;
+    if (!allowedIntegrationKeys.includes(key)) return res.status(400).json({ error: 'Unknown integration' });
+    const latency = Math.floor(12 + Math.random() * 180) + 'ms';
+    const current = await prisma.user.findUnique({ where: { id: req.user.id }, select: { integrations: true } });
+    const integrations = { ...safeIntegrations(current?.integrations) };
+    integrations[key] = { ...(integrations[key] || {}), lastTestedAt: new Date().toISOString(), latency, health: Math.floor(88 + Math.random() * 12) };
+    await prisma.user.update({ where: { id: req.user.id }, data: { integrations } });
+    await createAudit(req.user.id, 'integration.tested', 'Integration', key, { latency });
+    res.json({ ok: true, latency });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/user/api-keys', authApi, async (req, res) => {
+  try {
+    const name = String(req.body.name || '').trim();
+    const expiresInDays = Number(req.body.expiresInDays);
+    if (!name) return res.status(400).json({ error: 'Key name is required' });
+    const user = await prisma.user.findUnique({ where: { id: req.user.id }, select: { prefs: true } });
+    const prefs = safePrefs(user?.prefs);
+    const apiKeys = Array.isArray(prefs.apiKeys) ? [...prefs.apiKeys] : [];
+    const key = generateApiKey();
+    const expiresAt = Number.isFinite(expiresInDays) && expiresInDays > 0
+      ? new Date(Date.now() + expiresInDays * 86400000).toISOString()
+      : null;
+    apiKeys.push({
+      id: crypto.randomUUID(),
+      name,
+      keyHash: crypto.createHash('sha256').update(key).digest('hex'),
+      keyPreview: maskApiKey(key),
+      createdAt: new Date().toISOString().slice(0, 10),
+      expiresAt,
+      lastUsed: 'Never',
+    });
+    await prisma.user.update({ where: { id: req.user.id }, data: { prefs: { ...prefs, apiKeys } } });
+    await createAudit(req.user.id, 'api_key.created', 'User', req.user.id, { name, expiresAt });
+    res.status(201).json({ key, keyPreview: maskApiKey(key) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/user/api-keys/:idx', authApi, async (req, res) => {
+  try {
+    const idx = Number(req.params.idx);
+    const user = await prisma.user.findUnique({ where: { id: req.user.id }, select: { prefs: true } });
+    const prefs = safePrefs(user?.prefs);
+    const apiKeys = Array.isArray(prefs.apiKeys) ? [...prefs.apiKeys] : [];
+    if (!Number.isInteger(idx) || idx < 0 || idx >= apiKeys.length) return res.status(400).json({ error: 'Invalid API key index' });
+    const [removed] = apiKeys.splice(idx, 1);
+    await prisma.user.update({ where: { id: req.user.id }, data: { prefs: { ...prefs, apiKeys } } });
+    await createAudit(req.user.id, 'api_key.revoked', 'User', req.user.id, { name: removed?.name });
+    res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -1261,8 +1397,8 @@ app.post('/api/ai-chat', authApi, rateLimit({ windowMs: 60 * 1000, max: 20, keyP
     }
 
     const plantList = plants.map(p => `- ${p.name} (${p.location}): ${p.status}, OEE ${p.oee || 'N/A'}%, Energy ${p.energyUsage || 'N/A'} MWh, CO2 ${p.co2Tonnes || 'N/A'}t, Lat ${p.lat}, Lng ${p.lng}`).join('\n');
-    const machineSummary = machines.slice(0, 20).map(m => `- ${m.name} (${m.plant}): ${m.status}, health ${m.health}%, type ${m.type}, failure prob ${m.failureProbability || 'N/A'}, RUL ${m.remainingUsefulLife || 'N/A'}d`).join('\n');
-    const alarmSummary = alarms.slice(0, 15).map(a => `- [${a.severity}] ${a.title} on ${a.machine}: ${a.message}`).join('\n');
+    const machineSummary = machines.slice(0, 20).map(m => `- ${m.name} (${m.plant?.name || 'Unknown plant'}): ${m.status}, health ${m.health}%, type ${m.type}, failure prob ${m.failureProbability || 'N/A'}, RUL ${m.remainingUsefulLife || 'N/A'}d`).join('\n');
+    const alarmSummary = alarms.slice(0, 15).map(a => `- [${a.severity}] ${a.title} on ${a.machine?.name || 'Unknown machine'}: ${a.message}`).join('\n');
     const workOrderSummary = workOrders.slice(0, 15).map(w => `- ${w.title}: ${w.status}, ${w.priority}, assigned to ${w.assignedTo || 'unassigned'}`).join('\n');
 
     const systemPrompt = `You are YantraNklan, YantraMitra's industrial operations AI copilot with permanent real-time access to Yantra Manufacturing Technologies Pvt. Ltd.'s complete operational dataset.
