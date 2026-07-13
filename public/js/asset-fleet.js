@@ -90,7 +90,8 @@
   }
 
   function applyFilter() {
-    filtered = activeFilter === 'all' ? machines.slice() : machines.filter(machine => statusOf(machine) === activeFilter);
+    const searched = applySearch();
+    filtered = activeFilter === 'all' ? searched.slice() : searched.filter(machine => statusOf(machine) === activeFilter);
     const maxPage = Math.max(1, Math.ceil(filtered.length / pageSize));
     page = Math.min(page, maxPage);
   }
@@ -310,6 +311,31 @@
         exportCsv();
       });
     });
+    const searchInput = document.querySelector('input[type="text"]');
+    if (searchInput) {
+      let searchTimer;
+      searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+          activeFilter = 'all';
+          page = 1;
+          render();
+        }, 200);
+      });
+    }
+  }
+
+  function applySearch() {
+    const searchInput = document.querySelector('input[type="text"]');
+    const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    if (!query) return machines.slice();
+    return machines.filter(machine =>
+      (machine.name || '').toLowerCase().includes(query) ||
+      (machine.type || '').toLowerCase().includes(query) ||
+      (machine.plant?.name || '').toLowerCase().includes(query) ||
+      (machine.serial || '').toLowerCase().includes(query) ||
+      (machine.location || '').toLowerCase().includes(query)
+    );
   }
 
   document.addEventListener('DOMContentLoaded', async () => {

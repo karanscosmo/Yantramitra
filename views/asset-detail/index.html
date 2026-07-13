@@ -3,7 +3,7 @@
 <html class="light" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>YantraMitra | Asset Detail P-102</title>
+<title>YantraMitra | Asset Detail</title>
 <link rel="icon" href="/assets/icons/favicon.svg" type="image/svg+xml"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@600;700&amp;family=Geist:wght@600;700&amp;display=swap" rel="stylesheet"/>
@@ -147,9 +147,16 @@
             background: #c7c4d7;
             border-radius: 10px;
         }
+        .tab-content { animation: fadeIn 0.25s ease; }
+        .tab-content.hidden { display: none; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .sensor-card { transition: all 0.2s ease; }
+        .sensor-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(65,63,214,0.08); }
+        .doc-card { transition: all 0.2s ease; }
+        .doc-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(65,63,214,0.08); }
     </style>
 </head>
-<body class="font-body-md text-on-surface">
+<body class="font-body-md text-on-surface min-h-screen custom-scrollbar">
 <!-- Top Bar -->
 <header class="fixed top-0 w-full h-16 z-50 bg-white/70 backdrop-blur-md border-b border-outline-variant/30 flex justify-between items-center px-md shadow-[0_8px_32px_0_rgba(65,63,214,0.1)]">
 <div class="flex items-center gap-sm">
@@ -179,19 +186,19 @@
 </div>
 </header>
 <!-- Main Canvas -->
-<main class="pb-32 px-lg">
+<main class="pt-6 pb-32 px-lg">
 <!-- Hero Header -->
 <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-lg gap-md">
 <div>
 <div class="flex items-center gap-sm mb-xs">
-<span class="font-label-caps text-on-surface-variant px-2 py-1 bg-surface-container-high rounded-lg">ASSET ID: P-102</span>
-<div class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-secondary-container/20 border border-secondary/20">
+<span id="asset-id-badge" class="font-label-caps text-on-surface-variant px-2 py-1 bg-surface-container-high rounded-lg">ASSET ID: —</span>
+<div id="asset-status-badge" class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-secondary-container/20 border border-secondary/20">
 <span class="w-2 h-2 rounded-full bg-secondary pulse-teal"></span>
-<span class="font-label-caps text-secondary">OPTIMIZED</span>
+<span class="font-label-caps text-secondary">—</span>
 </div>
 </div>
-<h1 class="font-headline-lg text-headline-lg text-on-surface">Centrifugal Pump P-102</h1>
-<p class="text-on-surface-variant mt-2 max-w-2xl">Heavy-duty fluid transfer unit serving District A coolant loop. Last maintenance performed 12 days ago.</p>
+<h1 id="asset-name" class="font-headline-lg text-headline-lg text-on-surface">Loading…</h1>
+<p id="asset-description" class="text-on-surface-variant mt-2 max-w-2xl">Fetching asset data…</p>
 </div>
 <div class="flex gap-sm">
 <button class="glass-card px-md py-2.5 rounded-xl font-body-md text-on-surface flex items-center gap-xs hover:bg-white transition-colors">
@@ -205,61 +212,62 @@
 </div>
 </div>
 <!-- Tab Bar -->
-<div class="flex border-b border-outline-variant/30 mb-md">
-<button class="px-md py-4 text-primary font-bold border-b-2 border-primary flex items-center gap-xs">
+<div id="asset-tab-bar" class="flex border-b border-outline-variant/30 mb-md" role="tablist">
+<button class="asset-tab px-md py-4 text-primary font-bold border-b-2 border-primary flex items-center gap-xs transition-all" data-tab="overview" role="tab" aria-selected="true">
 <span class="material-symbols-outlined text-[20px]">analytics</span> Overview
-            </button>
-<button class="px-md py-4 text-on-surface-variant font-medium hover:text-primary transition-colors flex items-center gap-xs">
+</button>
+<button class="asset-tab px-md py-4 text-on-surface-variant font-medium hover:text-primary transition-colors flex items-center gap-xs transition-all" data-tab="sensors" role="tab" aria-selected="false">
 <span class="material-symbols-outlined text-[20px]">sensors</span> Sensors
-            </button>
-<button class="px-md py-4 text-on-surface-variant font-medium hover:text-primary transition-colors flex items-center gap-xs">
+</button>
+<button class="asset-tab px-md py-4 text-on-surface-variant font-medium hover:text-primary transition-colors flex items-center gap-xs transition-all" data-tab="history" role="tab" aria-selected="false">
 <span class="material-symbols-outlined text-[20px]">history</span> History
-            </button>
-<button class="px-md py-4 text-on-surface-variant font-medium hover:text-primary transition-colors flex items-center gap-xs">
+</button>
+<button class="asset-tab px-md py-4 text-on-surface-variant font-medium hover:text-primary transition-colors flex items-center gap-xs transition-all" data-tab="documents" role="tab" aria-selected="false">
 <span class="material-symbols-outlined text-[20px]">description</span> Documents
-            </button>
+</button>
 </div>
-<!-- Dashboard Grid -->
+<!-- Tab Content Panels -->
+<!-- Overview -->
+<div id="tab-overview" class="tab-content" role="tabpanel">
 <div class="grid grid-cols-12 gap-gutter">
 <!-- Left Column: KPI Cards -->
 <div class="col-span-12 lg:col-span-3 flex flex-col gap-sm">
 <div class="glass-card p-md rounded-2xl">
 <span class="font-label-caps text-on-surface-variant">POWER LOAD</span>
 <div class="mt-xs flex items-baseline gap-xs">
-<span class="font-kpi-numeric text-[32px] text-primary">14.2</span>
+<span class="font-kpi-numeric text-[32px] text-primary">—</span>
 <span class="font-label-caps text-on-surface-variant">KW</span>
 </div>
 <div class="mt-xs text-secondary flex items-center gap-1">
 <span class="material-symbols-outlined text-[14px]">trending_down</span>
-<span class="text-[12px] font-medium">-2.4% vs last hr</span>
+<span class="text-[12px] font-medium">—</span>
 </div>
 </div>
 <div class="glass-card p-md rounded-2xl">
 <span class="font-label-caps text-on-surface-variant">FLUID TEMP</span>
 <div class="mt-xs flex items-baseline gap-xs">
-<span class="font-kpi-numeric text-[32px] text-on-surface">62.8</span>
+<span class="font-kpi-numeric text-[32px] text-on-surface">—</span>
 <span class="font-label-caps text-on-surface-variant">°C</span>
 </div>
 <div class="mt-xs text-tertiary flex items-center gap-1">
 <span class="material-symbols-outlined text-[14px]">priority_high</span>
-<span class="text-[12px] font-medium">+5% Near Threshold</span>
+<span class="text-[12px] font-medium">—</span>
 </div>
 </div>
 <div class="glass-card p-md rounded-2xl">
 <span class="font-label-caps text-on-surface-variant">VIBRATION (RMS)</span>
 <div class="mt-xs flex items-baseline gap-xs">
-<span class="font-kpi-numeric text-[32px] text-on-surface">0.18</span>
+<span class="font-kpi-numeric text-[32px] text-on-surface">—</span>
 <span class="font-label-caps text-on-surface-variant">MM/S</span>
 </div>
 <div class="mt-xs text-secondary flex items-center gap-1">
 <span class="material-symbols-outlined text-[14px]">check_circle</span>
-<span class="text-[12px] font-medium">Optimal Range</span>
+<span class="text-[12px] font-medium">—</span>
 </div>
 </div>
 </div>
-<!-- Middle Column: Trend Charts (Multi-Series) -->
+<!-- Middle Column: Trend Charts + Stats -->
 <div class="col-span-12 lg:col-span-9 flex flex-col gap-gutter">
-<!-- Vibration Trend -->
 <div class="glass-card p-md rounded-2xl relative overflow-hidden h-64">
 <div class="flex justify-between items-start mb-md">
 <div>
@@ -278,12 +286,10 @@
 </div>
 </div>
 <div class="h-32 flex items-end gap-1 relative">
-<!-- Mock Chart Svg Area -->
-<svg class="w-full h-full" preserveaspectratio="none">
+<svg id="chart-vibration" class="w-full h-full" preserveaspectratio="none">
 <path d="M0 80 Q 50 70 100 85 T 200 60 T 300 75 T 400 50 T 500 65 T 600 40 T 700 55 T 800 30" fill="none" stroke="#413fd6" stroke-width="2"></path>
 <path d="M0 90 Q 50 85 100 95 T 200 80 T 300 88 T 400 70 T 500 82 T 600 60 T 700 72 T 800 50" fill="none" stroke="#36ddc8" stroke-dasharray="4" stroke-width="2"></path>
-<!-- Highlighted Anomaly -->
-<circle class="animate-pulse" cx="400" cy="50" fill="rgba(186, 26, 26, 0.2)" r="8" stroke="#ba1a1a" stroke-width="1"></circle>
+<circle class="animate-pulse" cx="400" cy="50" fill="rgba(186,26,26,0.2)" r="8" stroke="#ba1a1a" stroke-width="1"></circle>
 </svg>
 <div class="absolute top-0 left-[400px] -translate-x-1/2 flex flex-col items-center">
 <span class="bg-error text-white text-[10px] px-1.5 py-0.5 rounded shadow-lg">ANOMALY DETECTED</span>
@@ -291,16 +297,15 @@
 </div>
 </div>
 </div>
-<!-- Combined Pressure & Flow -->
 <div class="glass-card p-md rounded-2xl relative overflow-hidden h-64">
 <div class="flex justify-between items-start mb-md">
 <div>
-<h3 class="font-section-header text-[16px] text-on-surface">Pressure (Bar) &amp; Flow Rate (m³/h)</h3>
+<h3 class="font-section-header text-[16px] text-on-surface">Pressure &amp; Flow Rate</h3>
 <p class="text-[12px] text-on-surface-variant">Efficiency correlation mapping</p>
 </div>
 </div>
 <div class="h-32 w-full">
-<svg class="w-full h-full" preserveaspectratio="none">
+<svg id="chart-pressure-flow" class="w-full h-full" preserveaspectratio="none">
 <line stroke="#E7E9F5" stroke-width="1" x1="0" x2="100%" y1="20" y2="20"></line>
 <line stroke="#E7E9F5" stroke-width="1" x1="0" x2="100%" y1="60" y2="60"></line>
 <line stroke="#E7E9F5" stroke-width="1" x1="0" x2="100%" y1="100" y2="100"></line>
@@ -315,7 +320,6 @@
 </div>
 </div>
 </div>
-<!-- Bento Style Secondary Stats -->
 <div class="grid grid-cols-2 gap-sm">
 <div class="glass-card p-md rounded-2xl">
 <div class="flex items-center gap-xs mb-sm">
@@ -323,22 +327,46 @@
 <h4 class="font-section-header text-[14px]">Rotor Speed Stability</h4>
 </div>
 <div class="flex items-center justify-center p-md">
-<!-- Visual representation of stability -->
 <div class="w-full h-2 bg-surface-container rounded-full overflow-hidden">
 <div class="h-full bg-primary w-[98%] rounded-full shadow-[0_0_10px_#413fd6]"></div>
 </div>
-<span class="ml-sm font-kpi-numeric text-primary">98.2%</span>
+<span class="ml-sm font-kpi-numeric text-primary">—</span>
 </div>
 </div>
 <div class="glass-card p-md rounded-2xl flex items-center justify-between">
 <div>
 <h4 class="font-section-header text-[14px] text-on-surface">Digital Twin Health</h4>
-<p class="text-[12px] text-on-surface-variant">Synchronized 3 minutes ago</p>
+<p class="text-[12px] text-on-surface-variant">Synchronized —</p>
 </div>
 <div class="w-12 h-12 rounded-full border-4 border-secondary/30 flex items-center justify-center">
-<span class="font-kpi-numeric text-secondary text-[14px]">A+</span>
+<span class="font-kpi-numeric text-secondary text-[14px]">—</span>
 </div>
 </div>
+</div>
+</div>
+</div>
+</div>
+<!-- Sensors -->
+<div id="tab-sensors" class="tab-content hidden" role="tabpanel">
+<div id="sensors-content" class="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+<div class="col-span-full flex items-center justify-center py-16 text-on-surface-variant">
+<span class="material-symbols-outlined animate-spin text-2xl mr-2">sync</span> Loading sensor data…
+</div>
+</div>
+</div>
+<!-- History -->
+<div id="tab-history" class="tab-content hidden" role="tabpanel">
+<div id="history-content" class="space-y-gutter">
+<div class="flex items-center justify-center py-16 text-on-surface-variant">
+<span class="material-symbols-outlined animate-spin text-2xl mr-2">sync</span> Loading history…
+</div>
+</div>
+</div>
+<!-- Documents -->
+<div id="tab-documents" class="tab-content hidden" role="tabpanel">
+<div id="documents-content" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<div class="col-span-full flex items-center justify-center py-16 text-on-surface-variant">
+<span class="material-symbols-outlined animate-spin text-2xl mr-2">sync</span> Loading documents…
 </div>
 </div>
 </div>
