@@ -178,7 +178,7 @@
         .wo-card:hover { transform: translateY(-1px); box-shadow: 0 8px 32px rgba(65,63,214,0.1); }
     </style>
 </head>
-<body class="font-body-md text-on-surface">
+<body class="font-body-md text-on-surface min-h-screen custom-scrollbar">
 <main class="flex flex-col min-h-screen pl-md pt-6">
 <div class="flex items-center justify-between mb-md">
 <div>
@@ -291,12 +291,46 @@
 </div>
 </div>
 </main>
-<div class="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 flex justify-center pointer-events-none">
-<div class="yantrankln-bar glass-card rounded-full px-4 py-2 flex items-center gap-3 w-full max-w-2xl pointer-events-auto shadow-xl" id="ym-yantrankln-bar">
-<img src="/assets/images/yantranklan-avatar-ai.jpg" alt="Nklan" class="w-8 h-8 rounded-full border-2 border-secondary/40 shrink-0"/>
-<input class="flex-1 bg-transparent border-none outline-none text-sm" id="ym-yantrankln-input" placeholder="Ask YantraNklan to create, update, or find work orders..." type="text"/>
-<button class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white shrink-0 hover:bg-primary/90 transition-all" id="ym-yantrankln-send">
-<span class="material-symbols-outlined text-sm">bolt</span>
+<div class="fixed bottom-0 left-0 right-0 z-50 pointer-events-none" id="ym-work-chat">
+<div class="w-full max-w-3xl mx-auto pointer-events-auto">
+<div class="yantrankln-bar glass-card rounded-2xl shadow-[0_16px_48px_rgba(65,63,214,0.2)] border border-white/40 mb-4 overflow-hidden hidden" id="ym-chat-panel">
+<div class="flex items-center gap-2 px-4 py-3 border-b border-outline-variant/20 bg-primary/5">
+<div class="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary text-[18px]">auto_awesome</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-bold text-on-surface truncate" style="font-size:14px">YantraNklan</p>
+<p class="text-xs text-on-surface-variant truncate">AI Operations Agent — Work Orders Context</p>
+</div>
+<button class="p-2 rounded-full hover:bg-primary/10 transition-colors material-symbols-outlined text-on-surface-variant" id="ym-chat-close" title="Close chat">close</button>
+</div>
+<div class="flex-1 overflow-y-auto chat-scroll p-4 space-y-4" id="ym-chat-messages" style="max-height: 400px"></div>
+<div class="px-4 py-3 border-t border-outline-variant/20 bg-white/50">
+<div class="flex gap-2 mb-2 overflow-x-auto no-scrollbar" id="ym-suggested-pills"></div>
+<div class="glass-panel rounded-2xl p-1.5 flex items-end gap-1.5 shadow-lg border-primary/10">
+<input type="file" id="ym-chat-file-input" class="hidden" multiple accept=".pdf,.csv,.xlsx,.xls,.txt,.log,.md,.jpg,.jpeg,.png,.svg"/>
+<label class="material-symbols-outlined text-on-surface-variant p-2 hover:bg-surface-container rounded-lg transition-colors cursor-pointer shrink-0" id="ym-chat-attach-btn" title="Attach file" style="font-size:24px">attach_file</label>
+<div class="flex-1 flex flex-col min-w-0">
+<div id="ym-chat-file-preview" class="hidden flex gap-1.5 flex-wrap mb-1 px-1"></div>
+<input class="w-full bg-transparent border-none outline-none text-sm px-2" id="ym-chat-input" placeholder="Ask YantraNklan about work orders... (e.g. 'Create work order for pump P-102')" type="text" style="font-size:16px;padding-top:18px;padding-bottom:18px"/>
+</div>
+<div class="flex items-center gap-1 shrink-0 pr-1">
+<button class="material-symbols-outlined text-on-surface-variant p-2 hover:bg-surface-container rounded-lg transition-colors relative" id="ym-chat-mic-btn" title="Voice input" style="font-size:26px">mic</button>
+<button class="bg-primary-container text-on-primary-container p-3 rounded-xl hover:scale-105 active:scale-95 transition-all shimmer-btn disabled:opacity-40 disabled:cursor-not-allowed" id="ym-chat-send-btn" disabled>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;font-size:22px">send</span>
+</button>
+<button class="hidden bg-tertiary text-white p-3 rounded-xl hover:scale-105 active:scale-95 transition-all" id="ym-chat-cancel-btn">
+<span class="material-symbols-outlined" style="font-size:22px">stop</span>
+</button>
+</div>
+</div>
+<p class="text-center text-xs text-on-surface-variant/50 mt-1.5 font-medium">YantraMitra AI · Responses use live work order data</p>
+</div>
+</div>
+<div class="flex justify-center">
+<button class="yantrankln-bar glass-card rounded-full px-4 py-2 flex items-center gap-2 shadow-xl border border-white/40 hover:bg-white/50 transition-all" id="ym-chat-toggle">
+<span class="material-symbols-outlined text-primary animate-pulse">auto_awesome</span>
+<span class="font-bold text-on-surface text-sm">Ask YantraNklan</span>
 </button>
 </div>
 </div>
@@ -406,5 +440,6 @@
 
 <div id="ym-toast-container" class="fixed top-24 left-1/2 -translate-x-1/2 z-[120] flex flex-col items-center gap-2 pointer-events-none"></div>
 <script src="/js/work-orders.js" defer></script>
+<script src="/js/work-orders-chat.js" defer></script>
 <script src="/js/app-shell.js" defer></script>
 </body></html>
