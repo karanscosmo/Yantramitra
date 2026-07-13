@@ -311,7 +311,7 @@
 
         function togglePanel() {
             const panel = document.getElementById('inspector-panel');
-            panel.classList.toggle('translate-x-[calc(100%+100px)]');
+            panel.classList.toggle('translate-x-[calc(100%+var(--sidebar-width))]');
         }
 
         // Add a subtle drift effect to background blobs
