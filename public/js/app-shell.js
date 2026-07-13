@@ -102,11 +102,14 @@
       .ym-nav-rail .ym-nav-section-label {
         display:block;
         padding:0 2px 4px 2px;
-        font:600 7px/1 Inter,system-ui,sans-serif;
-        letter-spacing:.14em;
+        font:600 6px/1 Inter,system-ui,sans-serif;
+        letter-spacing:0;
         text-transform:uppercase;
         color:#9CA3AF;
         text-align:center;
+        overflow:hidden;
+        white-space:nowrap;
+        text-overflow:ellipsis;
       }
       .ym-nav-rail .ym-nav-link {
         position:relative;
