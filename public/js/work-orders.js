@@ -494,7 +494,14 @@
       }
       if (f.search) {
         const q = f.search.toLowerCase();
-        if (!o.title?.toLowerCase().includes(q) && !(o.assignedTo || '').toLowerCase().includes(q) && !(o.machine?.name || '').toLowerCase().includes(q)) return false;
+        const machineObj = machines.find(m => m.id === o.machineId);
+        const plant = machineObj?.plant?.name || '';
+        const matchesId = String(o.id).toLowerCase().includes(q);
+        const matchesAsset = (o.machine?.name || '').toLowerCase().includes(q);
+        const matchesEngineer = (o.assignedTo || '').toLowerCase().includes(q);
+        const matchesPlant = plant.toLowerCase().includes(q);
+        const matchesIssue = (o.title || '').toLowerCase().includes(q);
+        if (!matchesId && !matchesAsset && !matchesEngineer && !matchesPlant && !matchesIssue) return false;
       }
       return true;
     });
@@ -761,14 +768,173 @@
     input.disabled = true;
     btn.disabled = true;
     btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span>';
-    try {
-      const res = await post('/api/ai-chat', { message: command, context: 'work_orders' });
-      const reply = res.reply || res.message || 'YantraNklan processed your request.';
-      toast('YantraNklan: ' + reply.substring(0, 120) + (reply.length > 120 ? '...' : ''));
-      await loadOrders();
-    } catch (e) {
-      toast('YantraNklan: Unable to process command right now.', 'error');
+
+    const q = command.toLowerCase().trim();
+    let handled = false;
+
+    /* Clear / reset filters */
+    if (!handled && /^(clear|reset)\s*(all\s*)?filters?$/.test(q)) {
+      window.history.replaceState(null, '', window.location.pathname);
+      document.getElementById('ym-search-input').value = '';
+      applyFilters();
+      toast('YantraNklan: All filters cleared');
+      handled = true;
     }
+
+    /* Show overdue */
+    if (!handled && (q.includes('overdue') || q.includes('over due') || q.includes('past due'))) {
+      window.history.replaceState(null, '', window.location.pathname);
+      document.getElementById('ym-search-input').value = '';
+      applyFilters();
+      filteredOrders = orders.filter(o => o.status !== 'completed' && o.dueDate && new Date(o.dueDate) < new Date());
+      renderOrders();
+      toast('YantraNklan: Showing ' + filteredOrders.length + ' overdue work orders');
+      handled = true;
+    }
+
+    /* Show critical / high priority */
+    if (!handled) {
+      const priorityMatches = { critical: ['critical'], high: ['high'], urgent: ['critical', 'high'] };
+      for (const [keyword, levels] of Object.entries(priorityMatches)) {
+        if (q.includes(keyword) && /show|filter|find/.test(q) || q === keyword) {
+          const nf = { status: [], priority: levels, location: [], search: '' };
+          setFiltersToURL(nf);
+          document.getElementById('ym-search-input').value = '';
+          applyFilters();
+          toast('YantraNklan: Showing ' + filteredOrders.length + ' ' + keyword + ' priority work orders');
+          handled = true;
+          break;
+        }
+      }
+    }
+
+    /* Filter by location / plant */
+    if (!handled) {
+      const allPlants = [...new Set(machines.map(m => m.plant?.name).filter(Boolean))];
+      const plantKeywords = ['filter', 'show', 'find', 'in', 'at'];
+      for (const plant of allPlants) {
+        const pl = plant.toLowerCase();
+        if (plantKeywords.some(kw => q.includes(kw + ' ' + pl)) || q.includes(pl + ' plant') || q === pl) {
+          const nf = { status: [], priority: [], location: [plant], search: '' };
+          setFiltersToURL(nf);
+          document.getElementById('ym-search-input').value = '';
+          applyFilters();
+          toast('YantraNklan: Showing work orders for ' + plant);
+          handled = true;
+          break;
+        }
+      }
+    }
+
+    /* Show engineer's work orders / filter by name */
+    if (!handled) {
+      const engineerMatch = q.match(/(?:show|filter|find)\s+(\w[\w\s]+?)(?:'?s\s+)?(?:work\s+)?orders/);
+      if (engineerMatch) {
+        const name = engineerMatch[1].trim();
+        if (name.length > 1 && orders.some(o => (o.assignedTo || '').toLowerCase().includes(name.toLowerCase()))) {
+          const nf = { status: [], priority: [], location: [], search: name };
+          setFiltersToURL(nf);
+          document.getElementById('ym-search-input').value = name;
+          applyFilters();
+          toast('YantraNklan: Showing work orders matching "' + name + '"');
+          handled = true;
+        }
+      }
+    }
+
+    /* Show completed today / done today */
+    if (!handled && /completed|done|finished/.test(q) && q.includes('today')) {
+      window.history.replaceState(null, '', window.location.pathname);
+      document.getElementById('ym-search-input').value = '';
+      applyFilters();
+      const todayStr = new Date().toDateString();
+      filteredOrders = orders.filter(o => o.status === 'completed' && o.updatedAt && new Date(o.updatedAt).toDateString() === todayStr);
+      renderOrders();
+      toast('YantraNklan: Showing ' + filteredOrders.length + ' work orders completed today');
+      handled = true;
+    }
+
+    /* Show my work orders */
+    if (!handled && (q.includes('my work') || q.includes('my orders') || q.includes('assigned to me'))) {
+      const nf = { status: [], priority: [], location: [], search: currentUser?.name || currentUser?.email || '' };
+      setFiltersToURL(nf);
+      document.getElementById('ym-search-input').value = nf.search;
+      applyFilters();
+      toast('YantraNklan: Showing work orders assigned to you');
+      handled = true;
+    }
+
+    /* Open work order by ID */
+    if (!handled) {
+      const idMatch = q.match(/(?:open|show|find)\s+(?:work\s+)?order\s*[#:;]?\s*([a-z0-9-]{6,})/);
+      if (idMatch) {
+        const orderId = idMatch[1];
+        const order = orders.find(o => String(o.id).toLowerCase().includes(orderId.toLowerCase()));
+        if (order) {
+          openDrawer(order);
+          toast('YantraNklan: Opened work order #' + String(order.id).substring(0, 8));
+        } else {
+          toast('YantraNklan: Work order not found', 'error');
+        }
+        handled = true;
+      }
+    }
+
+    /* Create new work order */
+    if (!handled && (q.includes('create work order') || q.includes('new work order') || q === 'create order' || q === 'new order')) {
+      createOrderModal();
+      toast('YantraNklan: Opening create work order form');
+      handled = true;
+    }
+
+    /* Assign / reassign current order */
+    if (!handled) {
+      const assignMatch = q.match(/(?:assign|reassign|give)\s+(?:to\s+)?(\w[\w\s]+)/);
+      if (assignMatch && selectedOrder) {
+        const name = assignMatch[1].trim();
+        try {
+          await patch('/api/work-orders/' + selectedOrder.id, { assignedTo: name });
+          toast('YantraNklan: Assigned to ' + name);
+          selectedOrder.assignedTo = name;
+          openDrawer(selectedOrder);
+          await loadOrders();
+        } catch (e) {
+          toast('YantraNklan: Failed to assign', 'error');
+        }
+        handled = true;
+      }
+    }
+
+    /* Update priority of current order */
+    if (!handled && selectedOrder) {
+      const prioMatch = q.match(/(?:set|change|update)\s+(?:to\s+)?(critical|high|medium|low)\s+(?:priority\s+)?/);
+      if (prioMatch) {
+        const priority = prioMatch[1];
+        try {
+          await patch('/api/work-orders/' + selectedOrder.id, { priority });
+          toast('YantraNklan: Priority set to ' + priority);
+          selectedOrder.priority = priority;
+          openDrawer(selectedOrder);
+          await loadOrders();
+        } catch (e) {
+          toast('YantraNklan: Failed to update priority', 'error');
+        }
+        handled = true;
+      }
+    }
+
+    /* Default: fall back to API */
+    if (!handled) {
+      try {
+        const res = await post('/api/ai-chat', { message: command, context: 'work_orders' });
+        const reply = res.reply || res.message || 'YantraNklan processed your request.';
+        toast('YantraNklan: ' + reply.substring(0, 120) + (reply.length > 120 ? '...' : ''));
+        await loadOrders();
+      } catch (e) {
+        toast('YantraNklan: Unable to process command right now.', 'error');
+      }
+    }
+
     input.disabled = false;
     btn.disabled = false;
     btn.innerHTML = '<span class="material-symbols-outlined text-sm">bolt</span>';

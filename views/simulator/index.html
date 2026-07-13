@@ -88,15 +88,18 @@ tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-primary-
 <div><div class="flex justify-between items-center"><label class="text-[11px] text-on-surface font-medium">Maintenance Delay</label><span class="font-kpi-numeric text-primary font-bold text-xs" id="slider-delay">12h</span></div><input type="range" min="0" max="72" value="12" data-slider="delay"/></div>
 <div><div class="flex justify-between items-center"><label class="text-[11px] text-on-surface font-medium">Operator Count</label><span class="font-kpi-numeric text-primary font-bold text-xs" id="slider-operators">12</span></div><input type="range" min="2" max="30" value="12" data-slider="operators"/></div>
 </div>
-<div class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-primary">thermostat</span>Environment</div>
-<div class="pl-2 space-y-2">
-<div><div class="flex justify-between items-center"><label class="text-[11px] text-on-surface font-medium">Raw Material Quality</label><span class="font-kpi-numeric text-primary font-bold text-xs" id="slider-material">85%</span></div><input type="range" min="0" max="100" value="85" data-slider="material"/></div>
-<div><div class="flex justify-between items-center"><label class="text-[11px] text-on-surface font-medium">Ambient Temperature</label><span class="font-kpi-numeric text-primary font-bold text-xs" id="slider-temp">32°C</span></div><input type="range" min="10" max="50" value="32" data-slider="temp"/></div>
-</div>
-</div>
+  </div>
 <div class="px-3 py-2 border-t border-outline-variant/10">
-<div class="flex items-center justify-between mb-1.5"><span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Projected KPIs</span><span class="text-[9px] text-on-surface-variant" id="ym-kpi-iteration">iter #0</span></div>
-<div class="grid grid-cols-2 gap-1.5" id="ym-charts-grid"></div>
+    <div class="flex items-center justify-between mb-1.5"><span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Projected KPIs</span><span class="text-[9px] text-on-surface-variant" id="ym-kpi-iteration">iter #0</span></div>
+    <div class="grid grid-cols-2 gap-1.5" id="ym-charts-grid"></div>
+    <div class="mt-2 pt-2 border-t border-outline-variant/10">
+      <div class="flex items-center gap-1 mb-1"><span class="material-symbols-outlined text-[14px] text-primary">psychology</span><span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">AI Prediction</span></div>
+      <div id="ym-ai-prediction" class="text-[10px] text-on-surface-variant leading-relaxed min-h-[20px]">Adjust parameters to see predictions</div>
+    </div>
+    <div class="mt-2 pt-2 border-t border-outline-variant/10">
+      <div class="flex items-center gap-1 mb-1"><span class="material-symbols-outlined text-[14px] text-primary">timeline</span><span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Event Log</span></div>
+      <div id="ym-event-log" class="text-[9px] text-on-surface-variant max-h-[60px] overflow-y-auto custom-scrollbar space-y-0.5"></div>
+    </div>
 </div>
 </aside>
 </div>

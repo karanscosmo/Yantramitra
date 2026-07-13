@@ -9,15 +9,13 @@
     load: { min: 0, max: 100, default: 65, unit: '%', label: 'Machine Load' },
     delay: { min: 0, max: 72, default: 12, unit: 'h', label: 'Maintenance Delay' },
     operators: { min: 2, max: 30, default: 12, unit: '', label: 'Operator Count' },
-    material: { min: 0, max: 100, default: 85, unit: '%', label: 'Raw Material Quality' },
-    temp: { min: 10, max: 50, default: 32, unit: '°C', label: 'Ambient Temperature' },
   };
 
   const presets = {
-    balanced: { label: 'Balanced', speed: 85, load: 65, delay: 12, operators: 12, material: 85, temp: 32 },
-    'energy-saver': { label: 'Energy Saver', speed: 60, load: 40, delay: 8, operators: 8, material: 80, temp: 28 },
-    'max-output': { label: 'Max Output', speed: 100, load: 90, delay: 4, operators: 20, material: 95, temp: 38 },
-    'maintenance': { label: 'Maintenance', speed: 40, load: 50, delay: 48, operators: 6, material: 70, temp: 30 },
+    balanced: { label: 'Balanced', speed: 85, load: 65, delay: 12, operators: 12 },
+    'energy-saver': { label: 'Energy Saver', speed: 60, load: 40, delay: 8, operators: 8 },
+    'max-output': { label: 'Max Output', speed: 100, load: 90, delay: 4, operators: 20 },
+    'maintenance': { label: 'Maintenance', speed: 40, load: 50, delay: 48, operators: 6 },
   };
   let activePreset = 'balanced';
 
@@ -58,8 +56,9 @@
   }
 
   function computeKPIs(vals) {
-    const s = vals.speed, l = vals.load, d = vals.delay;
-    const o = vals.operators, m = vals.material, t = vals.temp;
+    const s = vals.speed, l = vals.load, d = vals.delay, o = vals.operators;
+    const m = Math.min(95, Math.max(30, 50 + o * 2.5 + (100 - s) * 0.15));
+    const t = Math.min(50, Math.max(10, 22 + s * 0.1 + l * 0.08 + (d > 36 ? 5 : 0)));
     const speedFactor = s / 100;
     const loadFactor = l / 100;
     const matFactor = m / 100;
@@ -117,11 +116,14 @@
   function updateSceneEffects(vals) {
     if (!scene || !scene.scene) return;
     const threeScene = scene.scene;
+    const mat = Math.min(95, Math.max(30, 50 + vals.operators * 2.5 + (100 - vals.speed) * 0.15));
+    const tmp = Math.min(50, Math.max(10, 22 + vals.speed * 0.1 + vals.load * 0.08 + (vals.delay > 36 ? 5 : 0)));
+    const faultActive = vals.delay > 48 || mat < 30;
     threeScene._simState = {
       speed: vals.speed, load: vals.load, delay: vals.delay,
-      operators: vals.operators, material: vals.material, temp: vals.temp,
+      operators: vals.operators, material: mat, temp: tmp,
       running: simRunning,
-      faultActive: vals.delay > 48 || vals.material < 30
+      faultActive
     };
     threeScene.children.forEach(child => {
       if (child.isPointLight) {
@@ -131,15 +133,14 @@
     const machineGroup = scene.group;
     if (!machineGroup) return;
     machineGroup.children.forEach(mg => {
-      const faultActive = vals.delay > 48 || vals.material < 30;
       const loadStress = vals.load / 100;
-      const tempStress = Math.max(0, (vals.temp - 25) / 25);
+      const tempStress = Math.max(0, (tmp - 25) / 25);
       const stress = Math.min(1, loadStress * 0.5 + tempStress * 0.5);
       mg.traverse(mesh => {
         if (!mesh.isMesh || !mesh.material) return;
         if (mesh.userData.isBelt || mesh.userData.isIndicator || mesh.userData.isSensor) return;
         if (mesh.userData.isBeacon) {
-          const warn = vals.temp > 38;
+          const warn = tmp > 38;
           let beaconColor, beaconIntensity;
           if (faultActive) { beaconColor = 0xba1a1a; beaconIntensity = 1.5; }
           else if (warn) { beaconColor = 0xffba4b; beaconIntensity = 1.2; }
@@ -159,7 +160,7 @@
           mesh.material.color.copy(color);
           if (mesh.material.emissive) {
             mesh.material.emissive.setHex(0xffba4b);
-            mesh.material.emissiveIntensity = stress * 0.2 * (Math.max(0, vals.temp - 20) / 30);
+            mesh.material.emissiveIntensity = stress * 0.2 * (Math.max(0, tmp - 20) / 30);
           }
         } else {
           mesh.material.color.setHex(baseColor);
@@ -233,10 +234,47 @@
     return '-₹' + Math.abs(val).toLocaleString();
   }
 
+  function renderAIPrediction(kpis) {
+    const el = document.getElementById('ym-ai-prediction');
+    if (!el) return;
+    const parts = [];
+    if (kpis.oee < 60) parts.push('OEE is critically low. Increase operators or reduce speed to improve availability.');
+    else if (kpis.oee < 75) parts.push('OEE below target. Consider adjusting load or reducing maintenance delays.');
+    else parts.push('OEE is healthy. Current params maintain good efficiency.');
+    if (kpis.downtime > 40) parts.push('High downtime - reduce maintenance delay or increase operator count.');
+    else if (kpis.downtime > 20) parts.push('Moderate downtime. Schedule preventive maintenance soon.');
+    if (kpis.failureRate > 30) parts.push('Failure risk elevated. Slow production speed or increase quality checks.');
+    if (kpis.qualityLoss > 20) parts.push('Quality loss is high. More operators would improve defect screening.');
+    if (kpis.profit < 0) parts.push('Operation is running at a loss. Reduce energy costs or boost throughput.');
+    el.textContent = parts.slice(0, 2).join(' ');
+  }
+
+  const eventLog = [];
+
+  function pushEvent(vals, kpis) {
+    const ts = new Date();
+    const label = simRunning ? 'Iteration #' + simIteration : 'Parameter update';
+    const summary = 'OEE:' + kpis.oee + '%  Units:' + kpis.throughput + '  Down:' + kpis.downtime + 'min';
+    eventLog.unshift({ time: ts.toLocaleTimeString(), label, summary });
+    if (eventLog.length > 20) eventLog.pop();
+  }
+
+  function renderEventLog() {
+    const el = document.getElementById('ym-event-log');
+    if (!el) return;
+    if (!eventLog.length) { el.innerHTML = '<div class="text-on-surface-variant/50">No events yet</div>'; return; }
+    el.innerHTML = eventLog.slice(0, 10).map(e =>
+      '<div class="flex items-center gap-1"><span class="text-on-surface-variant/50 shrink-0">' + e.time + '</span><span class="text-on-surface-variant font-medium">' + e.label + '</span><span class="text-on-surface-variant/60 truncate">' + e.summary + '</span></div>'
+    ).join('');
+  }
+
   function renderAll() {
     const kpis = getKPIs();
     document.getElementById('ym-kpi-iteration').textContent = 'iteration #' + simIteration;
     renderKPIs(kpis);
+    renderAIPrediction(kpis);
+    pushEvent(getSliderValues(), kpis);
+    renderEventLog();
   }
 
   function runSimulation() {
@@ -252,9 +290,9 @@
       document.getElementById('ym-iteration').textContent = '#' + simIteration;
       const vals = getSliderValues();
       const kpis = computeKPIs(vals);
-      renderKPIs(kpis);
       kpiHistory.push({ iteration: simIteration, time: new Date().toISOString(), ...vals, ...kpis });
       updateSceneEffects(vals);
+      renderAll();
       if (baselineKPIs) renderCompareButton();
       if (simIteration >= maxIter) {
         clearInterval(simTimer);
