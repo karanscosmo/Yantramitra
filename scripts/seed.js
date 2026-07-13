@@ -1,4 +1,4 @@
-const prisma = require('./lib/prisma');
+const prisma = require('./services/prisma');
 const bcrypt = require('bcryptjs');
 
 const people = [

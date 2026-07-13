@@ -101,7 +101,7 @@
     const openOrders = orders.filter(o => o.assignedTo === tech.name && o.status !== 'completed');
     openModal('Technician Profile', `
       <div class="flex items-center gap-md mb-md">
-        <img src="/images/ym-operator-avatar.jpg" class="w-20 h-20 rounded-full border-2 border-primary/20 object-cover"/>
+        <img src="/assets/images/ym-operator-avatar.jpg" class="w-20 h-20 rounded-full border-2 border-primary/20 object-cover"/>
         <div>
           <p class="font-bold text-lg text-on-surface">${tech.name}</p>
           <p class="text-sm text-on-surface-variant">${tech.role || 'Lead Technician'}</p>

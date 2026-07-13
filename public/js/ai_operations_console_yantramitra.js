@@ -60,7 +60,7 @@
       const bubble = document.createElement('div');
       bubble.className = 'max-w-[90%] flex gap-3';
       const avatar = document.createElement('img');
-      avatar.src = '/images/yantranklan-avatar-ai.jpg';
+      avatar.src = '/assets/images/yantranklan-avatar-ai.jpg';
       avatar.className = 'w-14 h-14 rounded-full mt-0.5 shrink-0 border-2 border-secondary/30 self-start';
       const contentDiv = document.createElement('div');
       contentDiv.className = 'glass-panel rounded-2xl rounded-tl-none px-5 py-3 shadow-sm border-l-4 border-l-secondary flex-1 min-w-0';
@@ -110,7 +110,7 @@
     const wrapper = document.createElement('div');
     wrapper.className = 'flex justify-start mb-5 msg-enter';
     wrapper.id = 'typing-indicator';
-    wrapper.innerHTML = '<div class="flex gap-3"><img src="/images/yantranklan-avatar-ai.jpg" class="w-14 h-14 rounded-full mt-0.5 shrink-0 border-2 border-secondary/30 self-start"/><div class="glass-panel rounded-2xl rounded-tl-none px-5 py-4 shadow-sm border-l-4 border-l-secondary"><div class="flex gap-2 items-center"><span class="w-3 h-3 bg-secondary rounded-full animate-bounce-dot" style="animation-delay:0s"></span><span class="w-3 h-3 bg-secondary rounded-full animate-bounce-dot" style="animation-delay:0.16s"></span><span class="w-3 h-3 bg-secondary rounded-full animate-bounce-dot" style="animation-delay:0.32s"></span></div></div></div>';
+    wrapper.innerHTML = '<div class="flex gap-3"><img src="/assets/images/yantranklan-avatar-ai.jpg" class="w-14 h-14 rounded-full mt-0.5 shrink-0 border-2 border-secondary/30 self-start"/><div class="glass-panel rounded-2xl rounded-tl-none px-5 py-4 shadow-sm border-l-4 border-l-secondary"><div class="flex gap-2 items-center"><span class="w-3 h-3 bg-secondary rounded-full animate-bounce-dot" style="animation-delay:0s"></span><span class="w-3 h-3 bg-secondary rounded-full animate-bounce-dot" style="animation-delay:0.16s"></span><span class="w-3 h-3 bg-secondary rounded-full animate-bounce-dot" style="animation-delay:0.32s"></span></div></div></div>';
     container.appendChild(wrapper);
     container.scrollTop = container.scrollHeight;
   }

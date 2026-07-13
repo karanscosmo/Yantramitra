@@ -7,8 +7,8 @@ window.YM_PLANTS = [
     domain: 'Automotive Components',
     lat: 18.5204,
     lng: 73.8567,
-    image: '/images/home-pune-automotive.jpg',
-    icon: '/images/plant-pune-auto.svg',
+    image: '/assets/images/home-pune-automotive.jpg',
+    icon: '/assets/images/plant-pune-auto.svg',
   },
   {
     slug: 'ahmedabad-process',
@@ -18,8 +18,8 @@ window.YM_PLANTS = [
     domain: 'Textile & Chemical Processing',
     lat: 23.0225,
     lng: 72.5714,
-    image: '/images/home-ahmedabad-process.jpg',
-    icon: '/images/plant-ahmedabad-textile.svg',
+    image: '/assets/images/home-ahmedabad-process.jpg',
+    icon: '/assets/images/plant-ahmedabad-textile.svg',
   },
   {
     slug: 'chennai-electronics',
@@ -29,8 +29,8 @@ window.YM_PLANTS = [
     domain: 'Electronics Assembly',
     lat: 13.0827,
     lng: 80.2707,
-    image: '/images/home-chennai-electronics.jpg',
-    icon: '/images/plant-chennai-electronics.svg',
+    image: '/assets/images/home-chennai-electronics.jpg',
+    icon: '/assets/images/plant-chennai-electronics.svg',
   },
   {
     slug: 'bengaluru-precision',
@@ -40,8 +40,8 @@ window.YM_PLANTS = [
     domain: 'Precision Engineering',
     lat: 12.9716,
     lng: 77.5946,
-    image: '/images/home-bengaluru-precision.jpg',
-    icon: '/images/plant-bengaluru-precision.svg',
+    image: '/assets/images/home-bengaluru-precision.jpg',
+    icon: '/assets/images/plant-bengaluru-precision.svg',
   },
   {
     slug: 'nagpur-logistics',
@@ -51,8 +51,8 @@ window.YM_PLANTS = [
     domain: 'Warehouse & Logistics',
     lat: 21.1458,
     lng: 79.0882,
-    image: '/images/home-nagpur-logistics.jpg',
-    icon: '/images/plant-nagpur-logistics.svg',
+    image: '/assets/images/home-nagpur-logistics.jpg',
+    icon: '/assets/images/plant-nagpur-logistics.svg',
   },
 ];
 
@@ -74,7 +74,7 @@ window.getPlantCoords = function(apiPlant) {
 
 window.getPlantImage = function(apiPlant) {
   const rec = window.findPlantRecord(apiPlant);
-  return rec ? rec.image : (apiPlant.image || '/images/home-pune-automotive.jpg');
+  return rec ? rec.image : (apiPlant.image || '/assets/images/home-pune-automotive.jpg');
 };
 
 window.getConnectionPaths = function() {

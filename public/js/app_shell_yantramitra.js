@@ -1,4 +1,17 @@
 (function() {
+  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    try {
+      const si = document.createElement('script');
+      si.src = '/_vercel/speed-insights/script.js';
+      si.defer = true;
+      document.head.appendChild(si);
+      const va = document.createElement('script');
+      va.src = '/_vercel/analytics/script.js';
+      va.defer = true;
+      document.head.appendChild(va);
+    } catch (e) { console.debug('Vercel insights injection failed (non-critical):', e); }
+  }
+
   const navItems = [
     { path: '/dashboard', icon: 'dashboard', label: 'Dashboard', kbd: '1', section: 'ops' },
     { path: '/map', icon: 'public', label: 'Global Map', kbd: '2', section: 'ops' },
@@ -641,17 +654,17 @@
     const header = document.createElement('header');
     header.className = 'ym-standard-topbar';
     header.innerHTML = `
-      <img class="ym-logo" src="/logo.svg" alt="YantraMitra">
+      <img class="ym-logo" src="/assets/logos/logo.svg" alt="YantraMitra">
       <div class="ym-standard-title">${pageTitle()}</div>
       <label class="ym-standard-search">
         <span class="material-symbols-outlined">search</span>
         <input type="search" placeholder="Search operations, assets, agents... (⌘K)" aria-label="Search operations">
       </label>
       <div class="ym-standard-actions">
-        <a class="ym-ask-yantranklan" href="/ai-console"><img src="/images/yantranklan-avatar-ai.jpg" alt="YantraNklan"><span>Ask YantraNklan</span></a>
+        <a class="ym-ask-yantranklan" href="/ai-console"><img src="/assets/images/yantranklan-avatar-ai.jpg" alt="YantraNklan"><span>Ask YantraNklan</span></a>
         <button type="button" class="ym-standard-icon" data-ym-notifications aria-label="Notifications"><span class="material-symbols-outlined">notifications</span></button>
         <button type="button" class="ym-standard-icon" data-ym-factory aria-label="Plant map"><span class="material-symbols-outlined">factory</span></button>
-        <img class="ym-standard-avatar" src="/images/ym-operator-avatar.jpg" alt="Profile">
+        <img class="ym-standard-avatar" src="/assets/images/ym-operator-avatar.jpg" alt="Profile">
       </div>`;
     document.body.prepend(header);
     header.querySelector('.ym-logo').addEventListener('click', () => { window.location.href = '/dashboard'; });
@@ -712,7 +725,7 @@
   }
 
   function wireLogoAndBackNavigation() {
-    const logo = document.querySelector('img[src="/logo.svg"]');
+    const logo = document.querySelector('img[src="/assets/logos/logo.svg"]');
     const isAuthPath = authPaths.includes(currentPath) || currentPath === '/onboarding';
 
     if (logo) {

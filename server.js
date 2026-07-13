@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
-const prisma = require('./lib/prisma');
+const prisma = require('./services/prisma');
 
 const isVercel = !!process.env.VERCEL;
 const uploadsDir = isVercel ? '/tmp/uploads' : path.join(__dirname, 'uploads');
@@ -210,27 +210,27 @@ app.get('/api/ready', async (req, res) => {
 const publicFacilities = {
   'pune-automotive': {
     title: 'Pune Automotive Components',
-    image: '/images/home-pune-automotive.jpg',
+    image: '/assets/images/home-pune-automotive.jpg',
     body: '<p><strong>Company unit:</strong> Automotive components and powertrain machining.</p><p>The Pune facility represents robotic welding, CNC cells, AGV material movement, line-level telemetry, and high-throughput component production. YantraMitra tracks machine health, OEE, alarms, and maintenance readiness for this plant.</p><p><strong>What the product demonstrates:</strong> asset health, digital-twin drilldown, predictive maintenance planning, and work-order execution.</p>'
   },
   'ahmedabad-process': {
     title: 'Ahmedabad Textile & Chemical Process Lines',
-    image: '/images/home-ahmedabad-process.jpg',
+    image: '/assets/images/home-ahmedabad-process.jpg',
     body: '<p><strong>Company unit:</strong> Textile finishing, dyeing, and controlled chemical process operations.</p><p>The Ahmedabad facility focuses on process tanks, fabric rollers, quality labs, dosing systems, and environmental process monitoring. It shows how YantraMitra handles continuous process context instead of only discrete manufacturing.</p><p><strong>What the product demonstrates:</strong> process visibility, quality risk, alarm triage, and plant-aware agent explanations.</p>'
   },
   'chennai-electronics': {
     title: 'Chennai Electronics Assembly',
-    image: '/images/home-chennai-electronics.jpg',
+    image: '/assets/images/home-chennai-electronics.jpg',
     body: '<p><strong>Company unit:</strong> SMT assembly, AOI inspection, reflow, and board testing.</p><p>The Chennai site models clean electronics production where throughput, inspection quality, thermal process stability, and downtime risk matter minute by minute.</p><p><strong>What the product demonstrates:</strong> line monitoring, sensor history, anomaly context, and technician-ready work orders.</p>'
   },
   'bengaluru-precision': {
     title: 'Bengaluru Precision Engineering',
-    image: '/images/home-bengaluru-precision.jpg',
+    image: '/assets/images/home-bengaluru-precision.jpg',
     body: '<p><strong>Company unit:</strong> Micro-machining, metrology, calibration, and additive manufacturing.</p><p>The Bengaluru facility is a precision lab-factory hybrid. It highlights machine tolerances, CMM inspection, calibration risk, and high-value asset reliability.</p><p><strong>What the product demonstrates:</strong> reliability forecasting, component context, maintenance planning, and AI-assisted diagnostics.</p>'
   },
   'nagpur-logistics': {
     title: 'Nagpur Warehouse & Logistics Hub',
-    image: '/images/home-nagpur-logistics.jpg',
+    image: '/assets/images/home-nagpur-logistics.jpg',
     body: '<p><strong>Company unit:</strong> Automated warehouse, ASRS, sortation, AGVs, and dock flow.</p><p>The Nagpur hub shows material movement, automated storage, charging flows, dock operations, and logistics execution. It rounds out YantraMitra as a full operations platform, not only a factory dashboard.</p><p><strong>What the product demonstrates:</strong> facility flow, uptime, incident visibility, and cross-site command center reporting.</p>'
   }
 };
@@ -387,7 +387,7 @@ app.post('/api/plants', authApi, requireRole('admin', 'executive', 'plant_manage
       data: {
         name: String(name).trim(), location: String(city).trim(), domain: String(industry).trim(),
         lat: Number(latitude), lng: Number(longitude), status: ['operational', 'optimized', 'attention', 'warning'].includes(status) ? status : 'operational',
-        image: '/images/home-bengaluru-precision.jpg', floorLayout: { machineCount: Math.max(0, Number(machineCount) || 0), plantManager: String(plantManager || '').trim() }
+        image: '/assets/images/home-bengaluru-precision.jpg', floorLayout: { machineCount: Math.max(0, Number(machineCount) || 0), plantManager: String(plantManager || '').trim() }
       }, include: { _count: { select: { machines: true } } }
     });
     res.status(201).json(plant);

@@ -26,13 +26,13 @@
     const host = document.getElementById('ym-top-facilities');
     if (!host) return;
     const images = {
-      pune: '/images/home-pune-automotive.jpg', ahmedabad: '/images/home-ahmedabad-process.jpg',
-      chennai: '/images/home-chennai-electronics.jpg', bengaluru: '/images/home-bengaluru-precision.jpg', nagpur: '/images/home-nagpur-logistics.jpg'
+      pune: '/assets/images/home-pune-automotive.jpg', ahmedabad: '/assets/images/home-ahmedabad-process.jpg',
+      chennai: '/assets/images/home-chennai-electronics.jpg', bengaluru: '/assets/images/home-bengaluru-precision.jpg', nagpur: '/assets/images/home-nagpur-logistics.jpg'
     };
     host.innerHTML = plants.slice(0, 5).map(plant => {
       const tone = statusTone(plant.status);
       const plantKey = Object.keys(images).find(key => String(plant.name).toLowerCase().includes(key));
-      const image = images[plantKey] || plant.image || '/images/home-bengaluru-precision.jpg';
+      const image = images[plantKey] || plant.image || '/assets/images/home-bengaluru-precision.jpg';
       return `
         <article class="glass-panel rounded-xl overflow-hidden group hover:-translate-y-1 transition-all duration-300">
           <div class="h-32 relative">

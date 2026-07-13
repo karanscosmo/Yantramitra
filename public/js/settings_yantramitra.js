@@ -58,7 +58,7 @@
           <div class="glass-card rounded-xl p-md flex flex-col items-center text-center">
             <div class="relative mb-md group">
               <div class="w-32 h-32 rounded-full overflow-hidden border-2 border-white shadow-[0_0_30px_rgba(65,63,214,0.3)] ring-4 ring-primary/10">
-                <img class="w-full h-full object-cover" id="ym-profile-avatar" src="${profile.avatar || '/images/ym-operator-avatar.jpg'}" alt="${escapeHtml(profile.name)}">
+                <img class="w-full h-full object-cover" id="ym-profile-avatar" src="${profile.avatar || '/assets/images/ym-operator-avatar.jpg'}" alt="${escapeHtml(profile.name)}">
                 <input type="file" accept="image/*" id="ym-photo-input" style="display:none">
               </div>
               <button id="ym-change-photo" class="absolute bottom-1 right-1 bg-primary text-white p-2 rounded-full shadow-lg hover:scale-110 transition-transform" title="Change photo">
@@ -300,7 +300,7 @@
     return `<article class="ym-team-card rounded-xl border border-outline-variant/40 bg-white/70 p-md flex flex-col" data-id="${m.id}" data-name="${escapeHtml(m.name)}" data-email="${escapeHtml(m.email)}" data-role="${m.role}">
       <div class="flex items-start gap-3 mb-3">
         <div class="relative">
-          <img src="${m.avatar || '/images/ym-operator-avatar.jpg'}" alt="${escapeHtml(m.name)}" class="w-14 h-14 rounded-full border-2 border-primary/20 object-cover">
+          <img src="${m.avatar || '/assets/images/ym-operator-avatar.jpg'}" alt="${escapeHtml(m.name)}" class="w-14 h-14 rounded-full border-2 border-primary/20 object-cover">
           <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${statusColor}"></span>
         </div>
         <div class="flex-1 min-w-0">
@@ -335,7 +335,7 @@
         if (!m) return;
         const plantNames = (m.assignedPlants || []).map(pid => { const p = plants.find(x => x.id === pid); return p ? p.name : null; }).filter(Boolean).join(', ') || 'None';
         openModal('Team Member: ' + m.name, `
-          <div class="flex items-center gap-3 mb-4"><img src="${m.avatar || '/images/ym-operator-avatar.jpg'}" class="w-20 h-20 rounded-full border-2 border-primary/20 object-cover"><div><h3 style="font-size:20px;font-weight:700">${escapeHtml(m.name)}</h3><p style="font-size:13px" class="text-on-surface-variant">${escapeHtml(m.email)}</p><span class="inline-block mt-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold uppercase" style="font-size:10px">${roleLabel(m.role)}</span></div></div>
+          <div class="flex items-center gap-3 mb-4"><img src="${m.avatar || '/assets/images/ym-operator-avatar.jpg'}" class="w-20 h-20 rounded-full border-2 border-primary/20 object-cover"><div><h3 style="font-size:20px;font-weight:700">${escapeHtml(m.name)}</h3><p style="font-size:13px" class="text-on-surface-variant">${escapeHtml(m.email)}</p><span class="inline-block mt-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold uppercase" style="font-size:10px">${roleLabel(m.role)}</span></div></div>
           <div class="grid grid-cols-2 gap-3 text-sm"><div><span class="font-bold text-on-surface-variant">Phone</span><p>${m.phone || '—'}</p></div><div><span class="font-bold text-on-surface-variant">Role</span><p>${roleLabel(m.role)}</p></div><div><span class="font-bold text-on-surface-variant">Member Since</span><p>${new Date(m.createdAt).toLocaleDateString()}</p></div><div><span class="font-bold text-on-surface-variant">Assigned Plants</span><p>${plantNames}</p></div></div>
           <div class="mt-4"><span class="font-bold text-on-surface-variant text-sm">Active Permissions</span><div class="flex flex-wrap gap-1 mt-1.5">${getPermissions(m.role).map(p => `<span class="px-2 py-0.5 rounded-full bg-primary/5 text-primary text-xs font-medium">${p}</span>`).join('')}</div></div>
         `);
