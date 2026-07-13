@@ -26,6 +26,7 @@
     { path: '/simulator', icon: 'science', label: 'Simulator', kbd: '-', section: 'intel' },
     { path: '/ai-console', icon: 'psychology', label: 'YantraNklan', kbd: '=', section: 'intel' },
     { path: '/settings', icon: 'settings', label: 'Settings', kbd: "'", section: 'sys' },
+    { path: '#logout', icon: 'logout', label: 'Log out', section: 'sys' },
   ];
   let navBadgeData = { workOrders: 0, anomalies: 0 };
 
@@ -68,8 +69,9 @@
         position: fixed;
         top: var(--header-height);
         right: var(--sidebar-gap);
-        bottom: var(--sidebar-gap);
         width: var(--sidebar-width);
+        max-height: calc(100vh - var(--header-height) - var(--sidebar-gap));
+        overflow-y: auto;
         transform: none;
         z-index: 999;
         display: flex;
@@ -185,7 +187,7 @@
       .ym-standard-topbar {
         position: fixed;
         left: 0;
-        right: calc(var(--sidebar-width) + var(--sidebar-gap));
+        right: 0;
         top: 0;
         height: var(--header-height);
         z-index: 95;
@@ -245,7 +247,7 @@
         margin-left: auto;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 8px;
         flex: 0 0 auto;
       }
       .ym-standard-icon {
@@ -266,7 +268,6 @@
         border-radius: 9999px;
         border: 2px solid rgba(65,63,214,.18);
         object-fit: cover;
-        cursor: pointer;
       }
       body.ym-in-app .primary-gradient,
       body.ym-in-app .shimmer-btn { color: #fff !important; }
@@ -321,41 +322,7 @@
         .ym-page-detail-drawer { width: 100% !important; right: 0 !important; }
       }
 
-      .ym-profile-wrap { position:relative; }
-      .ym-profile-trigger {
-        display:flex; align-items:center; gap:2px;
-        border:0; background:transparent; cursor:pointer; padding:2px;
-        border-radius:9999px;
-        transition:background .15s;
-      }
-      .ym-profile-trigger:hover { background:rgba(65,63,214,0.06); }
-      .ym-profile-chevron { font-size:16px; color:#9CA3AF; transition:transform .2s; }
-      .ym-profile-wrap.is-open .ym-profile-chevron { transform:rotate(180deg); }
-      .ym-profile-dropdown {
-        position:absolute; top:calc(100% + 8px); right:0;
-        min-width:190px;
-        background:#fff;
-        border:1px solid rgba(229,231,235,0.8);
-        border-radius:12px;
-        box-shadow:0 12px 36px rgba(0,0,0,0.1);
-        padding:6px;
-        display:none;
-        z-index:1000;
-      }
-      .ym-profile-dropdown.is-open { display:block; }
-      .ym-dropdown-item {
-        display:flex; align-items:center; gap:10px;
-        padding:10px 12px; border-radius:8px;
-        font:600 13px/1 Inter,system-ui,sans-serif;
-        color:#374151; text-decoration:none;
-        border:0; background:transparent;
-        cursor:pointer; width:100%; box-sizing:border-box;
-        transition:background .15s;
-      }
-      .ym-dropdown-item:hover { background:#F3F4F6; }
-      .ym-dropdown-item .material-symbols-outlined { font-size:18px; }
-      .ym-dropdown-logout { color:#DC2626; }
-      .ym-dropdown-logout:hover { background:#FEF2F2; }
+
       body:not(.ym-no-status) .ym-standard-topbar + .ym-status-bar { display:flex; }
       body.ym-no-status .ym-status-bar { display:none; }
 
@@ -581,6 +548,17 @@
 
     document.body.appendChild(rail);
 
+    /* Intercept logout click */
+    rail.addEventListener('click', async (e) => {
+      const link = e.target.closest('[href="#logout"]');
+      if (!link) return;
+      e.preventDefault();
+      const ok = window.confirm('Log out of YantraMitra?');
+      if (!ok) return;
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
+      window.location.href = '/';
+    });
+
     /* Update badges from API */
     fetch('/api/work-orders?status=open,in_progress&_t=' + Date.now(), { credentials: 'same-origin' }).then(r => r.json()).then(orders => {
       if (Array.isArray(orders)) {
@@ -634,39 +612,12 @@
         <a class="ym-ask-yantranklan" href="/ai-console"><img src="/assets/images/yantranklan-avatar-ai.jpg" alt="YantraNklan"><span>Ask YantraNklan</span></a>
         <button type="button" class="ym-standard-icon" data-ym-notifications aria-label="Notifications"><span class="material-symbols-outlined">notifications</span></button>
         <button type="button" class="ym-standard-icon" data-ym-factory aria-label="Plant map"><span class="material-symbols-outlined">factory</span></button>
-        <div class="ym-profile-wrap">
-          <button type="button" class="ym-profile-trigger" aria-label="Profile menu">
-            <img class="ym-standard-avatar" src="/assets/images/ym-operator-avatar.jpg" alt="Profile">
-            <span class="material-symbols-outlined ym-profile-chevron">expand_more</span>
-          </button>
-          <div class="ym-profile-dropdown">
-            <a href="/settings" class="ym-dropdown-item"><span class="material-symbols-outlined">settings</span>Settings</a>
-            <button type="button" class="ym-dropdown-item ym-dropdown-logout"><span class="material-symbols-outlined">logout</span>Log out</button>
-          </div>
-        </div>
+        <img class="ym-standard-avatar" src="/assets/images/ym-operator-avatar.jpg" alt="Profile">
       </div>`;
     document.body.prepend(header);
     header.querySelector('.ym-logo').addEventListener('click', () => { window.location.href = '/dashboard'; });
     header.querySelector('[data-ym-factory]').addEventListener('click', () => { window.location.href = '/map'; });
-    header.querySelector('.ym-profile-trigger').addEventListener('click', (e) => {
-      e.stopPropagation();
-      const dd = header.querySelector('.ym-profile-dropdown');
-      dd.classList.toggle('is-open');
-      header.querySelector('.ym-profile-wrap').classList.toggle('is-open');
-    });
-    header.querySelector('.ym-dropdown-logout').addEventListener('click', async () => {
-      header.querySelector('.ym-profile-dropdown').classList.remove('is-open');
-      const ok = window.confirm('Log out of YantraMitra?');
-      if (!ok) return;
-      await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
-      window.location.href = '/';
-    });
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.ym-profile-wrap')) {
-        header.querySelector('.ym-profile-dropdown')?.classList.remove('is-open');
-        header.querySelector('.ym-profile-wrap')?.classList.remove('is-open');
-      }
-    });
+    header.querySelector('.ym-standard-avatar').addEventListener('click', () => { window.location.href = '/settings'; });
     header.querySelector('input').addEventListener('keydown', event => {
       if (event.key === 'Enter' && event.currentTarget.value.trim()) openCommandPalette();
     });
