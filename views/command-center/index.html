@@ -74,12 +74,12 @@ tailwind.config = {
 </header>
 
 <!-- Main Content -->
-<main class="h-screen overflow-y-auto custom-scrollbar" style="padding-top:64px;padding-right:calc(var(--sidebar-width) + var(--sidebar-gap))">
+<main class="h-screen overflow-y-auto custom-scrollbar" style="padding-top:64px">
 <div class="grid grid-cols-12 gap-3 p-4">
 <!-- Page Header -->
 <div class="col-span-12 flex items-center justify-between mb-1">
 <div>
-<h1 class="font-headline-lg text-[28px] text-on-surface tracking-tight leading-tight">Mission Control</h1>
+<h1 class="font-headline-lg text-4xl text-on-surface tracking-tight leading-tight">Mission Control</h1>
 <p class="text-on-surface-variant/80 text-sm">Real-time operations across all autonomous facilities</p>
 </div>
 <div class="flex items-center gap-2">
@@ -90,10 +90,10 @@ tailwind.config = {
 
 <!-- KPI Row -->
 <div class="col-span-12 grid grid-cols-4 gap-3 mb-0.5">
-<button data-kpi-route="/reliability" class="glass-panel rounded-xl px-4 py-3 flex flex-col gap-1 text-left hover:border-primary/40 transition-colors"><div class="flex justify-between items-center"><span class="font-label-caps text-[10px] text-on-surface-variant">OEE (GLOBAL)</span><span class="material-symbols-outlined text-sm text-secondary">trending_up</span></div><div class="flex items-baseline gap-2"><span class="font-kpi-numeric text-[28px] text-primary">84.2%</span><span class="text-[10px] text-secondary font-medium">+1.4% vs LY</span></div><svg class="w-full h-6" viewBox="0 0 100 20"><path d="M0,16 L20,14 L40,10 L60,12 L80,4 L100,5" fill="none" stroke="#413fd6" stroke-width="2"/></svg></button>
-<button data-kpi-route="/anomaly" class="glass-panel rounded-xl px-4 py-3 flex flex-col gap-1 text-left hover:border-tertiary/40 transition-colors"><div class="flex justify-between items-center"><span class="font-label-caps text-[10px] text-on-surface-variant">ACTIVE MISSIONS</span><span class="material-symbols-outlined text-sm text-tertiary">rocket_launch</span></div><div class="flex items-baseline gap-2"><span class="font-kpi-numeric text-[28px]">14</span><span class="text-[10px] text-on-surface-variant">6 queued</span></div><svg class="w-full h-6" viewBox="0 0 100 20"><path d="M0,14 L20,12 L40,10 L60,8 L80,6 L100,4" fill="none" stroke="#774f00" stroke-width="2"/></svg></button>
-<button data-kpi-route="/anomaly" class="glass-panel rounded-xl px-4 py-3 flex flex-col gap-1 text-left hover:border-error/40 transition-colors"><div class="flex justify-between items-center"><span class="font-label-caps text-[10px] text-on-surface-variant">CRITICAL</span><span class="material-symbols-outlined text-sm text-error">emergency</span></div><div class="flex items-baseline gap-2"><span class="font-kpi-numeric text-[28px] text-error">3</span><span class="text-[10px] text-error">+1 new</span></div><svg class="w-full h-6" viewBox="0 0 100 20"><path d="M0,6 L20,5 L40,10 L60,4 L80,7 L100,4" fill="none" stroke="#ba1a1a" stroke-width="2"/></svg></button>
-<button data-kpi-route="/reliability" class="glass-panel rounded-xl px-4 py-3 flex flex-col gap-1 text-left hover:border-secondary/40 transition-colors"><div class="flex justify-between items-center"><span class="font-label-caps text-[10px] text-on-surface-variant">AGENT AVAILABILITY</span><span class="material-symbols-outlined text-sm text-secondary">group</span></div><div class="flex items-baseline gap-2"><span class="font-kpi-numeric text-[28px] text-secondary">92%</span><span class="text-[10px] text-on-surface-variant">18/20 online</span></div><svg class="w-full h-6" viewBox="0 0 100 20"><path d="M0,10 L100,10" fill="none" stroke="#006b5f" stroke-width="3"/></svg></button>
+<button data-kpi-route="/reliability" class="glass-panel rounded-xl px-4 py-3 flex flex-col gap-1 text-left hover:border-primary/40 transition-colors"><div class="flex justify-between items-center"><span class="font-label-caps text-[11px] text-on-surface-variant">OEE (GLOBAL)</span><span class="material-symbols-outlined text-sm text-secondary">trending_up</span></div><div class="flex items-baseline gap-2"><span class="font-kpi-numeric text-[28px] text-primary">84.2%</span><span class="text-[10px] text-secondary font-medium">+1.4% vs LY</span></div><svg class="w-full h-6" viewBox="0 0 100 20"><path d="M0,16 L20,14 L40,10 L60,12 L80,4 L100,5" fill="none" stroke="#413fd6" stroke-width="2"/></svg></button>
+<button data-kpi-route="/anomaly" class="glass-panel rounded-xl px-4 py-3 flex flex-col gap-1 text-left hover:border-tertiary/40 transition-colors"><div class="flex justify-between items-center"><span class="font-label-caps text-[11px] text-on-surface-variant">ACTIVE MISSIONS</span><span class="material-symbols-outlined text-sm text-tertiary">rocket_launch</span></div><div class="flex items-baseline gap-2"><span class="font-kpi-numeric text-[28px]">14</span><span class="text-[10px] text-on-surface-variant">6 queued</span></div><svg class="w-full h-6" viewBox="0 0 100 20"><path d="M0,14 L20,12 L40,10 L60,8 L80,6 L100,4" fill="none" stroke="#774f00" stroke-width="2"/></svg></button>
+<button data-kpi-route="/anomaly" class="glass-panel rounded-xl px-4 py-3 flex flex-col gap-1 text-left hover:border-error/40 transition-colors"><div class="flex justify-between items-center"><span class="font-label-caps text-[11px] text-on-surface-variant">CRITICAL</span><span class="material-symbols-outlined text-sm text-error">emergency</span></div><div class="flex items-baseline gap-2"><span class="font-kpi-numeric text-[28px] text-error">3</span><span class="text-[10px] text-error">+1 new</span></div><svg class="w-full h-6" viewBox="0 0 100 20"><path d="M0,6 L20,5 L40,10 L60,4 L80,7 L100,4" fill="none" stroke="#ba1a1a" stroke-width="2"/></svg></button>
+<button data-kpi-route="/reliability" class="glass-panel rounded-xl px-4 py-3 flex flex-col gap-1 text-left hover:border-secondary/40 transition-colors"><div class="flex justify-between items-center"><span class="font-label-caps text-[11px] text-on-surface-variant">AGENT AVAILABILITY</span><span class="material-symbols-outlined text-sm text-secondary">group</span></div><div class="flex items-baseline gap-2"><span class="font-kpi-numeric text-[28px] text-secondary">92%</span><span class="text-[10px] text-on-surface-variant">18/20 online</span></div><svg class="w-full h-6" viewBox="0 0 100 20"><path d="M0,10 L100,10" fill="none" stroke="#006b5f" stroke-width="3"/></svg></button>
 </div>
 
 <!-- Row 1: Running Missions (8) | Live Agent Status (4) -->
@@ -101,7 +101,7 @@ tailwind.config = {
 <div class="glass-panel rounded-xl h-full flex flex-col">
 <div class="flex items-center justify-between px-4 py-2.5 border-b border-outline-variant/20 shrink-0">
 <div class="flex items-center gap-2">
-<h2 class="font-section-header text-sm font-bold">Running Missions</h2>
+<h2 class="font-section-header text-base font-bold">Running Missions</h2>
 <span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold rounded-full">8 active</span>
 </div>
 <div class="flex items-center gap-2">
@@ -119,7 +119,7 @@ tailwind.config = {
 <div class="flex items-center justify-between px-4 py-2.5 border-b border-outline-variant/20 shrink-0">
 <div class="flex items-center gap-2">
 <div class="w-2 h-2 bg-secondary rounded-full pulsing-green"></div>
-<h2 class="font-section-header text-sm font-bold">Live Agent Status</h2>
+<h2 class="font-section-header text-base font-bold">Live Agent Status</h2>
 </div>
 <span class="text-[10px] text-primary font-bold">5 agents active</span>
 </div>
@@ -134,7 +134,7 @@ tailwind.config = {
 <div class="glass-panel rounded-xl h-full flex flex-col">
 <div class="flex items-center justify-between px-4 py-2.5 border-b border-outline-variant/20 shrink-0">
 <div class="flex items-center gap-2">
-<h2 class="font-section-header text-sm font-bold">Mission Queue</h2>
+<h2 class="font-section-header text-base font-bold">Mission Queue</h2>
 <span class="px-2 py-0.5 bg-tertiary/10 text-tertiary text-[10px] font-bold rounded-full">6 queued</span>
 </div>
 <div class="flex items-center gap-2">
@@ -197,7 +197,7 @@ tailwind.config = {
 <div class="col-span-4 min-h-0">
 <div class="glass-panel rounded-xl h-full flex flex-col">
 <div class="flex items-center justify-between px-4 py-2.5 border-b border-outline-variant/20 shrink-0">
-<h2 class="font-section-header text-sm font-bold">Selected Agent Details</h2>
+<h2 class="font-section-header text-base font-bold">Selected Agent Details</h2>
 <button class="text-primary text-[10px] font-bold">View All</button>
 </div>
 <div class="p-3 flex-1 overflow-y-auto custom-scrollbar">
@@ -231,7 +231,7 @@ tailwind.config = {
 <div class="col-span-6 min-h-0">
 <div class="glass-panel rounded-xl h-full flex flex-col">
 <div class="flex items-center justify-between px-4 py-2.5 border-b border-outline-variant/20 shrink-0">
-<h2 class="font-section-header text-sm font-bold">Mission Timeline</h2>
+<h2 class="font-section-header text-base font-bold">Mission Timeline</h2>
 <div class="flex items-center gap-1">
 <button class="ym-region-tab px-2 py-1 bg-primary text-on-primary rounded-full text-[9px] font-bold">24h</button>
 <button class="ym-region-tab px-2 py-1 bg-white/50 border border-outline-variant/30 rounded-full text-[9px] font-bold">7d</button>
@@ -271,7 +271,7 @@ tailwind.config = {
 <div class="glass-panel rounded-xl h-full flex flex-col">
 <div class="flex items-center justify-between px-4 py-2.5 border-b border-outline-variant/20 shrink-0">
 <div class="flex items-center gap-2">
-<h2 class="font-section-header text-sm font-bold">AI Insights</h2>
+<h2 class="font-section-header text-base font-bold">AI Insights</h2>
 <span class="material-symbols-outlined text-sm text-primary">auto_awesome</span>
 </div>
 <button class="text-primary text-[10px] font-bold">Generate Report</button>
@@ -308,7 +308,7 @@ tailwind.config = {
 <div class="glass-panel rounded-xl h-full flex flex-col">
 <div class="flex items-center justify-between px-4 py-2.5 border-b border-outline-variant/20 shrink-0">
 <div class="flex items-center gap-2">
-<h2 class="font-section-header text-sm font-bold">Completed Missions</h2>
+<h2 class="font-section-header text-base font-bold">Completed Missions</h2>
 <span class="px-2 py-0.5 bg-secondary/10 text-secondary text-[10px] font-bold rounded-full">24 today</span>
 </div>
 <button class="text-primary text-[10px] font-bold">View Archive</button>
@@ -340,7 +340,7 @@ tailwind.config = {
 <div class="col-span-6 min-h-0">
 <div class="glass-panel rounded-xl h-full flex flex-col">
 <div class="flex items-center justify-between px-4 py-2.5 border-b border-outline-variant/20 shrink-0">
-<h2 class="font-section-header text-sm font-bold">Activity Feed</h2>
+<h2 class="font-section-header text-base font-bold">Activity Feed</h2>
 <span class="text-[10px] text-on-surface-variant">Live</span>
 </div>
 <div class="overflow-y-auto custom-scrollbar p-3 pt-2 space-y-1">
