@@ -6,20 +6,18 @@
 
   const sliderConfig = {
     speed: { min: 0, max: 100, default: 85, unit: '%', label: 'Production Speed' },
+    load: { min: 0, max: 100, default: 65, unit: '%', label: 'Machine Load' },
     delay: { min: 0, max: 72, default: 12, unit: 'h', label: 'Maintenance Delay' },
-    power: { min: 100, max: 1000, default: 420, unit: ' kW', label: 'Power Load' },
-    quality: { min: 80, max: 100, default: 98, unit: '%', label: 'Quality Target' },
     operators: { min: 2, max: 30, default: 12, unit: '', label: 'Operator Count' },
-    material: { min: 0, max: 100, default: 85, unit: '%', label: 'Raw Material' },
-    temp: { min: 10, max: 50, default: 32, unit: '°C', label: 'Temperature' },
-    energy: { min: 2, max: 15, default: 65, unit: '', label: 'Energy Cost' },
+    material: { min: 0, max: 100, default: 85, unit: '%', label: 'Raw Material Quality' },
+    temp: { min: 10, max: 50, default: 32, unit: '°C', label: 'Ambient Temperature' },
   };
 
   const presets = {
-    balanced: { label: 'Balanced', speed: 85, delay: 12, power: 420, quality: 98, operators: 12, material: 85, temp: 32, energy: 65 },
-    'energy-saver': { label: 'Energy Saver', speed: 60, delay: 8, power: 250, quality: 95, operators: 8, material: 80, temp: 28, energy: 35 },
-    'max-output': { label: 'Maximum Output', speed: 100, delay: 4, power: 800, quality: 90, operators: 20, material: 95, temp: 38, energy: 80 },
-    'maintenance': { label: 'Maintenance Mode', speed: 40, delay: 48, power: 300, quality: 96, operators: 6, material: 70, temp: 30, energy: 50 },
+    balanced: { label: 'Balanced', speed: 85, load: 65, delay: 12, operators: 12, material: 85, temp: 32 },
+    'energy-saver': { label: 'Energy Saver', speed: 60, load: 40, delay: 8, operators: 8, material: 80, temp: 28 },
+    'max-output': { label: 'Max Output', speed: 100, load: 90, delay: 4, operators: 20, material: 95, temp: 38 },
+    'maintenance': { label: 'Maintenance', speed: 40, load: 50, delay: 48, operators: 6, material: 70, temp: 30 },
   };
   let activePreset = 'balanced';
 
@@ -56,31 +54,30 @@
 
   function formatSliderValue(key, val) {
     const cfg = sliderConfig[key];
-    if (key === 'energy') return '₹' + (val / 10).toFixed(1) + '/kWh';
     return val + cfg.unit;
   }
 
   function computeKPIs(vals) {
-    const s = vals.speed, d = vals.delay, p = vals.power, q = vals.quality;
-    const o = vals.operators, m = vals.material, t = vals.temp, e = vals.energy;
+    const s = vals.speed, l = vals.load, d = vals.delay;
+    const o = vals.operators, m = vals.material, t = vals.temp;
     const speedFactor = s / 100;
-    const opFactor = Math.min(1.4, 0.7 + o * 0.035);
+    const loadFactor = l / 100;
     const matFactor = m / 100;
-    const tempPenalty = Math.max(1, 1 + (t - 25) * 0.015);
+    const opFactor = Math.min(1.3, 0.6 + o * 0.025);
+    const tempFactor = Math.max(0.8, 1 - Math.abs(t - 25) * 0.008);
     const availability = Math.max(0.5, 1 - d / 200 - (100 - s) / 300);
-    const performance = speedFactor * opFactor * matFactor / tempPenalty;
-    const qualityRate = q / 100;
-    return {
-      oee: Math.min(100, Math.round(availability * performance * qualityRate * 100)),
-      throughput: Math.round(100 * speedFactor * opFactor * matFactor / tempPenalty),
-      energy: Math.round(p * (1 + (t - 20) * 0.008) * (0.9 + Math.random() * 0.2)),
-      downtime: Math.max(0, Math.round((d * 0.7 + (100 - s) * 0.3 + (100 - m) * 0.2 + Math.max(0, t - 30) * 0.5) * (0.9 + Math.random() * 0.2))),
-      maintenanceCost: Math.round((d * 18 + (100 - q) * 15 + p * 0.3) * (0.95 + Math.random() * 0.1)),
-      profit: Math.round(100 * speedFactor * opFactor * matFactor / tempPenalty * 65 - Math.round((d * 18 + (100 - q) * 15 + p * 0.3) * (0.95 + Math.random() * 0.1)) - Math.round(p * (1 + (t - 20) * 0.008) * (0.9 + Math.random() * 0.2)) * e / 10 - o * 350),
-      qualityLoss: Math.max(0, Math.round((100 - q) * (1 + t / 120) * 100 * speedFactor * opFactor * matFactor / tempPenalty * 0.005)),
-      carbon: Math.round(p * (1 + (t - 20) * 0.008) * (0.9 + Math.random() * 0.2) * 0.42 * (0.95 + Math.random() * 0.1)),
-      failureRate: Math.min(100, Math.round((100 - q) * 0.3 + (100 - s) * 0.2 + d * 0.5 + Math.max(0, t - 28) * 0.8)),
-    };
+    const performance = speedFactor * loadFactor * opFactor;
+    const qualityRate = matFactor * tempFactor;
+    const baseThroughput = 120 * speedFactor * loadFactor * opFactor;
+    const throughput = Math.round(baseThroughput * tempFactor);
+    const energy = Math.round(500 * loadFactor * (1 + Math.max(0, t - 25) * 0.02) * (0.9 + Math.random() * 0.2));
+    const downtime = Math.max(0, Math.round((d * 0.8 + (100 - s) * 0.2 + (100 - m) * 0.15 + Math.max(0, t - 30) * 0.3) * (0.9 + Math.random() * 0.2)));
+    const maintenanceCost = Math.round((d * 20 + (100 - m) * 12 + l * 2) * (0.95 + Math.random() * 0.1));
+    const qualityLoss = Math.max(0, Math.round((100 - m) * (1 + t / 100) * 0.5 * speedFactor * loadFactor * opFactor));
+    const profit = Math.round(throughput * 60 - maintenanceCost - energy * 6 - o * 320);
+    const carbon = Math.round(energy * 0.45 * (0.95 + Math.random() * 0.1));
+    const failureRate = Math.min(100, Math.round((100 - m) * 0.25 + (100 - s) * 0.15 + d * 0.6 + Math.max(0, t - 28) * 0.7));
+    return { oee: Math.min(100, Math.round(availability * performance * qualityRate * 100)), throughput, energy, downtime, maintenanceCost, profit, qualityLoss, carbon, failureRate };
   }
 
   const kpiDefs = [
@@ -118,25 +115,62 @@
   }
 
   function updateSceneEffects(vals) {
-    if (!scene || !scene.children) return;
-    const speed = vals.speed / 100;
-    scene.children.forEach(child => {
-      if (child.isMesh && child.material) {
-        const tx = child.material.map;
-        if (tx && tx.offset) {
-          tx.offset.x += 0.005 * speed;
-          tx.offset.y += 0.002 * speed;
-        }
+    if (!scene || !scene.scene) return;
+    const threeScene = scene.scene;
+    threeScene._simState = {
+      speed: vals.speed, load: vals.load, delay: vals.delay,
+      operators: vals.operators, material: vals.material, temp: vals.temp,
+      running: simRunning,
+      faultActive: vals.delay > 48 || vals.material < 30
+    };
+    threeScene.children.forEach(child => {
+      if (child.isPointLight) {
+        child.intensity = 0.3 + (vals.load / 100) * 0.7;
       }
     });
-    if (scene._lights) {
-      scene._lights.forEach(light => {
-        if (light.isPointLight) {
-          const intensity = 0.3 + (vals.power / 1000) * 0.7;
-          light.intensity = intensity;
+    const machineGroup = scene.group;
+    if (!machineGroup) return;
+    machineGroup.children.forEach(mg => {
+      const faultActive = vals.delay > 48 || vals.material < 30;
+      const loadStress = vals.load / 100;
+      const tempStress = Math.max(0, (vals.temp - 25) / 25);
+      const stress = Math.min(1, loadStress * 0.5 + tempStress * 0.5);
+      mg.traverse(mesh => {
+        if (!mesh.isMesh || !mesh.material) return;
+        if (mesh.userData.isBelt || mesh.userData.isIndicator || mesh.userData.isSensor) return;
+        if (mesh.userData.isBeacon) {
+          const warn = vals.temp > 38;
+          let beaconColor, beaconIntensity;
+          if (faultActive) { beaconColor = 0xba1a1a; beaconIntensity = 1.5; }
+          else if (warn) { beaconColor = 0xffba4b; beaconIntensity = 1.2; }
+          else { beaconColor = 0x5efae4; beaconIntensity = 0.8; }
+          mesh.material.color.setHex(beaconColor);
+          mesh.material.emissive.setHex(beaconColor);
+          mesh.material.emissiveIntensity = beaconIntensity;
+          mesh.material.needsUpdate = true;
+          return;
         }
+        const baseColor = mesh.userData._baseColor || mesh.material.color.getHex();
+        mesh.userData._baseColor = baseColor;
+        if (stress > 0.25) {
+          const color = new THREE.Color(baseColor);
+          const stressColor = new THREE.Color(faultActive ? 0xba1a1a : 0xffba4b);
+          color.lerp(stressColor, stress * 0.35);
+          mesh.material.color.copy(color);
+          if (mesh.material.emissive) {
+            mesh.material.emissive.setHex(0xffba4b);
+            mesh.material.emissiveIntensity = stress * 0.2 * (Math.max(0, vals.temp - 20) / 30);
+          }
+        } else {
+          mesh.material.color.setHex(baseColor);
+          if (mesh.material.emissive) {
+            mesh.material.emissive.setHex(0x000000);
+            mesh.material.emissiveIntensity = 0;
+          }
+        }
+        mesh.material.needsUpdate = true;
       });
-    }
+    });
   }
 
   function renderPlantPills() {
@@ -153,7 +187,7 @@
     if (!plant || plant.id === currentPlant?.id) return;
     currentPlant = plant;
     plantMachines = (machines || []).filter(m => m.plantId === plant.id);
-    if (scene && scene._destroy) { scene._destroy(); scene = null; }
+    if (scene && scene.destroy) { scene.destroy(); scene = null; }
     document.getElementById('ym-plant-name').textContent = plant.name;
     renderPlantPills();
     resetSimulation();
@@ -212,21 +246,15 @@
     document.getElementById('ym-sim-status').textContent = 'RUNNING';
     document.getElementById('ym-sim-run').disabled = true;
 
-    const predEl = document.getElementById('ym-prediction-text');
-    predEl.innerHTML = '<div class="space-y-2"><div class="flex items-center gap-2 text-white/80" style="font-size:13px"><span class="material-symbols-outlined animate-spin" style="font-size:18px">sync</span> Simulation running...</div><div style="height:6px;background:rgba(255,255,255,0.2);border-radius:3px;overflow:hidden"><div id="ym-sim-progress" style="height:100%;width:0%;background:white;border-radius:3px;transition:width 0.5s"></div></div><p class="text-white/60" style="font-size:11px" id="ym-sim-estimate">Estimating completion...</p></div>';
-
     const maxIter = 12;
     simTimer = setInterval(() => {
       simIteration++;
       document.getElementById('ym-iteration').textContent = '#' + simIteration;
-      document.getElementById('ym-sim-progress').style.width = Math.min(100, (simIteration / maxIter) * 100) + '%';
-      document.getElementById('ym-sim-estimate').textContent = `Iteration ${simIteration}/${maxIter} · ${Math.round((simIteration/maxIter)*100)}% complete`;
       const vals = getSliderValues();
       const kpis = computeKPIs(vals);
       renderKPIs(kpis);
       kpiHistory.push({ iteration: simIteration, time: new Date().toISOString(), ...vals, ...kpis });
       updateSceneEffects(vals);
-      if (simIteration % 3 === 0) generatePrediction(vals, kpis);
       if (baselineKPIs) renderCompareButton();
       if (simIteration >= maxIter) {
         clearInterval(simTimer);
@@ -235,7 +263,6 @@
         document.getElementById('ym-sim-indicator').style.background = '#5efae4';
         document.getElementById('ym-sim-status').textContent = 'COMPLETE';
         document.getElementById('ym-sim-run').disabled = false;
-        generatePrediction(getSliderValues(), computeKPIs(getSliderValues()));
       }
     }, 800);
   }
@@ -266,7 +293,6 @@
     activePreset = 'balanced';
     renderPresets();
     renderAll();
-    document.getElementById('ym-prediction-text').innerHTML = '<p class="text-white/70" style="font-size:14px;line-height:1.6">Adjust parameters and run to generate AI prediction.</p>';
   }
 
   function setBaseline() {
@@ -321,37 +347,6 @@
       return '<tr class="border-b border-outline-variant/10"><td class="py-1.5 px-2" style="font-size:12px">#' + entry.iteration + '</td><td class="py-1.5 px-2" style="font-size:12px">' + (entry.oee || 0) + '%</td><td class="py-1.5 px-2" style="font-size:12px">' + entry.throughput + '</td><td class="py-1.5 px-2" style="font-size:12px">' + entry.energy + '</td><td class="py-1.5 px-2" style="font-size:12px">' + entry.downtime + '</td><td class="py-1.5 px-2" style="font-size:12px">' + formatProfit(entry.profit || 0) + '</td></tr>';
     }).join('');
     openModal('Simulation History (Last 25)', '<table style="width:100%;border-collapse:collapse"><thead><tr style="border-bottom:2px solid #e1dfff"><th class="py-1.5 px-2 text-left text-on-surface-variant font-bold" style="font-size:11px">#</th><th class="py-1.5 px-2 text-left text-on-surface-variant font-bold" style="font-size:11px">OEE</th><th class="py-1.5 px-2 text-left text-on-surface-variant font-bold" style="font-size:11px">Units</th><th class="py-1.5 px-2 text-left text-on-surface-variant font-bold" style="font-size:11px">kWh</th><th class="py-1.5 px-2 text-left text-on-surface-variant font-bold" style="font-size:11px">Down</th><th class="py-1.5 px-2 text-left text-on-surface-variant font-bold" style="font-size:11px">Profit</th></tr></thead><tbody>' + rows + '</tbody></table><p class="text-on-surface-variant mt-2" style="font-size:12px">' + kpiHistory.length + ' total iterations recorded.</p>');
-  }
-
-  function generatePrediction(vals, kpis) {
-    const el = document.getElementById('ym-prediction-text');
-    if (!el) return;
-    const insights = [];
-    if (kpis.oee < 60) insights.push('OEE is critically low at ' + kpis.oee + '%. Consider increasing production speed or reducing maintenance delay to improve availability.');
-    else if (kpis.oee < 75) insights.push('OEE at ' + kpis.oee + '% is below target. Adjusting quality target or operator count could help.');
-    else insights.push('OEE at ' + kpis.oee + '% is ' + (kpis.oee > 85 ? 'strong' : 'acceptable') + '. Current configuration is ' + (kpis.oee > 85 ? 'near-optimal' : 'stable') + '.');
-
-    if (kpis.failureRate > 40) insights.push('Failure rate is elevated at ' + kpis.failureRate + '%. Preventive maintenance is recommended within ' + Math.round(vals.delay * 0.6) + ' hours.');
-    if (kpis.downtime > 30) insights.push('Downtime of ' + kpis.downtime + ' min is reducing throughput. Investigate ' + (vals.delay > 20 ? 'maintenance backlog' : 'production bottlenecks') + '.');
-    if (kpis.energy > 800) insights.push('Energy consumption is high at ' + kpis.energy + ' kWh. Reduce power load or optimize temperature to lower costs.');
-    if (kpis.qualityLoss > 15) insights.push('Quality loss of ' + kpis.qualityLoss + ' units is significant. Increase quality target or reduce temperature for better yield.');
-    if (kpis.profit < 1000) insights.push('Profit margin is tight at ' + formatProfit(kpis.profit) + '. Focus on reducing maintenance cost and energy usage.');
-
-    const confidence = Math.min(92, 65 + Math.round(kpis.oee * 0.2 + (100 - kpis.failureRate) * 0.1));
-    const outputChange = ((kpis.throughput / (kpiHistory[0]?.throughput || kpis.throughput)) - 1) * 100;
-    const energyChange = ((kpis.energy / (kpiHistory[0]?.energy || kpis.energy)) - 1) * 100;
-    const downtimeChange = ((kpis.downtime / (kpiHistory[0]?.downtime || kpis.downtime)) - 1) * 100;
-    if (simIteration > 5) {
-      el.innerHTML = '<div class="space-y-2"><div class="grid grid-cols-2 gap-1.5 mb-2">' +
-        '<div class="bg-white/10 rounded-lg p-2 text-center"><p class="text-white/60 text-[9px] font-bold">OUTPUT</p><p class="text-white font-bold" style="font-size:16px">' + (outputChange >= 0 ? '↑' : '↓') + Math.abs(Math.round(outputChange)) + '%</p></div>' +
-        '<div class="bg-white/10 rounded-lg p-2 text-center"><p class="text-white/60 text-[9px] font-bold">ENERGY</p><p class="text-white font-bold" style="font-size:16px">' + (energyChange <= 0 ? '↓' : '↑') + Math.abs(Math.round(energyChange)) + '%</p></div>' +
-        '<div class="bg-white/10 rounded-lg p-2 text-center"><p class="text-white/60 text-[9px] font-bold">DOWNTIME</p><p class="text-white font-bold" style="font-size:16px">' + (downtimeChange <= 0 ? '↓' : '↑') + Math.abs(Math.round(downtimeChange)) + '%</p></div>' +
-        '<div class="bg-white/10 rounded-lg p-2 text-center"><p class="text-white/60 text-[9px] font-bold">CONFIDENCE</p><p class="text-white font-bold" style="font-size:16px">' + confidence + '%</p></div></div>' +
-        '<ul class="text-white/85 ml-3 list-disc" style="font-size:13px;line-height:1.6">' + insights.slice(0, 2).map(i => '<li style="margin-bottom:2px">' + i + '</li>').join('') + '</ul>' +
-        '<p class="text-white/50 font-bold text-center" style="font-size:10px;margin-top:4px">Iteration #' + simIteration + '</p></div>';
-    } else {
-      el.innerHTML = '<ul class="text-white/85 ml-4 list-disc" style="font-size:14px;line-height:1.7;margin-bottom:8px">' + insights.slice(0, 3).map(i => '<li style="margin-bottom:4px">' + i + '</li>').join('') + '</ul><p class="text-white/60 font-bold" style="font-size:12px">Confidence: ' + confidence + '% · Iteration #' + simIteration + '</p>';
-    }
   }
 
   function applyPreset(name) {

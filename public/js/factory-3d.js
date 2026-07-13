@@ -232,6 +232,7 @@
 
     const beaconColor = fault ? PALETTE.red : (machine.status === 'idle' ? PALETTE.amber : PALETTE.teal);
     const beacon = cyl(0.16, 0.16, 0.18, beaconColor, 0, 2.85, 0, { emissive: beaconColor, emissiveIntensity: 0.8 });
+    beacon.userData.isBeacon = true;
     const light = new THREE.PointLight(beaconColor, fault ? 2.2 : 0.9, 6);
     light.position.set(0, 3, 0);
     group.add(beacon, light);
@@ -405,6 +406,9 @@
       renderPlantFloor._frames.set(host, frame);
       const sceneData = renderPlantFloor._scenes.get(host);
       if (sceneData) sceneData._tickFly();
+      const simState = scene._simState || {};
+      const speedFactor = (simState.speed ?? 85) / 85;
+      const running = simState.running !== false;
       const radius = (options.radius || 22) * zoom;
       camera.position.x = Math.sin(angle) * radius;
       camera.position.z = Math.cos(angle) * radius;
@@ -412,16 +416,16 @@
       camera.lookAt(0, 0, 0);
       group.children.forEach((machineGroup, index) => {
         const machine = machineGroup.userData.machine || {};
-        if (machine.status !== 'running') machineGroup.rotation.y += 0.006;
-        machineGroup.position.y = Math.sin(Date.now() * 0.0015 + index) * 0.035;
+        if (machine.status !== 'running') machineGroup.rotation.y += running ? 0.006 : 0.002;
+        machineGroup.position.y = Math.sin(Date.now() * 0.0015 * speedFactor + index) * 0.035 * (running ? speedFactor : 0.3);
       });
-      _beltTex.offset.x += 0.004;
+      _beltTex.offset.x += 0.004 * speedFactor * (running ? 1 : 0.2);
       group.children.forEach(mg => {
         const m = mg.userData.machine || {};
         if (includes(m, ['robot', 'weld', 'welder'])) {
           mg.traverse(child => {
             if (child.userData.isArm) {
-              child.rotation.z = child.userData._armBaseRot + Math.sin(Date.now() * 0.002 + child.id) * 0.12;
+              child.rotation.z = child.userData._armBaseRot + Math.sin(Date.now() * 0.002 * speedFactor + child.id) * 0.12 * (running ? 1 : 0.3);
             }
           });
         }
@@ -429,7 +433,7 @@
       group.children.forEach((mg, i) => {
         const m = mg.userData.machine || {};
         if (includes(m, ['agv'])) {
-          const t = Date.now() * 0.0005 + i;
+          const t = Date.now() * 0.0005 * speedFactor + i;
           mg.position.x = (m.posX ?? 0) * 1.6 + Math.sin(t) * 0.5;
           mg.position.z = (m.posZ ?? 0) * 1.3 + Math.cos(t) * 0.5;
         }
@@ -437,14 +441,14 @@
       group.children.forEach(mg => {
         mg.traverse(child => {
           if (child.userData.isIndicator) {
-            child.material.emissiveIntensity = 0.3 + Math.sin(Date.now() * 0.003 + child.id) * 0.2;
+            child.material.emissiveIntensity = 0.3 + Math.sin(Date.now() * 0.003 * speedFactor + child.id) * 0.2;
           }
         });
       });
       group.children.forEach(mg => {
         mg.traverse(child => {
           if (child.userData.isSensor) {
-            child.material.opacity = 0.2 + Math.sin(Date.now() * 0.004 + (child.userData._sIdx || 0)) * 0.15;
+            child.material.opacity = 0.2 + Math.sin(Date.now() * 0.004 * speedFactor + (child.userData._sIdx || 0)) * 0.15;
           }
         });
       });

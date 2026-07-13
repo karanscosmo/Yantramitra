@@ -37,71 +37,69 @@ tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-primary-
   .kpi-card { opacity:0; }
 </style>
 </head>
-<body class="font-body-md text-on-surface">
-<main class="h-screen flex overflow-hidden">
-  <section class="w-[72%] h-full relative overflow-hidden bg-[#13131f]" id="ym-viewport">
-    <div class="absolute inset-0 z-0 flex items-center justify-center" id="ym-scene-loading">
-      <div class="flex items-center gap-2 text-on-surface-variant" style="font-size:16px"><span class="material-symbols-outlined animate-spin text-primary" style="font-size:22px">sync</span> Loading factory floor...</div>
-    </div>
-    <div id="ym-three-container" class="absolute inset-0 z-[1]"></div>
-    <div class="absolute top-3 left-3 flex items-center gap-2 z-10">
-      <div class="glass-dark px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-        <span class="w-2 h-2 rounded-full" id="ym-sim-indicator"></span>
-        <span class="text-white/80 font-bold" style="font-size:11px" id="ym-sim-status">READY</span>
-        <span class="w-px h-3 bg-white/20 mx-1"></span>
-        <span class="font-kpi-numeric text-white/60" style="font-size:11px" id="ym-iteration">#0</span>
-      </div>
-      <div class="glass-dark px-2.5 py-1.5 rounded-lg flex items-center gap-1.5" id="ym-plant-badge">
-        <span class="material-symbols-outlined text-white/50" style="font-size:18px">factory</span>
-        <span class="text-white/80 font-semibold" style="font-size:13px" id="ym-plant-name">Loading...</span>
-      </div>
-    </div>
-    <div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2">
-      <div class="glass-dark p-1.5 rounded-full flex gap-1.5 shadow-lg">
-        <button class="px-3.5 py-2 rounded-full bg-primary text-white font-bold flex items-center gap-1.5 hover:opacity-90 transition-all" style="font-size:12px" id="ym-sim-run"><span class="material-symbols-outlined" style="font-size:18px">play_arrow</span>RUN</button>
-        <button class="px-3 py-2 rounded-full text-white/60 font-bold flex items-center gap-1.5 hover:bg-white/10 transition-all" style="font-size:12px" id="ym-sim-pause"><span class="material-symbols-outlined" style="font-size:18px">pause</span>PAUSE</button>
-        <button class="px-3 py-2 rounded-full text-white/60 font-bold flex items-center gap-1.5 hover:bg-white/10 transition-all" style="font-size:12px" id="ym-sim-reset"><span class="material-symbols-outlined" style="font-size:18px">restart_alt</span>RESET</button>
-        <button class="px-3 py-2 rounded-full text-white/60 font-bold flex items-center gap-1.5 hover:bg-white/10 transition-all" style="font-size:12px" id="ym-sim-compare"><span class="material-symbols-outlined" style="font-size:18px">compare_arrows</span>BASELINE</button>
-        <button class="px-3 py-2 rounded-full text-white/60 font-bold flex items-center gap-1.5 hover:bg-white/10 transition-all" style="font-size:12px" id="ym-sim-export"><span class="material-symbols-outlined" style="font-size:18px">download</span>CSV</button>
-        <button class="px-3 py-2 rounded-full text-white/60 font-bold flex items-center gap-1.5 hover:bg-white/10 transition-all" style="font-size:12px" id="ym-sim-history"><span class="material-symbols-outlined" style="font-size:18px">history</span>LOG</button>
-      </div>
-    </div>
-    <div id="ym-machine-detail" class="absolute right-3 bottom-20 w-[340px] max-h-[400px] z-20 glass-dark rounded-xl p-4 overflow-y-auto custom-scrollbar hidden"></div>
-  </section>
-  <section class="w-[28%] h-full flex flex-col overflow-y-auto custom-scrollbar bg-white/40 border-l border-outline-variant/30">
-    <div class="p-5 pb-2 flex items-center justify-between">
-      <div>
-        <h2 class="font-bold text-on-surface leading-tight" style="font-size:38px;font-family:Geist,sans-serif;letter-spacing:-0.02em">Scenario Simulator</h2>
-        <p class="text-on-surface-variant mt-1" style="font-size:15px">Adjust parameters to forecast production</p>
-      </div>
-    </div>
-    <div class="px-5 pb-3 overflow-x-auto no-scrollbar flex" id="ym-plant-pills"></div>
-    <div class="px-5 pb-3 flex flex-wrap gap-1.5" id="ym-presets"></div>
-    <div class="px-5 pb-3 space-y-3" id="ym-sliders">
-      <div><div class="flex justify-between items-center mb-1"><label class="font-semibold text-on-surface" style="font-size:18px">Production Speed</label><span class="font-kpi-numeric text-primary font-bold" style="font-size:18px" id="slider-speed">85%</span></div><input type="range" min="0" max="100" value="85" data-slider="speed"/></div>
-      <div><div class="flex justify-between items-center mb-1"><label class="font-semibold text-on-surface" style="font-size:18px">Maintenance Delay</label><span class="font-kpi-numeric text-primary font-bold" style="font-size:18px" id="slider-delay">12h</span></div><input type="range" min="0" max="72" value="12" data-slider="delay"/></div>
-      <div><div class="flex justify-between items-center mb-1"><label class="font-semibold text-on-surface" style="font-size:18px">Power Load</label><span class="font-kpi-numeric text-primary font-bold" style="font-size:18px" id="slider-power">420 kW</span></div><input type="range" min="100" max="1000" value="420" data-slider="power"/></div>
-      <div><div class="flex justify-between items-center mb-1"><label class="font-semibold text-on-surface" style="font-size:18px">Quality Target</label><span class="font-kpi-numeric text-primary font-bold" style="font-size:18px" id="slider-quality">98%</span></div><input type="range" min="80" max="100" value="98" data-slider="quality"/></div>
-      <div><div class="flex justify-between items-center mb-1"><label class="font-semibold text-on-surface" style="font-size:18px">Operator Count</label><span class="font-kpi-numeric text-primary font-bold" style="font-size:18px" id="slider-operators">12</span></div><input type="range" min="2" max="30" value="12" data-slider="operators"/></div>
-      <div><div class="flex justify-between items-center mb-1"><label class="font-semibold text-on-surface" style="font-size:18px">Raw Material</label><span class="font-kpi-numeric text-primary font-bold" style="font-size:18px" id="slider-material">85%</span></div><input type="range" min="0" max="100" value="85" data-slider="material"/></div>
-      <div><div class="flex justify-between items-center mb-1"><label class="font-semibold text-on-surface" style="font-size:18px">Temperature</label><span class="font-kpi-numeric text-primary font-bold" style="font-size:18px" id="slider-temp">32°C</span></div><input type="range" min="10" max="50" value="32" data-slider="temp"/></div>
-      <div><div class="flex justify-between items-center mb-1"><label class="font-semibold text-on-surface" style="font-size:18px">Energy Cost</label><span class="font-kpi-numeric text-primary font-bold" style="font-size:18px" id="slider-energy">₹6.5/kWh</span></div><input type="range" min="2" max="15" value="65" data-slider="energy"/></div>
-    </div>
-    <div class="px-5 pb-3">
-      <div class="flex items-center justify-between mb-2"><h3 class="font-bold text-on-surface-variant uppercase tracking-wider" style="font-size:14px">Projected KPIs</h3><span class="text-xs text-on-surface-variant font-medium" id="ym-kpi-iteration">iteration #0</span></div>
-      <div class="grid grid-cols-2 gap-2.5" id="ym-charts-grid"></div>
-    </div>
-    <div class="px-5 pb-5 mt-auto">
-      <div id="ym-ai-prediction" class="p-5 rounded-xl bg-gradient-to-br from-primary to-primary/90 relative overflow-hidden sticky bottom-0">
-        <div class="absolute top-0 right-0 w-28 h-28 bg-white/10 rounded-full blur-3xl -mr-14 -mt-14"></div>
-        <div class="relative z-10">
-          <div class="flex items-center gap-2 mb-1.5"><span class="material-symbols-outlined text-white" style="font-size:22px">auto_awesome</span><span class="font-bold text-white/90" style="font-size:15px">AI Prediction</span></div>
-          <div id="ym-prediction-text"><p class="text-white/70" style="font-size:14px;line-height:1.6">Adjust parameters and run to generate AI prediction.</p></div>
-        </div>
-      </div>
-    </div>
-  </section>
-</main>
+<body class="font-body-md text-on-surface overflow-hidden">
+<div class="flex h-screen" id="ym-app" style="padding-right:calc(var(--sidebar-width) + var(--sidebar-gap))">
+<div class="flex-1 min-w-0 relative overflow-hidden bg-[#13131f]" id="ym-viewport">
+<div class="absolute inset-0 z-0 flex items-center justify-center" id="ym-scene-loading">
+<div class="flex items-center gap-2 text-on-surface-variant text-sm"><span class="material-symbols-outlined animate-spin text-primary">sync</span> Loading factory floor...</div>
+</div>
+<div id="ym-three-container" class="absolute inset-0 z-[1]"></div>
+<div class="absolute top-2 left-2 flex items-center gap-1.5 z-10">
+<div class="glass-dark px-2 py-1 rounded-lg flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full" id="ym-sim-indicator"></span>
+<span class="text-white/80 font-bold text-[10px]" id="ym-sim-status">READY</span>
+<span class="w-px h-2.5 bg-white/20 mx-0.5"></span>
+<span class="font-kpi-numeric text-white/60 text-[10px]" id="ym-iteration">#0</span>
+</div>
+<div class="glass-dark px-2 py-1 rounded-lg flex items-center gap-1.5" id="ym-plant-badge">
+<span class="material-symbols-outlined text-white/50 text-sm">factory</span>
+<span class="text-white/80 font-semibold text-[11px]" id="ym-plant-name">Loading...</span>
+</div>
+</div>
+<div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5">
+<div class="glass-dark p-1 rounded-full flex gap-1 shadow-lg">
+<button class="px-3 py-1.5 rounded-full bg-primary text-white font-bold flex items-center gap-1 hover:opacity-90 transition-all text-[11px]" id="ym-sim-run"><span class="material-symbols-outlined text-sm">play_arrow</span>RUN</button>
+<button class="px-2.5 py-1.5 rounded-full text-white/60 font-bold flex items-center gap-1 hover:bg-white/10 transition-all text-[11px]" id="ym-sim-pause"><span class="material-symbols-outlined text-sm">pause</span>PAUSE</button>
+<button class="px-2.5 py-1.5 rounded-full text-white/60 font-bold hover:bg-white/10 transition-all text-[11px]" id="ym-sim-reset"><span class="material-symbols-outlined text-sm">restart_alt</span></button>
+<button class="px-2.5 py-1.5 rounded-full text-white/60 font-bold hover:bg-white/10 transition-all text-[11px]" id="ym-sim-compare"><span class="material-symbols-outlined text-sm">compare_arrows</span></button>
+<button class="px-2.5 py-1.5 rounded-full text-white/60 font-bold hover:bg-white/10 transition-all text-[11px]" id="ym-sim-export"><span class="material-symbols-outlined text-sm">download</span></button>
+<button class="px-2.5 py-1.5 rounded-full text-white/60 font-bold hover:bg-white/10 transition-all text-[11px]" id="ym-sim-history"><span class="material-symbols-outlined text-sm">history</span></button>
+</div>
+</div>
+<div id="ym-machine-detail" class="absolute right-2 bottom-16 w-[300px] max-h-[360px] z-20 glass-dark rounded-xl p-3 overflow-y-auto custom-scrollbar hidden text-xs"></div>
+</div>
+<aside class="w-[300px] shrink-0 flex flex-col overflow-y-auto custom-scrollbar bg-white/50 border-l border-outline-variant/30 backdrop-blur-md">
+<div class="p-3 pb-1.5 border-b border-outline-variant/10">
+<div class="flex items-center justify-between">
+<h2 class="font-bold text-on-surface text-sm" style="font-family:Geist,sans-serif">Scenario Simulator</h2>
+<div class="flex gap-1" id="ym-presets"></div>
+</div>
+<p class="text-on-surface-variant text-[10px] mt-0.5">Adjust parameters · factory updates live</p>
+</div>
+<div class="flex gap-1 px-3 py-1.5 overflow-x-auto no-scrollbar border-b border-outline-variant/10" id="ym-plant-pills"></div>
+<div class="flex-1 overflow-y-auto custom-scrollbar px-3 py-2 space-y-2.5" id="ym-sliders">
+<div class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-primary">settings</span>Operations</div>
+<div class="pl-2 space-y-2">
+<div><div class="flex justify-between items-center"><label class="text-[11px] text-on-surface font-medium">Production Speed</label><span class="font-kpi-numeric text-primary font-bold text-xs" id="slider-speed">85%</span></div><input type="range" min="0" max="100" value="85" data-slider="speed"/></div>
+<div><div class="flex justify-between items-center"><label class="text-[11px] text-on-surface font-medium">Machine Load</label><span class="font-kpi-numeric text-primary font-bold text-xs" id="slider-load">65%</span></div><input type="range" min="0" max="100" value="65" data-slider="load"/></div>
+</div>
+<div class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-primary">build</span>Maintenance</div>
+<div class="pl-2 space-y-2">
+<div><div class="flex justify-between items-center"><label class="text-[11px] text-on-surface font-medium">Maintenance Delay</label><span class="font-kpi-numeric text-primary font-bold text-xs" id="slider-delay">12h</span></div><input type="range" min="0" max="72" value="12" data-slider="delay"/></div>
+<div><div class="flex justify-between items-center"><label class="text-[11px] text-on-surface font-medium">Operator Count</label><span class="font-kpi-numeric text-primary font-bold text-xs" id="slider-operators">12</span></div><input type="range" min="2" max="30" value="12" data-slider="operators"/></div>
+</div>
+<div class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-primary">thermostat</span>Environment</div>
+<div class="pl-2 space-y-2">
+<div><div class="flex justify-between items-center"><label class="text-[11px] text-on-surface font-medium">Raw Material Quality</label><span class="font-kpi-numeric text-primary font-bold text-xs" id="slider-material">85%</span></div><input type="range" min="0" max="100" value="85" data-slider="material"/></div>
+<div><div class="flex justify-between items-center"><label class="text-[11px] text-on-surface font-medium">Ambient Temperature</label><span class="font-kpi-numeric text-primary font-bold text-xs" id="slider-temp">32°C</span></div><input type="range" min="10" max="50" value="32" data-slider="temp"/></div>
+</div>
+</div>
+<div class="px-3 py-2 border-t border-outline-variant/10">
+<div class="flex items-center justify-between mb-1.5"><span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Projected KPIs</span><span class="text-[9px] text-on-surface-variant" id="ym-kpi-iteration">iter #0</span></div>
+<div class="grid grid-cols-2 gap-1.5" id="ym-charts-grid"></div>
+</div>
+</aside>
+</div>
 <div id="ym-toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 glass-panel rounded-full py-2.5 px-5 flex items-center gap-2.5 translate-y-32 opacity-0 transition-all duration-500 z-[100] shadow-lg">
 <span class="material-symbols-outlined text-secondary text-sm">check_circle</span>
 <span class="font-bold text-sm text-on-surface" id="ym-toast-msg"></span>
