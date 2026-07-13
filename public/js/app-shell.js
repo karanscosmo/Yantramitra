@@ -78,7 +78,7 @@
         gap: 0;
         padding: 18px 12px;
         background: rgba(255, 255, 255, 0.92);
-        backdrop-filter: blur(24px) saturate(1.4);
+        backdrop-filter: blur(18px) saturate(1.4);
         border: 1px solid rgba(229, 231, 235, 0.8);
         border-radius: 24px;
         overflow: visible;
@@ -146,7 +146,7 @@
         transition:transform .2s cubic-bezier(.4,0,.2,1);
       }
       .ym-nav-rail .ym-nav-label {
-        font:600 9px/1 Inter,system-ui,sans-serif;
+        font:600 12px/1 Inter,system-ui,sans-serif;
         letter-spacing:0.2px;
         color:inherit;
         opacity:0.7;
@@ -202,7 +202,7 @@
         align-items: center;
         gap: 22px;
         padding: 0 28px;
-        border-bottom: 1px solid rgba(199,196,215,.36);
+        border-bottom: 1px solid #ececec;
         background: rgba(255,255,255,.88);
         backdrop-filter: blur(18px);
         box-shadow: 0 8px 32px rgba(65,63,214,.08);
