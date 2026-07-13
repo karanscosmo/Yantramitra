@@ -24,6 +24,10 @@
     };
   }
 
+  function getActiveFilters() {
+    return getFiltersFromURL();
+  }
+
   function setFiltersToURL(filters) {
     const p = new URLSearchParams();
     if (filters.status.length) p.set(FILTER_KEYS.status, filters.status.join(','));
@@ -498,13 +502,16 @@
   }
 
   function renderStats() {
-    const totalOrders = orders.length;
-    const activeOrders = orders.filter(o => o.status !== 'completed').length;
-    const completedOrders = orders.filter(o => o.status === 'completed').length;
-    const overdueOrders = orders.filter(o => o.status !== 'completed' && o.dueDate && new Date(o.dueDate) < new Date()).length;
-    const avgCompletion = totalOrders ? Math.round(completedOrders / totalOrders * 100) : 0;
+    const target = filteredOrders.length ? filteredOrders : orders;
+    const totalOrders = target.length;
+    const activeOrders = target.filter(o => o.status !== 'completed').length;
+    const todayStr = new Date().toDateString();
+    const completedToday = target.filter(o => o.status === 'completed' && o.updatedAt && new Date(o.updatedAt).toDateString() === todayStr).length;
+    const overdueOrders = target.filter(o => o.status !== 'completed' && o.dueDate && new Date(o.dueDate) < new Date()).length;
+    const completedTotal = target.filter(o => o.status === 'completed').length;
+    const avgCompletion = totalOrders ? Math.round(completedTotal / totalOrders * 100) : 0;
     document.getElementById('ym-active-count').textContent = activeOrders;
-    document.getElementById('ym-completed-count').textContent = completedOrders;
+    document.getElementById('ym-completed-count').textContent = completedToday;
     document.getElementById('ym-avg-completion').textContent = avgCompletion;
     document.getElementById('ym-overdue-count').textContent = overdueOrders;
   }
@@ -516,7 +523,11 @@
     const tbody = document.getElementById('ym-table-body');
     const container = document.getElementById('ym-table-container');
     if (!tbody || !container) return;
-    if (!filteredOrders.length) { container.style.display = 'none'; return; }
+    if (!filteredOrders.length) {
+      container.style.display = 'block';
+      tbody.innerHTML = '';
+      return;
+    }
     container.style.display = 'block';
 
     const sorted = [...filteredOrders].sort((a, b) => {
@@ -570,56 +581,23 @@
   }
 
   function renderOrders() {
-    const container = document.getElementById('ym-orders-list');
-    if (!container) return;
+    const loadingEl = document.getElementById('ym-loading-state');
+    if (loadingEl) loadingEl.style.display = 'none';
     renderStats();
+    renderActiveFilters();
+
+    const emptyEl = document.getElementById('ym-table-empty');
+    const emptyMsg = document.getElementById('ym-empty-msg');
 
     if (!filteredOrders.length) {
-      container.innerHTML = `<div class="flex flex-col items-center justify-center py-20 text-on-surface-variant">
-        <span class="material-symbols-outlined text-5xl mb-sm">assignment</span>
-        <p class="font-label-caps text-sm">No work orders match your filters</p>
-        <button class="text-xs text-primary hover:underline mt-1 cursor-pointer" id="ym-empty-reset">Reset all filters</button>
-      </div>`;
-      document.getElementById('ym-empty-reset')?.addEventListener('click', () => {
-        window.history.replaceState(null, '', window.location.pathname);
-        applyFilters();
-      });
+      const hasFilters = getActiveFilters().status.length || getActiveFilters().priority.length || getActiveFilters().location.length || getActiveFilters().search;
+      if (emptyMsg) emptyMsg.textContent = hasFilters ? 'No work orders match your filters' : 'No work orders yet';
+      if (emptyEl) emptyEl.style.display = 'flex';
       renderTable();
       return;
     }
-    const statusOrder = { 'in_progress': 0, 'open': 1, 'blocked': 2, 'waiting_parts': 3, 'assigned': 4, 'approved': 5, 'cancelled': 6, 'completed': 7 };
-    const sorted = [...filteredOrders].sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
-    container.innerHTML = sorted.map((o, idx) => {
-      const isSelected = selectedOrder && selectedOrder.id === o.id;
-      return `<div class="wo-card glass-card rounded-xl p-md flex items-center gap-md ${isSelected ? 'border-l-4 border-primary ring-2 ring-primary/20' : 'hover:bg-white/80 transition-all cursor-pointer'}" data-order-id="${o.id}">
-        <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-          <span class="material-symbols-outlined text-primary">${orderIcon(o)}</span>
-        </div>
-        <div class="flex-grow min-w-0">
-          <div class="flex items-center gap-xs">
-            <h3 class="font-semibold text-on-surface truncate text-sm">${o.title}</h3>
-            ${priorityBadge(o.priority)}
-          </div>
-          <p class="text-sm text-on-surface-variant mt-1 truncate">Asset: ${o.machine?.name || 'Unknown'} ${o.assignedTo ? '• ' + o.assignedTo : ''}</p>
-        </div>
-        <div class="text-right shrink-0">
-          <div class="flex items-center justify-end gap-1.5">
-            <div class="w-2 h-2 rounded-full ${o.status === 'in_progress' ? 'bg-secondary status-glow-teal' : o.status === 'completed' ? 'bg-outline-variant' : o.status === 'blocked' ? 'bg-error status-glow-coral' : 'bg-outline-variant'}"></div>
-            ${statusBadge(o.status)}
-          </div>
-          <span class="text-xs text-on-surface-variant block mt-1">${o.dueDate ? 'Due ' + new Date(o.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : ''}</span>
-        </div>
-      </div>`;
-    }).join('');
-    container.querySelectorAll('[data-order-id]').forEach(el => {
-      el.addEventListener('click', function() {
-        const id = this.dataset.orderId;
-        const order = orders.find(o => o.id === id);
-        if (order) openDrawer(order);
-      });
-    });
+    if (emptyEl) emptyEl.style.display = 'none';
     renderTable();
-    renderActiveFilters();
   }
 
   async function pauseSession() {
@@ -803,7 +781,11 @@
       const data = await get('/api/work-orders');
       orders = data;
       applyFilters();
-    } catch (e) { console.error('loadOrders error:', e); }
+    } catch (e) {
+      console.error('loadOrders error:', e);
+      const loadingEl = document.getElementById('ym-loading-state');
+      if (loadingEl) loadingEl.innerHTML = '<span class="material-symbols-outlined text-error">error</span><span class="text-sm font-bold text-error">Failed to load work orders</span>';
+    }
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
@@ -820,6 +802,12 @@
 
     renderFilters();
     await loadOrders();
+
+    document.getElementById('ym-empty-reset')?.addEventListener('click', () => {
+      window.history.replaceState(null, '', window.location.pathname);
+      document.getElementById('ym-search-input').value = '';
+      applyFilters();
+    });
 
     const f = getActiveFilters();
     if (f.search) {
