@@ -56,7 +56,7 @@
     const style = document.createElement('style');
     style.id = 'ym-shell-styles';
     style.textContent = `
-      :root { --header-height: 72px; --sidebar-width: 104px; --sidebar-gap: 16px; }
+      :root { --header-height: 72px; --sidebar-width: 64px; --sidebar-gap: 16px; --status-bar-height: 26px; }
 
       .ym-empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px 24px; text-align:center; }
       .ym-empty-state .material-symbols-outlined { font-size:48px; color:#c7c4d7; margin-bottom:12px; }
@@ -76,7 +76,7 @@
         flex-direction: column;
         align-items: stretch;
         gap: 0;
-        padding: 18px 12px;
+        padding: 12px 8px;
         background: rgba(255, 255, 255, 0.92);
         backdrop-filter: blur(18px) saturate(1.4);
         border: 1px solid rgba(229, 231, 235, 0.8);
@@ -86,11 +86,11 @@
         box-shadow: 0 8px 40px rgba(0,0,0,0.08);
       }
       .ym-nav-rail .ym-nav-section {
-        display:flex; flex-direction:column; align-items:stretch; gap:6px; width:100%; padding:0 0 12px;
+        display:flex; flex-direction:column; align-items:stretch; gap:2px; width:100%; padding:0 0 6px;
       }
       .ym-nav-rail .ym-nav-section + .ym-nav-section {
-        margin-top:10px;
-        padding-top:12px;
+        margin-top:6px;
+        padding-top:6px;
         position:relative;
       }
       .ym-nav-rail .ym-nav-section + .ym-nav-section::before {
@@ -99,9 +99,9 @@
       }
       .ym-nav-rail .ym-nav-section-label {
         display:block;
-        padding:0 4px 12px 4px;
-        font:700 10px/1 Inter,system-ui,sans-serif;
-        letter-spacing:.18em;
+        padding:0 2px 4px 2px;
+        font:600 7px/1 Inter,system-ui,sans-serif;
+        letter-spacing:.14em;
         text-transform:uppercase;
         color:#9CA3AF;
         text-align:center;
@@ -109,13 +109,13 @@
       .ym-nav-rail .ym-nav-link {
         position:relative;
         width:100%;
-        min-height:60px;
+        min-height:42px;
         display:flex;
         flex-direction:column;
         align-items:center;
         justify-content:center;
-        gap:4px;
-        border-radius:14px;
+        gap:0;
+        border-radius:8px;
         color:#6B7280;
         border:0;
         background:transparent;
@@ -123,15 +123,11 @@
         text-decoration:none;
         transition:all .2s cubic-bezier(.4,0,.2,1);
         flex-shrink:0;
-        padding:8px 0;
+        padding:4px 0;
       }
       .ym-nav-rail .ym-nav-link:hover {
         color:#4F46E5;
         background:rgba(79,70,229,0.06);
-        transform:scale(1.04);
-      }
-      .ym-nav-rail .ym-nav-link:hover .material-symbols-outlined {
-        transform:scale(1.1);
       }
       .ym-nav-rail .ym-nav-link.is-active {
         color:#4338CA;
@@ -142,16 +138,11 @@
         color:#4338CA;
       }
       .ym-nav-rail .ym-nav-link .material-symbols-outlined {
-        font-size:28px; line-height:1;
-        transition:transform .2s cubic-bezier(.4,0,.2,1);
+        font-size:22px; line-height:1;
       }
       .ym-nav-rail .ym-nav-label {
-        font:600 12px/1 Inter,system-ui,sans-serif;
-        letter-spacing:0.2px;
-        color:inherit;
-        opacity:0.7;
+        display:none;
       }
-      .ym-nav-rail .ym-nav-link.is-active .ym-nav-label { opacity:1; }
       .ym-nav-rail .ym-nav-badge {
         position:absolute; top:0; right:0;
         min-width:18px; height:18px;
@@ -207,7 +198,7 @@
         backdrop-filter: blur(18px);
         box-shadow: 0 8px 32px rgba(65,63,214,.08);
       }
-      body.ym-in-app { padding-top: var(--header-height); }
+      body.ym-in-app { padding-top: calc(var(--header-height) + var(--status-bar-height)); }
       body.ym-in-app > header:not(.ym-standard-topbar) { display: none !important; }
 
       body.ym-in-app main {
@@ -306,11 +297,11 @@
 
       body.ym-page-map main,
       body.ym-page-simulator main {
-        height: calc(100vh - var(--header-height)) !important;
+        height: calc(100vh - var(--header-height) - var(--status-bar-height)) !important;
         padding-top: 0 !important;
       }
       body.ym-page-ai-console main {
-        height: calc(100vh - var(--header-height)) !important;
+        height: calc(100vh - var(--header-height) - var(--status-bar-height)) !important;
         padding-top: 16px !important;
       }
 
@@ -331,6 +322,15 @@
       }
 
       .ym-profile-wrap { position:relative; }
+      .ym-profile-trigger {
+        display:flex; align-items:center; gap:2px;
+        border:0; background:transparent; cursor:pointer; padding:2px;
+        border-radius:9999px;
+        transition:background .15s;
+      }
+      .ym-profile-trigger:hover { background:rgba(65,63,214,0.06); }
+      .ym-profile-chevron { font-size:16px; color:#9CA3AF; transition:transform .2s; }
+      .ym-profile-wrap.is-open .ym-profile-chevron { transform:rotate(180deg); }
       .ym-profile-dropdown {
         position:absolute; top:calc(100% + 8px); right:0;
         min-width:190px;
@@ -528,7 +528,7 @@
       .ym-palette-wrapper .ym-command-input {
         box-sizing: border-box;
       }
-      .ym-status-bar { position:fixed; top:56px; left:0; right:0; z-index:45; height:26px; background:rgba(244,242,255,.85); backdrop-filter:blur(8px); border-bottom:1px solid rgba(199,196,215,.3); display:flex; align-items:center; padding:0 16px; }
+      .ym-status-bar { position:fixed; top:var(--header-height); left:0; right:0; z-index:45; height:var(--status-bar-height); background:rgba(244,242,255,.85); backdrop-filter:blur(8px); border-bottom:1px solid rgba(199,196,215,.3); display:flex; align-items:center; padding:0 16px; }
       .ym-status-items { display:flex; align-items:center; gap:16px; font:500 10px/1 Inter,system-ui,sans-serif; color:#767586; overflow-x:auto; white-space:nowrap; width:100%; }
       .ym-status-item { display:inline-flex; align-items:center; gap:4px; }
       @media (max-width: 768px) {
@@ -568,7 +568,6 @@
         return `<a href="${item.path}" class="ym-nav-link ${active ? 'is-active' : ''}">
           <span class="ym-nav-tooltip">${item.label}${item.kbd ? ' <span style="opacity:0.5;margin-left:4px">⌘'+item.kbd+'</span>' : ''}</span>
           <span class="material-symbols-outlined">${item.icon}</span>${badgeHtml}
-          <span class="ym-nav-label">${item.label.replace(' ','\u00a0')}</span>
         </a>`;
       }).join('')}</div>`;
     }
@@ -636,7 +635,10 @@
         <button type="button" class="ym-standard-icon" data-ym-notifications aria-label="Notifications"><span class="material-symbols-outlined">notifications</span></button>
         <button type="button" class="ym-standard-icon" data-ym-factory aria-label="Plant map"><span class="material-symbols-outlined">factory</span></button>
         <div class="ym-profile-wrap">
-          <img class="ym-standard-avatar" src="/assets/images/ym-operator-avatar.jpg" alt="Profile">
+          <button type="button" class="ym-profile-trigger" aria-label="Profile menu">
+            <img class="ym-standard-avatar" src="/assets/images/ym-operator-avatar.jpg" alt="Profile">
+            <span class="material-symbols-outlined ym-profile-chevron">expand_more</span>
+          </button>
           <div class="ym-profile-dropdown">
             <a href="/settings" class="ym-dropdown-item"><span class="material-symbols-outlined">settings</span>Settings</a>
             <button type="button" class="ym-dropdown-item ym-dropdown-logout"><span class="material-symbols-outlined">logout</span>Log out</button>
@@ -646,10 +648,11 @@
     document.body.prepend(header);
     header.querySelector('.ym-logo').addEventListener('click', () => { window.location.href = '/dashboard'; });
     header.querySelector('[data-ym-factory]').addEventListener('click', () => { window.location.href = '/map'; });
-    header.querySelector('.ym-standard-avatar').addEventListener('click', (e) => {
+    header.querySelector('.ym-profile-trigger').addEventListener('click', (e) => {
       e.stopPropagation();
       const dd = header.querySelector('.ym-profile-dropdown');
       dd.classList.toggle('is-open');
+      header.querySelector('.ym-profile-wrap').classList.toggle('is-open');
     });
     header.querySelector('.ym-dropdown-logout').addEventListener('click', async () => {
       header.querySelector('.ym-profile-dropdown').classList.remove('is-open');
@@ -661,6 +664,7 @@
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.ym-profile-wrap')) {
         header.querySelector('.ym-profile-dropdown')?.classList.remove('is-open');
+        header.querySelector('.ym-profile-wrap')?.classList.remove('is-open');
       }
     });
     header.querySelector('input').addEventListener('keydown', event => {
