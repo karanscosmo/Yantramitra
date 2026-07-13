@@ -729,7 +729,7 @@
       if (/history|timeline/i.test(text)) { button.dataset.ymWired = 'true'; button.addEventListener('click', openHistoryModal); return; }
       if (/replay/i.test(text)) { button.dataset.ymWired = 'true'; button.addEventListener('click', openIncidentReplay); return; }
       if (/compare/i.test(text)) { button.dataset.ymWired = 'true'; button.addEventListener('click', openCompareModal); return; }
-      if (/details/i.test(text) && !/open\s+maintenance/i.test(lower)) {
+      if (/details/i.test(text) && !/open\s+maintenance/i.test(lower) && !button.closest('.agent-card')) {
         button.dataset.ymWired = 'true';
         button.addEventListener('click', async function() {
           const card = this.closest('[id^="plan-"]');
@@ -748,11 +748,9 @@
       }
       if (/approve/i.test(text)) { button.dataset.ymWired = 'true'; button.addEventListener('click', () => incidentAction('approve_plan')); return; }
       if (/reject/i.test(text)) { button.dataset.ymWired = 'true'; button.addEventListener('click', () => showModal('Decision Logged', '<p class="text-on-surface-variant">Rejection recorded in the review workflow. A revised plan can be generated from the incident replay.</p>')); return; }
-      if (/create order|new mission|deploy scenario|advance state|auto-resolve|re-scan|latest snapshot|clear filters|save changes|restart/i.test(text)) {
+      if (/deploy scenario|advance state|auto-resolve|re-scan|latest snapshot|clear filters|restart/i.test(text)) {
         button.dataset.ymWired = 'true';
         button.addEventListener('click', () => {
-          if (/create order/i.test(text)) { window.location.href = '/work-orders'; return; }
-          if (/new mission/i.test(text)) { window.location.href = '/agents'; return; }
           if (/deploy scenario/i.test(text)) { window.location.href = '/simulator'; return; }
           showModal('Action Registered', '<p class="text-on-surface-variant">YantraMitra recorded <strong>' + (text || 'this action') + '</strong> in the live operations workflow.</p>');
         });
