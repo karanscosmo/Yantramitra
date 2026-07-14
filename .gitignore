@@ -16,7 +16,4 @@ yarn-debug.log*
 yarn-error.log*
 .vercel
 uploads/
-public/assets/images/yantranklan-avatar-ai.png
-public/assets/images/ym-digital-twin-factory.png
-public/assets/images/ym-hero-control-room.png
-public/assets/images/ym-operator-avatar.png
+coverage/

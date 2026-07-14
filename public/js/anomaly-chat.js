@@ -440,8 +440,7 @@
     // Load alarms/investigation for context
     try {
       const [alarmsRes] = await Promise.all([
-        fetch('/api/alarms', { credentials: 'same-origin' }).then(r => r.json()),
-        // fetch('/api/anomaly/investigation/' + (window.location.pathname.split('/').pop() || ''), { credentials: 'same-origin' }).then(r => r.json()).catch(() => ({}))
+        fetch('/api/alarms', { credentials: 'same-origin' }).then(r => r.json())
       ]);
       currentAlarms = alarmsRes || [];
     } catch {}
