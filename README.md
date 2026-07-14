@@ -1,41 +1,31 @@
 # YantraMitra
 
-Industrial operations intelligence platform — command center, digital twin, AI copilot, and work order management for multi-plant manufacturing environments.
+Industrial operations intelligence platform with multi-plant monitoring, asset diagnostics, AI-assisted analysis, and work order management for manufacturing environments.
 
-YantraMitra models a realistic five-plant Indian manufacturing company (Pune, Ahmedabad, Chennai, Bengaluru, Nagpur) with live seeded data: machines, sensors, alarms, work orders, agents, incidents, and a full incident-to-recovery lifecycle. The platform includes a Three.js digital twin, anomaly investigation graph, scenario simulator, role-based access, and YantraNklan — an AI operations assistant powered by Groq (Llama 3).
+## Features
 
-## Screenshots
-
-| Dashboard | Digital Twin | AI Console |
-|---|---|---|
-| Global command center with live KPIs | 3D factory floor with machine inspector | YantraNklan AI operations chat |
-
-*Deploy to Vercel and open the app to see the full interface. Screenshots are not bundled in the repository to keep it lean.*
-
-## Key Features
-
-- **Command Center** — Global dashboard with plant OEE, active alarms, machine status, and executive summary across all five facilities
-- **Digital Twin** — Three.js 3D factory floor with clickable machines, HUD overlay (Active/Warning/Down/OEE), health inspector panel, and ambient animations
-- **AI Copilot (YantraNklan)** — Chat interface with live database context, file upload with text extraction (PDF/DOCX/XLSX/CSV/TXT/images), streaming responses, and conversation memory
-- **Work Orders** — Full CRUD, multi-select status/priority/location filters with URL persistence, search by ID/asset/engineer/plant/issue, sortable column headers, pagination (10/page), detail drawer, AI chat bar with natural language commands (show overdue/assign/create/filter), auto-seed of 25 realistic industrial orders on first GET
-- **Anomaly Investigation** — Graph-based root cause analysis with zoom/pan, draggable nodes, hypothesis highlighting, confidence bars, SVG edge glow animations
-- **Scenario Simulator** — 4 presets (Balanced/Energy Saver/Maximum Output/Maintenance Mode), animated KPI bars with stagger and direction flash, progress bar, AI-generated grid summary
-- **Agent Mission Control** — 9 AI agents with drag-and-drop status, live running missions, mission queue, activity feed, timeline, mission details, AI recommendations, system health, and detail drawer
-- **Asset Fleet & Diagnostics** — Machine health cards, telemetry readings, component breakdown, maintenance timeline, AI root-cause predictions with confidence scoring
-- **Plant Map** — Leaflet-based global map with real Indian city coordinates, facility status markers, and drill-down
-- **Settings** — 5 tabs (Profile, Notifications, Team & Roles, Integrations, Security) with avatar upload/initials fallback, notification toggles, team invite/remove/role-change, integration connect/disconnect/test, password change/2FA/API keys/sessions/login history
-- **Global Command Palette** — Cmd+K / Ctrl+K / / search across plants, machines, work orders, agents, and incidents
-- **Keyboard Navigation** — ⌘1–⌘' for nav rail items, Escape for modal close
-- **Role-based Access** — Admin, plant manager, maintenance, operator, executive roles with permission boundaries
-- **Audit Logging** — All mutations recorded with actor, action, entity, and detail in the database
-- **Enterprise Status Bar** — 26px strip showing environment badge, AI model, live plant/device counts, uptime, last sync (30s refresh)
-- **Nav Rail** — Dark glass fixed panel (100px right) with section labels, 26px icons, text labels, accent bar, animated tooltips, live badge counts, keyboard shortcut labels
+- **Command Center** — Dashboard with plant KPIs, active alarms, machine status, and executive summary across facilities.
+- **Digital Twin** — Three.js 3D factory floor with clickable machines, health overlay, and inspector panel.
+- **AI Copilot (YantraNklan)** — Chat with streaming responses, file upload (PDF/DOCX/XLSX/CSV/TXT/images), text extraction, and conversation history. Context injected per page (assets, work orders, missions, anomaly investigation).
+- **Work Orders** — CRUD, status/priority/location filters, search, sortable columns, pagination, detail drawer. Auto-seeds 25 orders on first fetch if fewer than 5 exist.
+- **Asset Fleet & Detail** — Machine health cards, telemetry, component breakdown, maintenance timeline, AI predictions. Four tabs: Overview, Sensors, History, Documents.
+- **Anomaly Investigation** — Active alarm management, root-cause graph with zoom/pan/draggable nodes, investigation path, evidence timeline, causal hypotheses with confidence bars, recommended actions, affected assets, AI reasoning panel.
+- **Scenario Simulator** — Configuration presets (Balanced, Energy Saver, Maximum Output, Maintenance Mode), animated KPI bars.
+- **Agent Mission Control** — AI agents with status management, mission queue, activity feed, timeline, recommendations.
+- **Global Map** — Leaflet map with Indian city coordinates, facility status markers, drill-down.
+- **Reliability Forecast** — Analytics and prediction views.
+- **Diagnostics** — Per-asset diagnostics with telemetry, AI predictions, remaining useful life, hierarchy.
+- **Maintenance Planner** — Maintenance schedule and event management.
+- **Settings** — Profile, notifications, team & roles (invite/remove/role-change), integrations (connect/disconnect/configure/test), security (password change, 2FA, API keys, sessions, login history).
+- **Command Palette** — Cmd+K / Ctrl+K global search across plants, machines, work orders, agents, and incidents.
+- **Role-based Access** — Admin, plant_manager, maintenance, operator, executive roles with permission boundaries.
+- **Audit Logging** — All mutations recorded with actor, action, entity, detail.
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | 21 standalone HTML pages, Tailwind CSS (CDN), Material Symbols |
+| Frontend | HTML, Tailwind CSS (CDN), Material Symbols |
 | 3D Rendering | Three.js (CDN) |
 | Maps | Leaflet (CDN) |
 | Backend | Node.js, Express |
@@ -43,220 +33,94 @@ YantraMitra models a realistic five-plant Indian manufacturing company (Pune, Ah
 | Auth | JWT (httpOnly cookies), bcryptjs |
 | AI | Groq (Llama 3.3 70B) via OpenAI-compatible API |
 | File Parsing | pdf-parse, mammoth (DOCX), xlsx |
-| Deployment | Vercel (serverless via api/index.js) |
+| File Upload | multer |
+| Deployment | Vercel (serverless via `api/index.js`) |
 
-## Folder Structure
+## Project Structure
 
 ```
 api/
-  index.js                          Vercel serverless entry point
-views/
-  */code.html                       21 standalone page screens
+  index.js                    Vercel serverless entry point
+views/                        21 page directories (home, login, command-center, asset-fleet, etc.)
 prisma/
-  schema.prisma                     Database schema (15 models)
+  schema.prisma               Database schema (15 models)
 public/
-  assets/
-    images/                         Plant photos, people avatars, facility SVGs
-    logos/                          YantraMitra logo
-    icons/                          Favicon
-  docs/
-    yantramitra-project-overview.pdf
-  js/                               Page controllers + shared app shell (24 files)
+  js/                         28 page controllers + shared app shell
+  assets/                     images, logos, icons
 scripts/
-  seed.js                           Demo data seeder (5 plants, 29 machines, 16K readings)
+  seed.js                     Demo data seeder
 services/
-  prisma.js                         PrismaClient singleton with serverless-safe caching
-server.js                           Express app, routes, auth, APIs, AI chat (1551 lines)
-vercel.json                         Build and routing configuration
+  prisma.js                   PrismaClient singleton
+server.js                     Express app (~1795 lines)
+vercel.json                   Build and routing configuration
 ```
 
 ## Installation
 
 ```bash
+git clone <repo-url>
+cd yantramitra-platform
 npm install
 cp .env.example .env
+# Edit .env with your database and API credentials
+npx prisma db push
+npm run seed
+npm start
 ```
+
+Open `http://localhost:3000` and log in with `admin@yantramitra.com` / `password123`.
 
 ## Environment Variables
 
 | Variable | Required | Description |
 |---|---|---|
-| `DATABASE_URL` | Yes | Postgres connection URL (pooled for Neon) |
-| `DIRECT_URL` | Yes | Direct Postgres URL for migrations |
+| `DATABASE_URL` | Yes | PostgreSQL connection URL (pooled, e.g. Neon with PgBouncer) |
+| `DIRECT_URL` | Yes | Direct PostgreSQL URL for migrations |
 | `JWT_SECRET` | Yes | Secret key for JWT signing |
-| `GROQ_API_KEY` | Yes | Groq API key for YantraNklan AI chat |
-| `ENABLE_DEMO_PASSWORD_RESET` | No | Set `true` for demo reset-password |
+| `GROQ_API_KEY` | No (AI features disabled without it) | Groq API key (get at https://console.groq.com) |
+| `ENABLE_DEMO_PASSWORD_RESET` | No | Set `true` to enable reset-password in demo |
 
-## Run Locally
+## Scripts
 
-### First-time setup
-
-```bash
-npx prisma db push       # Create database tables from schema
-node scripts/seed.js     # Seed 5 plants, 29 machines, 16K readings, team, incidents
-npm start                # Start server on port 3000
-```
-
-Then open `http://localhost:3000` and log in with `admin@yantramitra.com` / `password123`.
-
-### Quick start (if already seeded)
-
-```bash
-npm start
-```
-
-## Demo Credentials
-
-| Role | Email | Password |
-|---|---|---|
-| Admin | admin@yantramitra.com | password123 |
-| Operator | operator@yantramitra.com | password123 |
-
-Additional roles: plant_manager, maintenance, executive — available via signup.
-
-## Production Deployment (Vercel)
-
-```bash
-npm i -g vercel
-vercel --prod
-```
-
-Set environment variables in Vercel dashboard:
-- `DATABASE_URL` (pooled URL for Neon)
-- `DIRECT_URL` (direct connection URL)
-- `JWT_SECRET`
-- `GROQ_API_KEY`
-
-## Available Scripts
-
-| Script | Command |
+| Command | Description |
 |---|---|
-| Start server | `npm start` |
-| Seed demo data | `npm run seed` |
-| Generate Prisma client | `npm run build` |
-| Post-install hook | `npx prisma generate` |
+| `npm start` | Start server on port 3000 |
+| `npm run dev` | Same as start |
+| `npm run seed` | Seed demo data (5 plants, 29 machines, 16K readings, team, incidents) |
+| `npm run build` | Generate Prisma client |
+| `npm run postinstall` | Auto-generates Prisma client after install |
 
-## API Summary
+## Architecture Overview
 
-### Authentication
-- `POST /api/auth/signup` — Register new user
-- `POST /api/auth/login` — Login
-- `POST /api/auth/logout` — Logout
-- `GET /api/auth/me` — Current user profile
+The application is a single Express server (`server.js`) that serves both API routes and static HTML pages. Each page is a standalone HTML file in `views/` with a corresponding controller in `public/js/`. Authentication uses JWT stored in httpOnly cookies with role-based middleware on admin routes. The AI chat uses Groq's OpenAI-compatible API with SSE streaming; it falls back to non-streaming if the client doesn't support SSE. Database access is through Prisma ORM with a singleton client instance (`services/prisma.js`) that caches across serverless invocations.
 
-### Operations
-- `GET /api/dashboard/summary` — Global KPIs
-- `GET /api/executive/summary` — Executive report
-- `GET /api/plants` — All plants with hierarchy
-- `GET /api/plants/:id` — Plant detail
-- `GET /api/machines` — All machines
-- `GET /api/machines/:id` — Machine detail
-- `GET /api/diagnostics/:assetId` — Full diagnostics
-- `GET /api/readings` — Sensor readings (filterable)
-- `GET /api/alarms` — All alarms
-- `PATCH /api/alarms/:id/resolve` — Resolve alarm
-- `GET /api/incidents` — Operational incidents
-- `POST /api/incidents/:id/actions` — Incident workflow actions
+## Notes
 
-### Work Orders
-- `GET /api/work-orders` — List (auto-seeds if <5 exist)
-- `POST /api/work-orders` — Create
-- `PATCH /api/work-orders/:id` — Update
+- **Vercel deployment:** All routes are handled through `api/index.js` which re-exports the Express app. Set environment variables in the Vercel dashboard. The `vercel.json` rewrites all paths to the serverless function.
+- **Database:** Designed for PostgreSQL (Neon). Prisma migrations require a `DIRECT_URL` (non-pooled). The `DATABASE_URL` should use PgBouncer pooling for serverless compatibility.
+- **Demo data:** Running `npm run seed` populates 5 Indian manufacturing plants, 29 machines with components and sensors, 16,704 sensor readings, active alarms, 9 AI agents, 5 maintenance plans, 6 work orders, 1 operational incident, and 7 team members. Work orders auto-seed an additional 25 on first GET if fewer than 5 exist.
+- **Seeded credentials:** `admin@yantramitra.com` / `operator@yantramitra.com` / `password123`. Additional roles (plant_manager, maintenance, executive) available via signup.
 
-### AI
-- `POST /api/ai-chat` — YantraNklan chat (non-streaming, auto-fallback to DB lookup)
-- `POST /api/ai-chat/stream` — YantraNklan chat (SSE streaming with fallback to non-streaming)
-- `POST /api/ai-upload` — Upload files (PDF/DOCX/XLSX/CSV/TXT/images) for AI analysis with text extraction
+## Routes
 
-### Diagnostics
-- `GET /api/diagnostics/:assetId` — Full machine diagnostics with telemetry, AI predictions, RUL, hierarchy
-- `GET /api/readings` — Filterable sensor readings by machineId, metric, and time window
-
-### Incidents
-- `GET /api/incidents` — All operational incidents with machine context
-- `GET /api/incidents/:id` — Single incident detail with full machine hierarchy
-- `POST /api/incidents/:id/actions` — Lifecycle actions: generate_plan, approve_plan, create_work_order, reserve_inventory, mark_repaired
-
-### Agents, Plans, Team
-- `GET/POST /api/agents` — List/create agents
-- `PATCH /api/agents/:id` — Update agent
-- `GET/POST /api/plans` — List/create plans
-- `PATCH /api/plans/:id` — Approve/reject plan
-- `GET /api/team` — Team members
-- `POST /api/team/invite` — Invite user
-- `PATCH /api/team/:id` — Update user role
-- `DELETE /api/team/:id` — Remove user
-
-### User
-- `GET/PATCH /api/user/profile` — Profile CRUD
-- `POST /api/user/profile/photo` — Upload avatar
-- `POST /api/user/change-password` — Change password
-- `GET/PATCH /api/user/preferences` — Preferences
-
-### Integrations
-- `POST /api/integrations/:key/connect` — Connect (SAP, AzureIoT, MQTT, OPCUA, Email, Webhooks)
-- `POST /api/integrations/:key/disconnect` — Disconnect
-- `POST /api/integrations/:key/configure` — Configure
-- `POST /api/integrations/:key/test` — Test connection
-
-## Route Map
-
-| Route | Page |
+| Path | Page |
 |---|---|
-| `/` | Landing page |
-| `/login` | Login |
-| `/signup` | Signup |
-| `/reset-password` | Reset password |
-| `/onboarding` | Role onboarding |
+| `/` | Landing |
+| `/login`, `/signup`, `/reset-password`, `/onboarding` | Auth |
 | `/dashboard` | Command center |
-| `/map` | Global operations map |
+| `/map` | Global map |
 | `/plant/:id` | Plant overview |
-| `/digital-twin` | 3D digital twin |
+| `/digital-twin` | 3D factory |
 | `/assets` | Asset fleet |
 | `/assets/:id` | Asset detail |
 | `/anomaly` | Anomaly investigation |
 | `/reliability` | Reliability forecast |
-| `/diagnostics/:assetId` | Machine diagnostics |
+| `/diagnostics/:assetId` | Diagnostics |
 | `/simulator` | Scenario simulator |
-| `/ai-console` | YantraNklan AI chat |
+| `/ai-console` | AI chat |
 | `/agents` | Agent mission control |
 | `/plans` | Plan review |
 | `/maintenance` | Maintenance planner |
 | `/work-orders` | Work orders |
 | `/settings` | Settings & profile |
-
-Static routes: `/privacy`, `/terms`, `/sitemap`, `/api-status`, `/about`, `/help`, `/contact`, `/documentation`.
-
-## Seeded Demo Data
-
-Running `node scripts/seed.js` creates:
-- 5 Indian facilities with hierarchy (plants → buildings → lines)
-- 29 domain-specific machines (CNC, robotic welders, SMT, etc.)
-- 87 components, 174 sensors, 58 inventory parts
-- 16,704 sensor readings across 6 metrics (96h each)
-- Active alarms, 9 AI agents, 5 maintenance plans
-- 6 work orders + 25 auto-seeded on first GET
-- 1 operational incident with full lifecycle timeline
-- 7 team members with distinct roles
-
-## Keyboard Shortcuts
-
-| Shortcut | Action |
-|---|---|
-| `⌘K` / `Ctrl+K` / `/` | Command palette |
-| `⌘1`–`⌘'` | Navigate nav rail items |
-| `Escape` | Close modals |
-
-## Future Roadmap
-
-- **Real-time Streaming** — WebSocket-based telemetry push for live sensor data without page refresh
-- **Mobile App** — React Native companion for technician field access, barcode scanning, and photo capture
-- **OAuth / SSO** — Azure AD, Google Workspace, and Okta single sign-on integration
-- **Email Notifications** — SMTP-based alert routing for critical alarms and work order assignments
-- **BI Exports** — CSV/JSON export for all table views, scheduled PDF report generation
-- **Multi-language** — Hindi, Marathi, Tamil, and Kannada UI locale support
-- **Offline Mode** — Service worker caching for critical dashboards during network interruptions
-
-## License
-
-Proprietary — Yantra Manufacturing Technologies Pvt. Ltd.
+| `/privacy`, `/terms`, `/sitemap`, `/api-status`, `/about`, `/help`, `/contact`, `/documentation` | Static pages |
