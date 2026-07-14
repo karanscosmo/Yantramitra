@@ -61,8 +61,8 @@ body { background-color:#fbf8ff; background-image: radial-gradient(at 0% 0%, rgb
 .custom-scrollbar::-webkit-scrollbar-thumb { background:#c7c4d7; border-radius:10px; }
 .hide-scrollbar::-webkit-scrollbar { display:none; }
 .hide-scrollbar { -ms-overflow-style:none; scrollbar-width:none; }
-.drawer-backdrop { position:fixed; inset:0; z-index:60; background:rgba(25,26,40,0.32); opacity:0; transition:opacity .3s ease; }
-.drawer-backdrop.open { opacity:1; }
+.drawer-backdrop { position:fixed; inset:0; z-index:60; background:rgba(25,26,40,0.32); opacity:0; transition:opacity .3s ease; pointer-events:none; }
+.drawer-backdrop.open { opacity:1; pointer-events:auto; }
 .glass-drawer { background: rgba(255,255,255,0.8); backdrop-filter: blur(24px); border-left: 1px solid #E7E9F5; }
 .drawer-enter { transform:translateX(100%); opacity:0; }
 .drawer-enter-active { transform:translateX(0); opacity:1; transition:transform .3s ease, opacity .3s ease; }
