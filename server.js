@@ -18,6 +18,7 @@ const decisionService = require('./services/decisions');
 const fleetService = require('./services/fleet');
 const learningService = require('./services/learning');
 const integrationService = require('./services/integrations');
+const securityService = require('./services/security');
 
 const isVercel = !!process.env.VERCEL;
 const uploadsDir = isVercel ? '/tmp/uploads' : path.join(__dirname, 'uploads');
@@ -2258,6 +2259,77 @@ app.post('/api/integrations/sync', authApi, async (req, res) => {
     }
 
     res.json({ message: 'Sync completed', at: new Date().toISOString() });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ──────────────────────────────────────────────
+// Enterprise Security & Governance APIs
+// ──────────────────────────────────────────────
+
+app.get('/api/security', authApi, (req, res) => {
+  try {
+    res.json(securityService.getSecuritySystemStatus());
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/security/audit', authApi, (req, res) => {
+  try {
+    const filters = {};
+    if (req.query.type) filters.type = req.query.type;
+    if (req.query.userId) filters.userId = req.query.userId;
+    if (req.query.tenantId) filters.tenantId = req.query.tenantId;
+    if (req.query.status) filters.status = req.query.status;
+    if (req.query.search) filters.search = req.query.search;
+    if (req.query.startDate) filters.startDate = req.query.startDate;
+    if (req.query.endDate) filters.endDate = req.query.endDate;
+    if (req.query.limit) filters.limit = parseInt(req.query.limit);
+
+    if (req.query.stats === 'true') return res.json(securityService.auditSystem.getAuditStats());
+    res.json(securityService.auditSystem.searchAudit(filters));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/security/compliance', authApi, (req, res) => {
+  try {
+    const { standard, tenantId } = req.query;
+    if (standard) {
+      const report = securityService.complianceEngine.generateComplianceReport(standard, { generatedBy: req.user?.id, tenantId });
+      return res.json(report);
+    }
+    const summary = securityService.complianceEngine.getComplianceSummary();
+    const violations = securityService.complianceEngine.getViolations({ unremediated: true });
+    res.json({ summary, violations });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/security/sessions', authApi, (req, res) => {
+  try {
+    if (req.query.userId) {
+      const sessions = securityService.sessionManager.getActiveSessions(req.query.userId);
+      return res.json({ userId: req.query.userId, sessions, deviceCount: securityService.sessionManager.listDevices(req.query.userId).length });
+    }
+    res.json(securityService.sessionManager.getSessionsSummary());
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/security/roles', authApi, (req, res) => {
+  try {
+    const { userId, role } = req.body;
+    if (!userId || !role) return res.status(400).json({ error: 'userId and role are required' });
+    const result = securityService.rbac.assignRole(userId, role, req.user?.id || 'api');
+    const permissions = securityService.rbac.getEffectivePermissions(userId);
+    securityService.auditSystem.trackEvent('ROLE_CHANGE', { userId, role, details: `Role '${role}' assigned to user '${userId}'` });
+    res.json({ message: `Role '${role}' assigned to user '${userId}'`, userId, role: result.role, permissions });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/security/policies', authApi, (req, res) => {
+  try {
+    const { name, description, conditions, effect, priority } = req.body;
+    if (!name || !conditions) return res.status(400).json({ error: 'name and conditions are required' });
+    const policy = securityService.abac.createPolicy(name, description || '', conditions, effect || 'DENY', priority || 0);
+    securityService.auditSystem.trackEvent('POLICY_CHANGE', { details: `Policy '${name}' created`, metadata: { policyId: policy.id } });
+    res.json({ message: `Policy '${name}' created`, policy });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
