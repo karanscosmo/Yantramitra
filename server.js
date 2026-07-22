@@ -8,6 +8,14 @@ const fs = require('fs');
 const crypto = require('crypto');
 const prisma = require('./services/prisma');
 const googleAuth = require('./services/google-auth');
+const mlPrediction = require('./services/mlPrediction');
+const ragService = require('./services/rag');
+const agentService = require('./services/agents');
+const workflowService = require('./services/workflows');
+const eventService = require('./services/events');
+const graphService = require('./services/graph');
+const decisionService = require('./services/decisions');
+const fleetService = require('./services/fleet');
 
 const isVercel = !!process.env.VERCEL;
 const uploadsDir = isVercel ? '/tmp/uploads' : path.join(__dirname, 'uploads');
@@ -504,6 +512,13 @@ app.get('/api/public/stats', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.get('/api/ml/model-info', authApi, (req, res) => {
+  try {
+    const status = mlPrediction.getHealthCheckStatus();
+    res.json(status);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/plants', authApi, async (req, res) => {
   try {
     const plants = await prisma.plant.findMany({
@@ -560,10 +575,21 @@ app.get('/api/machines', authApi, async (req, res) => {
         productionLine: { include: { building: { include: { plant: { select: { name: true } } } } } },
         alarms: { orderBy: { createdAt: 'desc' }, take: 5 },
         sensors: { take: 12, orderBy: { createdAt: 'asc' } },
+        readings: { take: 20, orderBy: { timestamp: 'desc' } },
         _count: { select: { alarms: true, workOrders: true } }
       }
     });
-    res.json(machines);
+    const enriched = machines.map(m => {
+      const ml = mlPrediction.predictForMachine(m, m.readings);
+      return {
+        ...m,
+        failureProbability: ml.failureProbability,
+        remainingUsefulLife: ml.remainingUsefulLife,
+        riskLevel: ml.riskLevel,
+        confidence: ml.confidence
+      };
+    });
+    res.json(enriched);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -584,7 +610,15 @@ app.get('/api/machines/:id', authApi, async (req, res) => {
       }
     });
     if (!machine) return res.status(404).json({ error: 'Machine not found' });
-    res.json(machine);
+    const mlResult = mlPrediction.predictForMachine(machine, machine.readings);
+    res.json({
+      ...machine,
+      failureProbability: mlResult.failureProbability,
+      remainingUsefulLife: mlResult.remainingUsefulLife,
+      riskLevel: mlResult.riskLevel,
+      confidence: mlResult.confidence,
+      topContributions: mlResult.topContributions
+    });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -624,17 +658,20 @@ app.get('/api/diagnostics/:assetId', authApi, async (req, res) => {
       });
     } catch {} // non-critical
 
+    const mlResult = mlPrediction.predictForMachine(machine, machine.readings);
     const aiPredictions = {
       rootCause: machine.aiSummary || 'Vibration-induced bearing fatigue detected across recent operational cycles.',
-      confidence: Math.min(99, Math.max(60, Math.round(100 - (machine.failureProbability || 0) * 0.3))),
+      confidence: mlResult.confidence,
+      failureProbability: mlResult.failureProbability,
+      riskLevel: mlResult.riskLevel,
+      topContributions: mlResult.topContributions,
       affectedComponents: machine.components?.filter(c => c.health < 85).map(c => c.name) || ['Main Bearing', 'Drive Shaft'],
       recommendedActions: machine.status === 'running'
         ? ['Schedule preventive maintenance within 14 days', 'Monitor vibration trends', 'Inspect lubrication system']
         : ['Immediate inspection required', 'Replace worn components', 'Run diagnostic sequence'],
-      estimatedDowntime: machine.remainingUsefulLife
-        ? `${Math.max(1, Math.round(machine.remainingUsefulLife / 24))} hours`
-        : '4-6 hours',
-      remainingUsefulLife: machine.remainingUsefulLife ? `${machine.remainingUsefulLife}h` : 'Unknown'
+      estimatedDowntime: `${Math.max(1, Math.round(mlResult.remainingUsefulLife / 24))} hours`,
+      remainingUsefulLife: `${mlResult.remainingUsefulLife}h`,
+      modelInfo: mlResult.modelMeta
     };
 
     const telemetry = {};
@@ -654,8 +691,10 @@ app.get('/api/diagnostics/:assetId', authApi, async (req, res) => {
         oee: machine.oee, location: machine.location,
         installationDate: machine.installationDate,
         criticality: machine.criticality,
-        failureProbability: machine.failureProbability,
-        remainingUsefulLife: machine.remainingUsefulLife,
+        failureProbability: mlResult.failureProbability,
+        remainingUsefulLife: mlResult.remainingUsefulLife,
+        riskLevel: mlResult.riskLevel,
+        confidence: mlResult.confidence,
         lastUpdated: machine.updatedAt
       },
       plant: machine.plant ? { id: machine.plant.id, name: machine.plant.name, location: machine.plant.location } : null,
@@ -834,7 +873,17 @@ app.post('/api/incidents/:id/actions', authApi, async (req, res) => {
 
     if (action === 'mark_repaired') {
       if (incident.workOrderId) await prisma.workOrder.update({ where: { id: incident.workOrderId }, data: { status: 'completed' } });
-      await prisma.machine.update({ where: { id: incident.machineId }, data: { status: 'running', health: Math.min(96, incident.machine.health + 18), failureProbability: 8, remainingUsefulLife: 1400 } });
+      const updatedHealth = Math.min(96, incident.machine.health + 18);
+      const mlPost = mlPrediction.predictForMachine({ ...incident.machine, health: updatedHealth, status: 'running' }, []);
+      await prisma.machine.update({
+        where: { id: incident.machineId },
+        data: {
+          status: 'running',
+          health: updatedHealth,
+          failureProbability: mlPost.failureProbability,
+          remainingUsefulLife: mlPost.remainingUsefulLife
+        }
+      });
       const updated = await prisma.operationalIncident.update({ where: { id: incident.id }, data: { status: 'recovered', stage: 'recovered', recoveredAt: new Date(), timeline: addTimeline('recovered', 'Machine repaired and KPIs recovered') } });
       await createNotification({ title: 'Incident recovered', message: `${incident.machine.name} returned to running state.`, type: 'incident', priority: 'medium', link: '/dashboard' });
       await createAudit(req.user.id, 'incident.recovered', 'OperationalIncident', incident.id, { machineId: incident.machineId });
@@ -1140,11 +1189,49 @@ app.get('/api/command-palette', authApi, async (req, res) => {
 app.get('/api/analytics/reliability', authApi, async (req, res) => {
   try {
     const plants = await prisma.plant.findMany({
-      include: { machines: true }
+      include: {
+        machines: {
+          include: {
+            components: true,
+            alarms: true,
+            readings: { take: 20, orderBy: { timestamp: 'desc' } }
+          }
+        }
+      }
     });
     const reliability = plants.map(p => {
-      const avgHealth = p.machines.reduce((sum, m) => sum + m.health, 0) / (p.machines.length || 1);
-      return { plantId: p.id, plantName: p.name, avgHealth: Math.round(avgHealth * 10) / 10, machineCount: p.machines.length };
+      let totalProb = 0;
+      let totalRul = 0;
+      let criticalCount = 0;
+      const count = p.machines.length || 1;
+
+      const machineEvaluations = p.machines.map(m => {
+        const ml = mlPrediction.predictForMachine(m, m.readings);
+        totalProb += ml.failureProbability;
+        totalRul += ml.remainingUsefulLife;
+        if (ml.riskLevel === 'Critical' || ml.riskLevel === 'High') criticalCount++;
+        return {
+          id: m.id,
+          name: m.name,
+          health: m.health,
+          failureProbability: ml.failureProbability,
+          remainingUsefulLife: ml.remainingUsefulLife,
+          riskLevel: ml.riskLevel,
+          confidence: ml.confidence
+        };
+      });
+
+      const avgHealth = p.machines.reduce((sum, m) => sum + m.health, 0) / count;
+      return {
+        plantId: p.id,
+        plantName: p.name,
+        avgHealth: Math.round(avgHealth * 10) / 10,
+        avgFailureProbability: Math.round(totalProb / count),
+        avgRemainingUsefulLife: Math.round(totalRul / count),
+        criticalMachineCount: criticalCount,
+        machineCount: p.machines.length,
+        machines: machineEvaluations
+      };
     });
     res.json(reliability);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -1502,90 +1589,14 @@ app.post('/api/ai-chat', authApi, rateLimit({ windowMs: 60 * 1000, max: 20, keyP
       return res.status(503).json({ error: 'api_key_missing', message: 'GROQ_API_KEY environment variable is not configured. Set it to enable AI chat.' });
     }
 
-    const [machines, alarms, plants, agents, workOrders, plans, incidents] = await Promise.all([
-      prisma.machine.findMany({
-        include: {
-          plant: { select: { name: true, location: true, oee: true, energyUsage: true, co2Tonnes: true } },
-          productionLine: { include: { building: true } },
-          sensors: { take: 6 },
-          components: { take: 3 },
-          inventoryParts: { take: 3 },
-          maintenanceEvents: { orderBy: { performedAt: 'desc' }, take: 2 },
-        }
-      }),
-      prisma.alarm.findMany({ where: { status: 'active' }, include: { machine: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 20 }),
-      prisma.plant.findMany(),
-      prisma.agent.findMany({ orderBy: { createdAt: 'desc' } }),
-      prisma.workOrder.findMany({ include: { machine: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 20 }),
-      prisma.plan.findMany({ orderBy: { createdAt: 'desc' }, take: 10 }),
-      prisma.operationalIncident.findMany({ include: { machine: { select: { name: true } } }, orderBy: { updatedAt: 'desc' }, take: 10 }),
-    ]);
-
     if (conversationId) {
       if (!aiConversations.has(conversationId)) aiConversations.set(conversationId, { messages: [], created: Date.now() });
       if (history && Array.isArray(history)) aiConversations.get(conversationId).messages = history.slice(-30);
     }
 
-    const plantList = plants.map(p => `- ${p.name} (${p.location}): ${p.status}, OEE ${p.oee || 'N/A'}%, Energy ${p.energyUsage || 'N/A'} MWh, CO2 ${p.co2Tonnes || 'N/A'}t, Lat ${p.lat}, Lng ${p.lng}`).join('\n');
-    const machineSummary = machines.slice(0, 20).map(m => `- ${m.name} (${m.plant?.name || 'Unknown plant'}): ${m.status}, health ${m.health}%, type ${m.type}, failure prob ${m.failureProbability || 'N/A'}, RUL ${m.remainingUsefulLife || 'N/A'}d`).join('\n');
-    const alarmSummary = alarms.slice(0, 15).map(a => `- [${a.severity}] ${a.title} on ${a.machine?.name || 'Unknown machine'}: ${a.message}`).join('\n');
-    const workOrderSummary = workOrders.slice(0, 15).map(w => `- ${w.title}: ${w.status}, ${w.priority}, assigned to ${w.assignedTo || 'unassigned'}`).join('\n');
-
-    const systemPrompt = `You are YantraNklan, YantraMitra's industrial operations AI copilot with permanent real-time access to Yantra Manufacturing Technologies Pvt. Ltd.'s complete operational dataset.
-
-## DATABASE CONTEXT (Current Snapshot)
-
-### Plants (${plants.length} total):
-${plantList || 'No plant data available'}
-
-### Key Machines (${machines.length} total, showing top 20):
-${machineSummary || 'No machine data available'}
-
-### Active Alarms (${alarms.length} total):
-${alarmSummary || 'No active alarms'}
-
-### Recent Work Orders (${workOrders.length} total, showing top 15):
-${workOrderSummary || 'No work orders'}
-
-### Agents (${agents.length} total):
-${agents.slice(0, 8).map(a => `- ${a.name}: ${a.type}, ${a.status}, progress ${a.progress}%, success rate ${a.successRate}%`).join('\n') || 'No agents'}
-
-### Plans (${plans.length} total):
-${plans.slice(0, 8).map(p => `- ${p.title}: ${p.status}, ${p.priority}, ${p.type}`).join('\n') || 'No plans'}
-
-### Incidents (${incidents.length} total):
-${incidents.slice(0, 8).map(i => `- ${i.title}: ${i.severity}, stage ${i.stage}, impact cost ₹${(i.impactCost || 0).toLocaleString()}`).join('\n') || 'No incidents'}
-
-${attachmentContext ? `\n### USER FILE ATTACHMENT\n\`\`\`\n${attachmentContext.slice(0, 4000)}\n\`\`\`\n` : ''}
-
-## TOOLS / PAGE ROUTING
-You can suggest actions the user can take. When referencing data, use these exact URL patterns:
-- Plant details: [/plant/{plant.id}] or use plant name
-- Machine detail: [/assets/{machine.id}]
-- Work orders: [/work-orders]
-- Digital Twin: [/digital-twin?plant={plant.id}]
-- AI Console: [/ai-console]
-- Plans: [/plans]
-- Agents: [/agents]
-- Anomaly: [/anomaly]
-- Dashboard: [/dashboard]
-- Map: [/map]
-- Simulator: [/simulator]
-
-Include clickable links like: [View Work Orders](/work-orders) or [Pune Plant Details](/plant/{uuid})
-
-## RESPONSE RULES
-- Format with proper markdown (headings, bold, lists, tables).
-- Use tables for comparisons across plants or machines.
-- Always reference specific data points from the context above.
-- You have full data access — never say you don't have information.
-- For follow-up questions, use the conversation history for context.
-- Always provide actionable, specific recommendations.
-- For "create work order" requests, suggest using [/work-orders].
-- For failure predictions, explain reasoning with evidence.
-- Use Indian Rupee (₹) formatting for costs.
-- Maximum 600 words unless the user asks for more.
-- No signature blocks. No preamble about being an AI.`;
+    // Enterprise Hybrid Vector RAG Retrieval
+    const ragResult = await ragService.queryHybridRAG(message, { conversationId, history, attachmentContext });
+    const systemPrompt = ragResult.systemPrompt;
 
     const OpenAI = require('openai');
     const groq = new OpenAI({ apiKey, baseURL: GROQ_BASE_URL });
@@ -1600,16 +1611,18 @@ Include clickable links like: [View Work Orders](/work-orders) or [Pune Plant De
       const completion = await groq.chat.completions.create({
         model: GROQ_MODEL,
         messages,
-        max_tokens: 700,
+        max_tokens: 800,
         temperature: 0.7,
       });
 
-      const reply = completion.choices[0]?.message?.content || 'I apologize, but I was unable to generate a response. Please try again.';
+      let reply = completion.choices[0]?.message?.content || 'I apologize, but I was unable to generate a response. Please try again.';
+      reply = ragService.appendVerifiedCitations(reply, ragResult.sources);
+
       if (conversationId) {
         const conv = aiConversations.get(conversationId);
         if (conv) { conv.messages.push({ role: 'user', content: message }, { role: 'assistant', content: reply }); }
       }
-      res.json({ reply, model: GROQ_MODEL });
+      res.json({ reply, model: GROQ_MODEL, sources: ragResult.sources, intent: ragResult.intent });
     } catch (e) {
       console.error('AI provider error:', { message: e.message, status: e.status, code: e.code });
       throw e;
@@ -1691,11 +1704,8 @@ app.post('/api/ai-upload', authApi, upload.array('files', 5), async (req, res) =
       conv.attachmentContext = extractedText;
     }
 
-    res.json({ reply, model: GROQ_MODEL, sources: fileSources, extractedText });
-  } catch (e) {
-    console.error('Upload error:', e.message);
-    res.status(500).json({ error: 'Upload failed', message: e.message });
-  }
+    res.json({ reply, model: GROQ_MODEL, sources: fileSources, attachments: files.length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Streaming AI chat endpoint with auto-fallback to non-streaming
@@ -1707,25 +1717,13 @@ app.post('/api/ai-chat/stream', authApi, rateLimit({ windowMs: 60 * 1000, max: 2
   if (!apiKey) return res.status(503).json({ error: 'api_key_missing', message: 'GROQ_API_KEY not configured. Set it in your environment to enable AI chat.' });
 
   try {
-    const [machines, alarms, plants, agents, workOrders, plans, incidents] = await Promise.all([
-      prisma.machine.findMany({ include: { plant: { select: { name: true, location: true, oee: true, energyUsage: true, co2Tonnes: true } }, sensors: { take: 4 }, components: { take: 2 } } }),
-      prisma.alarm.findMany({ where: { status: 'active' }, include: { machine: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 15 }),
-      prisma.plant.findMany(),
-      prisma.agent.findMany({ orderBy: { createdAt: 'desc' } }),
-      prisma.workOrder.findMany({ include: { machine: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 15 }),
-      prisma.plan.findMany({ orderBy: { createdAt: 'desc' }, take: 8 }),
-      prisma.operationalIncident.findMany({ include: { machine: { select: { name: true } } }, orderBy: { updatedAt: 'desc' }, take: 8 }),
-    ]);
-
     if (conversationId) {
       if (!aiConversations.has(conversationId)) aiConversations.set(conversationId, { messages: [], created: Date.now() });
       if (history && Array.isArray(history)) aiConversations.get(conversationId).messages = history.slice(-30);
     }
 
-    const plantList = plants.map(p => `- ${p.name} (${p.location}): OEE ${p.oee || 'N/A'}%, Energy ${p.energyUsage || 'N/A'} MWh, CO2 ${p.co2Tonnes || 'N/A'}t`).join('\n');
-    const machineSummary = machines.slice(0, 20).map(m => `- ${m.name} (${m.plant?.name}): ${m.status}, health ${m.health}%, RUL ${m.remainingUsefulLife || 'N/A'}d`).join('\n');
-
-    const systemPrompt = `You are YantraNklan, YantraMitra's industrial AI copilot.\n\n## LIVE DATA\nPlants:\n${plantList}\n\nMachines:\n${machineSummary}\n\nUse markdown. Include links like [View](/plant/{id}). Never say you lack data. Be specific.${attachmentContext ? `\n\n## FILE ATTACHMENT\n${attachmentContext.slice(0, 3000)}` : ''}`;
+    const ragResult = await ragService.queryHybridRAG(message, { conversationId, history, attachmentContext });
+    const systemPrompt = ragResult.systemPrompt;
 
     const OpenAI = require('openai');
     const groq = new OpenAI({ apiKey, baseURL: GROQ_BASE_URL });
@@ -1737,13 +1735,15 @@ app.post('/api/ai-chat/stream', authApi, rateLimit({ windowMs: 60 * 1000, max: 2
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
 
-      const stream = await groq.chat.completions.create({ model: GROQ_MODEL, messages, max_tokens: 700, temperature: 0.7, stream: true });
+      const stream = await groq.chat.completions.create({ model: GROQ_MODEL, messages, max_tokens: 800, temperature: 0.7, stream: true });
 
       let fullReply = '';
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content || '';
         if (content) { fullReply += content; res.write('data: ' + JSON.stringify({ content }) + '\n\n'); }
       }
+
+      fullReply = ragService.appendVerifiedCitations(fullReply, ragResult.sources);
 
       if (conversationId) {
         const conv = aiConversations.get(conversationId);
@@ -1752,48 +1752,379 @@ app.post('/api/ai-chat/stream', authApi, rateLimit({ windowMs: 60 * 1000, max: 2
       res.write('data: [DONE]\n\n');
       res.end();
     } catch (streamError) {
-      console.error('AI stream provider error:', {
-        message: streamError.message,
-        status: streamError.status,
-        code: streamError.code || streamError.type || 'unknown',
-        type: streamError.constructor?.name,
-        stack: (streamError.stack || '').split('\n').slice(0, 5).join('\n')
-      });
-
+      console.error('AI stream provider error:', streamError.message);
       if (res.headersSent) {
         res.write('data: ' + JSON.stringify({ error: streamError.message, code: streamError.status || 'stream_error' }) + '\n\n');
         res.write('data: [DONE]\n\n');
         return res.end();
       }
 
-      console.log('Stream failed, falling back to non-streaming completion. Reason:', streamError.message);
       try {
-        const completion = await groq.chat.completions.create({ model: GROQ_MODEL, messages, max_tokens: 700, temperature: 0.7, stream: false });
-        const reply = completion.choices[0]?.message?.content || '';
+        const completion = await groq.chat.completions.create({ model: GROQ_MODEL, messages, max_tokens: 800, temperature: 0.7, stream: false });
+        let reply = completion.choices[0]?.message?.content || '';
+        reply = ragService.appendVerifiedCitations(reply, ragResult.sources);
         if (conversationId) {
           const conv = aiConversations.get(conversationId);
           if (conv) conv.messages.push({ role: 'user', content: message }, { role: 'assistant', content: reply });
         }
         res.type('json');
-        return res.json({ reply, model: GROQ_MODEL, fallback: true, fallbackReason: streamError.message });
+        return res.json({ reply, model: GROQ_MODEL, sources: ragResult.sources, fallback: true, fallbackReason: streamError.message });
       } catch (fallbackError) {
-        console.error('AI fallback also failed:', {
-          message: fallbackError.message,
-          status: fallbackError.status,
-          code: fallbackError.code || fallbackError.type || 'unknown',
-          stack: (fallbackError.stack || '').split('\n').slice(0, 5).join('\n')
-        });
+        console.error('AI fallback error:', fallbackError.message);
         res.type('json');
         if (!res.headersSent) return res.status(500).json({ error: fallbackError.message || 'AI service unavailable', code: fallbackError.status || 'ai_error' });
       }
     }
   } catch (e) {
-    console.error('Stream setup error:', { message: e.message, stack: (e.stack || '').split('\n').slice(0, 5).join('\n') });
+    console.error('Stream setup error:', e.message);
     res.type('json');
     if (!res.headersSent) return res.status(500).json({ error: e.message || 'stream_error', code: 'stream_setup_failed' });
-    res.write('data: ' + JSON.stringify({ error: e.message }) + '\n\n');
-    res.end();
   }
+});
+
+// ──────────────────────────────────────────────
+// RAG Administration Endpoints
+// ──────────────────────────────────────────────
+
+app.get('/api/rag/status', authApi, (req, res) => {
+  try {
+    const status = ragService.getRAGStatus();
+    res.json(status);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/rag/stats', authApi, (req, res) => {
+  try {
+    const stats = ragService.vectorStore.getStats();
+    res.json(stats);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/rag/reindex', authApi, async (req, res) => {
+  try {
+    const stats = await ragService.reindexAllDocuments();
+    res.json({ message: 'RAG reindexing complete', stats });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/rag/reindex/:document', authApi, async (req, res) => {
+  try {
+    const docName = req.params.document;
+    const docPath = path.join(__dirname, 'data', 'knowledge_base', docName);
+    if (!fs.existsSync(docPath)) return res.status(404).json({ error: 'Knowledge base document not found' });
+    const count = await ragService.indexSingleFile(docPath, docName);
+    res.json({ message: `Document ${docName} reindexed successfully`, chunksIndexed: count });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/rag/document/:id', authApi, (req, res) => {
+  try {
+    const docId = req.params.id;
+    const deletedCount = ragService.vectorStore.deleteDocumentChunks(docId);
+    res.json({ message: `Document ${docId} deleted from vector store`, chunksRemoved: deletedCount });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ──────────────────────────────────────────────
+// Autonomous Multi-Agent Endpoints
+// ──────────────────────────────────────────────
+
+app.get('/api/agents/status', authApi, (req, res) => {
+  try {
+    const status = agentService.getAgentStatus();
+    res.json(status);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/agents/list', authApi, (req, res) => {
+  try {
+    const status = agentService.getAgentStatus();
+    res.json({
+      count: status.totalAgents,
+      agents: status.agents
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/agents/dispatch', authApi, async (req, res) => {
+  try {
+    const { query, machineId, userIntent } = req.body;
+    if (!query) return res.status(400).json({ error: 'Query is required for agent dispatch' });
+
+    const result = await agentService.dispatchMultiAgentFlow(query, { machineId, userIntent });
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ──────────────────────────────────────────────
+// Autonomous Industrial Digital Worker Workflows
+// ──────────────────────────────────────────────
+
+app.get('/api/workflows', authApi, (req, res) => {
+  try {
+    const systemStatus = workflowService.getWorkflowSystemStatus();
+    const activeWorkflows = workflowService.workflowEngine.listAllWorkflows();
+    const templates = workflowService.listAllTemplates();
+    res.json({
+      systemStatus,
+      templates,
+      activeWorkflowsCount: activeWorkflows.length,
+      workflows: activeWorkflows
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/workflows/:id', authApi, (req, res) => {
+  try {
+    const workflowId = req.params.id;
+    const workflow = workflowService.workflowEngine.getWorkflowById(workflowId);
+    if (!workflow) return res.status(404).json({ error: `Workflow ${workflowId} not found` });
+
+    const auditLogs = workflowService.auditTrail.getAuditHistoryForWorkflow(workflowId);
+    res.json({
+      workflow,
+      auditLogs
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/workflows/execute', authApi, async (req, res) => {
+  try {
+    const { templateId, machineId, customOptions, mode } = req.body;
+    const selectedTemplate = templateId || 'preventive_maintenance';
+
+    let machine = null;
+    if (machineId) {
+      machine = await prisma.machine.findUnique({ where: { id: machineId } });
+    }
+
+    const { plan, simulation } = await workflowService.workflowEngine.createAndSimulateWorkflow(selectedTemplate, machine, customOptions);
+
+    if (mode === 'SIMULATE_ONLY') {
+      return res.json({
+        message: 'Workflow dry-run simulation executed successfully',
+        plan,
+        simulation
+      });
+    }
+
+    // Execute Next Step in Workflow
+    const stepResult = await workflowService.workflowEngine.executeNextStep(plan.workflowId);
+    res.json({
+      message: 'Workflow step execution initiated',
+      plan,
+      simulation,
+      stepResult
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/workflows/:id/approve', authApi, async (req, res) => {
+  try {
+    const workflowId = req.params.id;
+    const { supervisorName } = req.body;
+    const result = await workflowService.workflowEngine.approveStep(workflowId, supervisorName || 'Shift Supervisor');
+    res.json({
+      message: `Workflow step approved by ${supervisorName || 'Shift Supervisor'}`,
+      result
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/workflows/:id/rollback', authApi, (req, res) => {
+  try {
+    const workflowId = req.params.id;
+    const result = workflowService.workflowEngine.rollbackWorkflow(workflowId);
+    res.json({
+      message: `Workflow ${workflowId} rolled back successfully`,
+      result
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ──────────────────────────────────────────────
+// Event-Driven Industrial Architecture Endpoints
+// ──────────────────────────────────────────────
+
+app.get('/api/events', authApi, (req, res) => {
+  try {
+    const status = eventService.getEventSystemStatus();
+    res.json(status);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/events/history', authApi, (req, res) => {
+  try {
+    const { machineId, eventType, severity, limit } = req.query;
+    const history = eventService.eventHistory.queryHistory({ machineId, eventType, severity, limit: limit || 50 });
+    res.json({
+      totalEvents: history.length,
+      events: history
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/events/publish', authApi, (req, res) => {
+  try {
+    const { eventType, payload } = req.body;
+    if (!eventType) return res.status(400).json({ error: 'eventType is required' });
+
+    const publishedEvent = eventService.eventBus.publish(eventType, payload || {});
+    res.json({
+      message: `Event ${eventType} published to Event Bus`,
+      event: publishedEvent
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/events/replay', authApi, async (req, res) => {
+  try {
+    const { eventIds, limit } = req.body;
+    const result = await eventService.eventReplay.replayEvents(eventIds, { limit });
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ──────────────────────────────────────────────
+// Industrial Knowledge Graph APIs
+// ──────────────────────────────────────────────
+
+app.get('/api/graph', authApi, (req, res) => {
+  try {
+    res.json(graphService.getGraphSystemStatus());
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/graph/node/:id', authApi, (req, res) => {
+  try {
+    const node = graphService.graphEngine.getNode(req.params.id);
+    if (!node) return res.status(404).json({ error: `Node ${req.params.id} not found in knowledge graph` });
+    res.json(node);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/graph/neighbors/:id', authApi, (req, res) => {
+  try {
+    const { relationship } = req.query;
+    const neighbors = graphService.graphEngine.getNeighbors(req.params.id, relationship || null);
+    res.json({ nodeId: req.params.id, neighbors, totalNeighbors: neighbors.length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/graph/path', authApi, (req, res) => {
+  try {
+    const { from, to } = req.query;
+    if (!from || !to) return res.status(400).json({ error: 'Query params "from" and "to" are required' });
+    const result = graphService.graphEngine.findPath(from, to);
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/graph/impact/:machineId', authApi, (req, res) => {
+  try {
+    const impact = graphService.graphEngine.analyzeImpact(req.params.machineId);
+    if (!impact) return res.status(404).json({ error: `Machine ${req.params.machineId} not found in knowledge graph` });
+    res.json(impact);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/graph/dependencies/:machineId', authApi, (req, res) => {
+  try {
+    const depMap = graphService.graphEngine.getDependencyMap(req.params.machineId);
+    res.json(depMap);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/graph/similar/:nodeId', authApi, (req, res) => {
+  try {
+    const { limit } = req.query;
+    const result = graphService.graphEngine.findSimilar(req.params.nodeId, parseInt(limit) || 5);
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ──────────────────────────────────────────────
+// Decision Intelligence APIs
+// ──────────────────────────────────────────────
+
+app.get('/api/decisions', authApi, (req, res) => {
+  try {
+    res.json(decisionService.getDecisionSystemStatus());
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/decisions/analyze', authApi, async (req, res) => {
+  try {
+    const {
+      machineId,
+      machineName,
+      problemType,
+      mlPrediction,
+      ragEvidence,
+      graphImpact,
+      customWeights
+    } = req.body;
+
+    if (!machineId) return res.status(400).json({ error: 'machineId is required' });
+
+    // Optionally auto-fetch graph impact if not provided
+    let resolvedGraphImpact = graphImpact;
+    if (!resolvedGraphImpact && machineId) {
+      try { resolvedGraphImpact = graphService.graphEngine.analyzeImpact(machineId); } catch (_) {}
+    }
+
+    const analysis = await decisionService.decisionEngine.analyze({
+      machineId,
+      machineName,
+      problemType,
+      context: {
+        mlPrediction: mlPrediction || {},
+        ragEvidence: ragEvidence || [],
+        graphImpact: resolvedGraphImpact || {},
+        customWeights
+      }
+    });
+
+    res.json(analysis);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ──────────────────────────────────────────────
+// Enterprise Fleet Intelligence APIs
+// ──────────────────────────────────────────────
+
+app.get('/api/fleet', authApi, (req, res) => {
+  try {
+    res.json(fleetService.getFleetSystemStatus());
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/fleet/overview', authApi, (req, res) => {
+  try {
+    const overview     = fleetService.FleetManager.getFleetOverview();
+    const comparison   = fleetService.crossPlantAnalytics.comparePlants();
+    const machineRanks = fleetService.crossPlantAnalytics.rankAllMachines();
+    const classComp    = fleetService.crossPlantAnalytics.compareMachineClasses();
+    res.json({ overview, crossPlantComparison: comparison, machineRankings: machineRanks, machineClassComparison: classComp });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/fleet/benchmark', authApi, (req, res) => {
+  try {
+    res.json(fleetService.benchmarkEngine.getBenchmarkSummary());
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/fleet/anomalies', authApi, (req, res) => {
+  try {
+    res.json(fleetService.fleetAnomalyDetector.getFullAnomalyReport());
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/fleet/recommendations', authApi, (req, res) => {
+  try {
+    res.json(fleetService.globalRecommendations.generate());
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Dashboard missions endpoint (aggregates agents with missions)

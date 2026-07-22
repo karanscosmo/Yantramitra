@@ -1,0 +1,102 @@
+{
+  "model_version": "v1.0",
+  "algorithm": "Gradient Boosting (Scikit-Learn)",
+  "framework": "XGBoost 3.x / Scikit-Learn Ensemble",
+  "training_dataset": "AI4I 2020 Predictive Maintenance (UCI) + NASA C-MAPSS Failure Telemetry",
+  "training_records": 65000,
+  "trained_date": "2026-07-22T10:38:06.195321",
+  "feature_names": [
+    "temperature",
+    "vibration",
+    "pressure",
+    "rpm",
+    "power",
+    "flow_rate",
+    "component_health",
+    "machine_age_days",
+    "alarm_count",
+    "runtime_hours",
+    "vibration_std",
+    "temp_rate_of_change",
+    "pressure_stability",
+    "load_ratio"
+  ],
+  "feature_labels": {
+    "temperature": "Operating Temperature",
+    "vibration": "Vibration Amplitude",
+    "pressure": "Fluid Pressure",
+    "rpm": "Rotational Speed",
+    "power": "Power Consumption",
+    "flow_rate": "Coolant Flow Rate",
+    "component_health": "Component Health Score",
+    "machine_age_days": "Asset Operating Age",
+    "alarm_count": "Historical Alarm Count",
+    "runtime_hours": "Cumulative Runtime Hours",
+    "vibration_std": "Vibration Variance",
+    "temp_rate_of_change": "Thermal Rise Rate",
+    "pressure_stability": "Pressure Stability Index",
+    "load_ratio": "Mechanical Load Ratio"
+  },
+  "scaler_mean": [
+    65.03006528610196,
+    2.4082340506649755,
+    6.2080161535884075,
+    3199.1636375119974,
+    27.956585162440525,
+    44.99891194938074,
+    62.572462781370284,
+    1095.1103183479242,
+    1.50625,
+    15344.20056266414,
+    0.4827987877072607,
+    0.7175319278574726,
+    84.54204927199265,
+    0.9937494617820126
+  ],
+  "scaler_scale": [
+    14.02914118350174,
+    2.382695774008509,
+    2.0926940607419895,
+    799.0333321210123,
+    8.007498949389298,
+    12.023333427084529,
+    21.594767703630723,
+    629.0591118922024,
+    1.2272073421296315,
+    9838.389190822993,
+    0.5612749892789876,
+    0.9614368854486329,
+    10.288077703232315,
+    0.3828070957910987
+  ],
+  "metrics": {
+    "classification": {
+      "accuracy": 0.9869,
+      "precision": 0.9298,
+      "recall": 0.8571,
+      "f1_score": 0.892,
+      "roc_auc": 0.9974
+    },
+    "regression": {
+      "r2_score": 0.9196,
+      "mae_hours": 102.62,
+      "rmse_hours": 135.32
+    }
+  },
+  "shap_feature_importance": {
+    "temperature": 9.98,
+    "vibration": 38.7,
+    "pressure": 0.36,
+    "rpm": 0.11,
+    "power": 0.07,
+    "flow_rate": 0.07,
+    "component_health": 24.25,
+    "machine_age_days": 1.87,
+    "alarm_count": 8.53,
+    "runtime_hours": 10.61,
+    "vibration_std": 2.17,
+    "temp_rate_of_change": 0.47,
+    "pressure_stability": 2.76,
+    "load_ratio": 0.06
+  }
+}

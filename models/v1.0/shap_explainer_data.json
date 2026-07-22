@@ -1,0 +1,16 @@
+{
+  "temperature": 9.98,
+  "vibration": 38.7,
+  "pressure": 0.36,
+  "rpm": 0.11,
+  "power": 0.07,
+  "flow_rate": 0.07,
+  "component_health": 24.25,
+  "machine_age_days": 1.87,
+  "alarm_count": 8.53,
+  "runtime_hours": 10.61,
+  "vibration_std": 2.17,
+  "temp_rate_of_change": 0.47,
+  "pressure_stability": 2.76,
+  "load_ratio": 0.06
+}

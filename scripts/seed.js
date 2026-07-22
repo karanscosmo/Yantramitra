@@ -1,4 +1,5 @@
-const prisma = require('./services/prisma');
+const prisma = require('../services/prisma');
+const mlPrediction = require('../services/mlPrediction');
 const bcrypt = require('bcryptjs');
 
 const people = [
@@ -239,8 +240,8 @@ async function main() {
         installationDate: new Date(2020 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 12), 15),
         criticality: health < 75 ? 'high' : health > 92 ? 'medium' : 'medium',
         oee: Math.max(45, Math.min(99, health - 4 + Math.random() * 5)),
-        failureProbability: Math.max(2, Math.min(88, 104 - health + Math.random() * 8)),
-        remainingUsefulLife: Math.max(12, Math.round(health * 18)),
+        failureProbability: mlPrediction.predictForMachine({ health, status, type }).failureProbability,
+        remainingUsefulLife: mlPrediction.predictForMachine({ health, status, type }).remainingUsefulLife,
         bearing: health < 75 ? 'elevated vibration' : 'normal',
         lubrication: health < 75 ? 'inspection due' : 'within interval',
         aiSummary: `${name} is ${status}; primary risk is ${health < 75 ? 'fault escalation and downtime' : 'normal degradation under production load'}.`,
