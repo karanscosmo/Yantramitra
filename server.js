@@ -19,6 +19,7 @@ const fleetService = require('./services/fleet');
 const learningService = require('./services/learning');
 const integrationService = require('./services/integrations');
 const securityService = require('./services/security');
+const productionService = require('./services/production');
 
 const isVercel = !!process.env.VERCEL;
 const uploadsDir = isVercel ? '/tmp/uploads' : path.join(__dirname, 'uploads');
@@ -2330,6 +2331,65 @@ app.post('/api/security/policies', authApi, (req, res) => {
     const policy = securityService.abac.createPolicy(name, description || '', conditions, effect || 'DENY', priority || 0);
     securityService.auditSystem.trackEvent('POLICY_CHANGE', { details: `Policy '${name}' created`, metadata: { policyId: policy.id } });
     res.json({ message: `Policy '${name}' created`, policy });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ──────────────────────────────────────────────
+// Production Readiness & Observability APIs
+// ──────────────────────────────────────────────
+
+app.get('/api/system/status', authApi, (req, res) => {
+  try {
+    res.json(productionService.getProductionSystemStatus());
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/system/health', authApi, async (req, res) => {
+  try {
+    const results = await productionService.observability.runAllHealthChecks();
+    productionService.logger.info('Health check completed', { metadata: { healthy: results.healthy, total: results.total } });
+    res.json(results);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/system/metrics', authApi, (req, res) => {
+  try {
+    const api = productionService.observability.getApiMetrics();
+    const agents = productionService.observability.getAgentMetrics();
+    const cache = productionService.cacheLayer.getStats();
+    const queues = productionService.jobEngine.getAllQueueStatus();
+    const rateStatus = productionService.rateLimiter.getRateStatus();
+    res.json({ api, agents, cache, queues, rateLimiting: rateStatus });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/system/performance', authApi, (req, res) => {
+  try {
+    const report = productionService.performanceMonitor.getPerformanceReport();
+    const coldStart = productionService.performanceMonitor.getColdStartDuration();
+    const logger = productionService.logger;
+    res.json({ performance: report, coldStart, logStats: logger.getLogStats() });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/system/cache', authApi, (req, res) => {
+  try {
+    const stats = productionService.cacheLayer.getStats();
+    const action = req.query.action;
+    if (action === 'flush') {
+      productionService.cacheLayer.flush();
+      return res.json({ message: 'Cache flushed', stats: productionService.cacheLayer.getStats() });
+    }
+    res.json(stats);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/system/jobs', authApi, (req, res) => {
+  try {
+    const queues = productionService.jobEngine.getAllQueueStatus();
+    const dlq = productionService.jobEngine.getDeadLetterQueue();
+    const history = productionService.jobEngine.getJobHistory(20);
+    res.json({ queues, deadLetterQueue: dlq, recentHistory: history });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
