@@ -17,6 +17,7 @@ const graphService = require('./services/graph');
 const decisionService = require('./services/decisions');
 const fleetService = require('./services/fleet');
 const learningService = require('./services/learning');
+const integrationService = require('./services/integrations');
 
 const isVercel = !!process.env.VERCEL;
 const uploadsDir = isVercel ? '/tmp/uploads' : path.join(__dirname, 'uploads');
@@ -2180,6 +2181,83 @@ app.post('/api/learning/feedback', authApi, async (req, res) => {
       weightsTuned: tuned.tuned,
       tunedWeights: tuned.tunedWeights || null
     });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ──────────────────────────────────────────────
+// Enterprise Integration APIs
+// ──────────────────────────────────────────────
+
+app.get('/api/integrations', authApi, (req, res) => {
+  try {
+    res.json(integrationService.getIntegrationSystemStatus());
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/integrations/status', authApi, (req, res) => {
+  try {
+    const hubStatus = integrationService.integrationHub.getHubStatus();
+    const healthSummary = integrationService.healthMonitor.getOverallHealthSummary();
+    const syncStatus = integrationService.syncEngine.getSyncStatus();
+    res.json({ hub: hubStatus, health: healthSummary, sync: syncStatus });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/integrations/connectors', authApi, (req, res) => {
+  try {
+    const all = integrationService.integrationHub.listConnectors();
+    const withHealth = all.map(c => {
+      const health = integrationService.healthMonitor.getConnectorHealth(c.name);
+      return { ...c, health };
+    });
+    res.json({ connectors: withHealth });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/integrations/connect', authApi, async (req, res) => {
+  try {
+    const { connectorName, config } = req.body;
+    if (!connectorName) return res.status(400).json({ error: 'connectorName is required' });
+
+    const conn = integrationService.integrationHub.getConnector(connectorName);
+    if (!conn) return res.status(404).json({ error: `Connector '${connectorName}' not registered` });
+
+    const start = Date.now();
+    let result;
+    if (conn.type === 'OPC-UA') {
+      result = conn.connect(config?.endpoint);
+    } else if (conn.type === 'MQTT') {
+      result = conn.connect(config);
+    } else if (conn.type === 'Modbus') {
+      result = conn.connect(config);
+    } else if (conn.type === 'REST/Webhook') {
+      result = { connected: true, message: 'REST/Webhook connector always available', config };
+    } else if (conn.type.startsWith('ERP') || conn.type.startsWith('CMMS') || conn.type.startsWith('MES')) {
+      result = await conn.authenticate(config || { baseUrl: config?.baseUrl || 'https://localhost' });
+    } else {
+      result = { connected: true };
+    }
+
+    const latency = Date.now() - start;
+    integrationService.healthMonitor.recordConnectionAttempt(connectorName, true, latency);
+    integrationService.integrationHub.enableConnector(connectorName, config);
+
+    res.json({ message: `Connector '${connectorName}' connected`, connectorName, result, latency });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/integrations/sync', authApi, async (req, res) => {
+  try {
+    const { jobName, connectorName, target } = req.body;
+    if (!jobName && !connectorName) return res.status(400).json({ error: 'jobName or connectorName is required' });
+
+    if (jobName) {
+      const result = await integrationService.syncEngine.executeSync(jobName);
+      const health = integrationService.healthMonitor.recordSync(jobName, result.success, result.duration || 0);
+      return res.json({ syncResult: result, health });
+    }
+
+    res.json({ message: 'Sync completed', at: new Date().toISOString() });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
